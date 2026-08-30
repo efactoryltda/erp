@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP E-Factory</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --panel:#ffffff;
+    --sidebar:#1c2536;
+    --sidebar-text:#aab2c5;
+    --sidebar-active:#2a3650;
+    --accent:#e8983c;
+    --text:#1c2536;
+    --muted:#6b7280;
+    --border:#e3e6ec;
+    --danger:#d64545;
+    --ok:#2e9e5b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); display:flex; min-height:100vh;
+  }
+  #sidebar{
+    width:220px; background:var(--sidebar); color:var(--sidebar-text);
+    flex-shrink:0; padding:24px 0; display:flex; flex-direction:column;
+  }
+  #sidebar h1{
+    color:#fff; font-size:16px; padding:0 20px 20px 20px; margin:0;
+    border-bottom:1px solid rgba(255,255,255,0.08); letter-spacing:0.3px;
+  }
+  #sidebar h1 span{color:var(--accent);}
+  .nav-item{
+    padding:12px 20px; cursor:pointer; font-size:14px; border-left:3px solid transparent;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,0.04); color:#fff; }
+  .nav-item.active{ background:var(--sidebar-active); color:#fff; border-left:3px solid var(--accent); }
+  #main{ flex:1; padding:32px 40px; max-width:1100px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+  h2{ margin-top:0; font-size:22px; }
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:20px; margin-bottom:24px;
+  }
+  .card h3{ margin-top:0; font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+  form.inline{ display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+  .field{ display:flex; flex-direction:column; gap:4px; }
+  .field label{ font-size:12px; color:var(--muted); }
+  .field input, .field select{
+    padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; min-width:120px;
+  }
+  button{
+    background:var(--accent); color:#fff; border:none; padding:9px 16px;
+    border-radius:6px; font-size:14px; cursor:pointer; font-weight:600;
+  }
+  button:hover{ opacity:0.9; }
+  button.secondary{ background:var(--sidebar); }
+  button.danger{ background:var(--danger); }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th, td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
+  th{ color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; }
+  tr:hover{ background:#fafbfc; }
+  .badge{ padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge.acabado{ background:#e6f0ff; color:#1d4ed8; }
+  .badge.materia{ background:#fff2e0; color:#b5610a; }
+  .badge.rascunho{ background:#f1f2f4; color:var(--muted); }
+  .badge.em_producao{ background:#fff2e0; color:#b5610a; }
+  .badge.concluida{ background:#e4f7ea; color:var(--ok); }
+  .badge.cancelada{ background:#fde8e8; color:var(--danger); }
+  .muted{ color:var(--muted); font-size:13px; }
+  .config-warning{
+    background:#fff2e0; border:1px solid #f0c78a; color:#8a5a12;
+    padding:14px 18px; border-radius:8px; margin-bottom:20px; font-size:14px;
+  }
+  .empty{ color:var(--muted); font-size:13px; padding:16px 0; text-align:center; }
+  .metric-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
+  .metric-card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px 20px; }
+  .metric-label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; }
+  .metric-value{ font-size:26px; font-weight:700; color:var(--text); }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <!-- Nome do sistema no topo do menu (estilizado com cor) — edite o texto direto aqui se quiser mudar -->
+  <h1 id="nome-sistema-header">E-Factory <span>ERP</span></h1>
+  <div class="nav-item active" data-view="dashboard"></div>
+  <div class="nav-item" data-view="vendas"></div>
+  <div class="nav-item" data-view="integracoes"></div>
+  <div class="nav-item" data-view="produtos"></div>
+  <div class="nav-item" data-view="ficha"></div>
+  <div class="nav-item" data-view="estoque"></div>
+  <div class="nav-item" data-view="producao"></div>
+</div>
+
+<div id="main">
+
+  <div id="config-alert"></div>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div class="view active" id="view-dashboard">
+    <h2>Dashboard</h2>
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Valor em estoque (físico)</div>
+        <div class="metric-value" id="dash-valor-fisico">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Valor em estoque (matéria-prima)</div>
+        <div class="metric-value" id="dash-valor-materia">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Valor em estoque (ML Full - E-Factory)</div>
+        <div class="metric-value" id="dash-valor-full1">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Valor em estoque (ML Full - JG)</div>
+        <div class="metric-value" id="dash-valor-full2">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Valor em estoque (ML Full - Gustavo Baruffi)</div>
+        <div class="metric-value" id="dash-valor-full3">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Ordens de produção em andamento</div>
+        <div class="metric-value" id="dash-ordens-andamento">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Produtos ativos</div>
+        <div class="metric-value" id="dash-produtos-ativos">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Produtos abaixo do estoque mínimo</div>
+        <div class="metric-value" id="dash-produtos-baixo">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Faturamento hoje</div>
+        <div class="metric-value" id="dash-fat-hoje">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Faturamento no mês</div>
+        <div class="metric-value" id="dash-fat-mes">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Faturamento no ano</div>
+        <div class="metric-value" id="dash-fat-ano">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Pedidos no mês</div>
+        <div class="metric-value" id="dash-pedidos-mes">-</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Produtos com estoque abaixo do mínimo</h3>
+      <table><thead><tr><th>Produto</th><th>Estoque total</th><th>Mínimo</th></tr></thead>
+      <tbody id="tabela-dash-baixo"></tbody></table>
+      <div class="empty" id="dash-baixo-vazio" style="display:none;">Nenhum produto abaixo do mínimo. 🎉</div>
+    </div>
+
+    <div class="card">
+      <h3>Vendas por canal (mês atual)</h3>
+      <table><thead><tr><th>Canal</th><th>Faturamento</th></tr></thead>
+      <tbody id="tabela-dash-canal"></tbody></table>
+      <div class="empty" id="dash-canal-vazio" style="display:none;">Nenhuma venda registrada este mês ainda.</div>
+    </div>
+  </div>
+
+  <!-- ================= INTEGRAÇÕES ================= -->
+  <div class="view" id="view-integracoes">
+    <h2>Integrações</h2>
+    <div class="card">
+      <h3>Contas do Mercado Livre</h3>
+      <p class="muted">Clique em "Conectar" pra autorizar cada conta (abre numa aba nova — faça login com a conta correspondente e autorize). Depois, clique em "Atualizar status" aqui.</p>
+      <table><thead><tr><th>Conta</th><th>Nome da conta</th><th>Status</th><th>Conectado em</th><th></th></tr></thead>
+        <tbody id="tabela-integracoes"></tbody>
+      </table>
+      <button class="secondary" id="btn-atualizar-integracoes" style="margin-top:12px;">Atualizar status</button>
+    </div>
+
+    <div class="card">
+      <h3>Estoque Full</h3>
+      <p class="muted" style="margin-top:0;">Consulta o estoque real de cada anúncio conectado no Mercado Livre e corrige o saldo do Full no ERP pra bater com o real (cadastre o ID do anúncio de cada conta no produto, aba Produtos).</p>
+      <button id="btn-sincronizar-full">Sincronizar Full agora</button>
+      <p class="muted" id="resultado-sync-full" style="margin-top:12px;"></p>
+    </div>
+  </div>
+
+  <!-- ================= VENDAS ================= -->
+  <div class="view" id="view-vendas">
+    <h2>Vendas</h2>
+
+    <div class="card">
+      <h3>Registrar pedido de venda</h3>
+      <form class="inline" id="form-pedido-header" style="margin-bottom:16px;">
+        <div class="field"><label>Canal *</label>
+          <select id="v-canal" required>
+            <option value="loja_fisica">Loja Física</option>
+            <option value="ml_conta1">Mercado Livre - Conta 1</option>
+            <option value="ml_conta2">Mercado Livre - Conta 2</option>
+            <option value="ml_conta3">Mercado Livre - Conta 3</option>
+          </select>
+        </div>
+        <div class="field" id="campo-local-baixa" style="display:none;">
+          <label>Baixar estoque de</label>
+          <select id="v-local"></select>
+        </div>
+        <div class="field"><label>Cliente</label><input type="text" id="v-cliente" placeholder="Nome do cliente"></div>
+        <div class="field"><label>Data do pedido</label><input type="date" id="v-data"></div>
+        <div class="field"><label>Frete</label><input type="number" step="0.01" id="v-frete" placeholder="0.00"></div>
+        <div class="field"><label>Desconto</label><input type="number" step="0.01" id="v-desconto" placeholder="0.00"></div>
+        <div class="field"><label>Taxas do canal</label><input type="number" step="0.01" id="v-taxas" placeholder="0.00"></div>
+        <div class="field"><label>Observação</label><input type="text" id="v-obs"></div>
+      </form>
+
+      <h4 style="margin-bottom:8px;">Itens do pedido</h4>
+      <form class="inline" id="form-add-item" style="margin-bottom:12px;">
+        <div class="field"><label>Produto</label><select id="v-item-produto"></select></div>
+        <div class="field"><label>Quantidade</label><input type="number" step="0.001" id="v-item-qtd"></div>
+        <div class="field"><label>Preço unitário</label><input type="number" step="0.01" id="v-item-preco"></div>
+        <button type="submit" class="secondary">+ Adicionar item</button>
+      </form>
+
+      <table><thead><tr><th>Produto</th><th>Qtd</th><th>Preço unit.</th><th>Subtotal</th><th></th></tr></thead>
+        <tbody id="tabela-itens-pedido"></tbody>
+      </table>
+      <p><strong>Total dos produtos: <span id="v-total-produtos">R$ 0,00</span></strong></p>
+
+      <button id="btn-finalizar-pedido">Registrar pedido</button>
+    </div>
+
+    <div class="card">
+      <h3>Filtrar pedidos</h3>
+      <form class="inline" id="form-filtro-vendas">
+        <div class="field"><label>De</label><input type="date" id="f-data-inicio"></div>
+        <div class="field"><label>Até</label><input type="date" id="f-data-fim"></div>
+        <div class="field"><label>Canal</label>
+          <select id="f-canal">
+            <option value="">Todos</option>
+            <option value="loja_fisica">Loja Física</option>
+            <option value="ml_conta1">Mercado Livre - Conta 1</option>
+            <option value="ml_conta2">Mercado Livre - Conta 2</option>
+            <option value="ml_conta3">Mercado Livre - Conta 3</option>
+          </select>
+        </div>
+        <button type="submit">Filtrar</button>
+      </form>
+      <p style="margin-top:12px;"><strong>Faturamento no período filtrado: <span id="v-faturamento-filtro">R$ 0,00</span></strong> <span class="muted" id="v-qtd-pedidos-filtro"></span></p>
+    </div>
+
+    <div class="card">
+      <h3>Pedidos</h3>
+      <table><thead><tr><th>Data</th><th>Canal</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
+        <tbody id="tabela-pedidos"></tbody>
+      </table>
+      <div class="empty" id="pedidos-vazio" style="display:none;">Nenhum pedido encontrado.</div>
+    </div>
+  </div>
+
+  <!-- ================= PRODUTOS ================= -->
+  <div class="view" id="view-produtos">
+    <h2>Produtos</h2>
+    <div class="card">
+      <h3>Cadastrar produto</h3>
+      <form class="inline" id="form-produto">
+        <div class="field"><label>SKU interno *</label><input type="text" id="p-sku" required></div>
+        <div class="field"><label>Nome *</label><input type="text" id="p-nome" required></div>
+        <div class="field"><label>Tipo *</label>
+          <select id="p-tipo" required>
+            <option value="produto_acabado">Produto acabado</option>
+            <option value="materia_prima">Matéria-prima</option>
+          </select>
+        </div>
+        <div class="field"><label>Unidade *</label><input type="text" id="p-unidade" placeholder="UN, KG, RL..." required></div>
+        <div class="field"><label>Custo atual</label><input type="number" step="0.0001" id="p-custo" placeholder="0.00"></div>
+        <div class="field"><label>Preço de venda</label><input type="number" step="0.01" id="p-preco" placeholder="0.00"></div>
+        <div class="field"><label>Estoque mínimo</label><input type="number" step="0.001" id="p-min" placeholder="0"></div>
+        <div class="field"><label>SKU no Mercado Livre</label><input type="text" id="p-sku-ml" placeholder="opcional"></div>
+        <div class="field"><label>ID anúncio - Conta 1</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
+        <div class="field"><label>ID anúncio - Conta 2</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
+        <div class="field"><label>ID anúncio - Conta 3</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
+        <button type="submit" id="btn-salvar-produto">Salvar produto</button>
+        <button type="button" class="secondary" id="btn-cancelar-edicao-produto" style="display:none;">Cancelar edição</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Produtos cadastrados</h3>
+      <table id="tabela-produtos"><thead>
+        <tr><th>SKU</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Custo</th><th>Preço venda</th><th>Ativo</th><th></th><th></th></tr>
+      </thead><tbody></tbody></table>
+      <div class="empty" id="produtos-vazio" style="display:none;">Nenhum produto cadastrado ainda.</div>
+    </div>
+  </div>
+
+  <!-- ================= FICHA TÉCNICA ================= -->
+  <div class="view" id="view-ficha">
+    <h2>Ficha Técnica (BOM)</h2>
+    <div class="card">
+      <h3>Adicionar item à ficha técnica</h3>
+      <form class="inline" id="form-ficha">
+        <div class="field"><label>Produto acabado *</label><select id="f-acabado" required></select></div>
+        <div class="field"><label>Matéria-prima *</label><select id="f-materia" required></select></div>
+        <div class="field"><label>Qtd. necessária (por 1 unidade) *</label><input type="number" step="0.000001" id="f-qtd" required></div>
+        <button type="submit">Adicionar</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Fichas técnicas cadastradas</h3>
+      <div id="lista-fichas"></div>
+      <div class="empty" id="ficha-vazio" style="display:none;">Nenhuma ficha técnica cadastrada ainda.</div>
+    </div>
+  </div>
+
+  <!-- ================= ESTOQUE ================= -->
+  <div class="view" id="view-estoque">
+    <h2>Estoque</h2>
+    <div class="card">
+      <h3>Registrar movimentação manual</h3>
+      <form class="inline" id="form-movimento">
+        <div class="field"><label>Produto *</label><select id="m-produto" required></select></div>
+        <div class="field"><label>Local *</label>
+          <select id="m-local" required></select>
+        </div>
+        <div class="field"><label>Tipo *</label>
+          <select id="m-tipo" required>
+            <option value="entrada_manual">Entrada</option>
+            <option value="saida_manual">Saída</option>
+            <option value="ajuste">Ajuste (inventário)</option>
+          </select>
+        </div>
+        <div class="field"><label>Quantidade *</label><input type="number" step="0.001" id="m-qtd" required></div>
+        <div class="field"><label>Observação</label><input type="text" id="m-obs"></div>
+        <button type="submit">Registrar</button>
+      </form>
+      <p class="muted">Entrada soma, Saída subtrai. Em Ajuste, use número negativo pra reduzir o saldo.</p>
+    </div>
+
+    <div class="card">
+      <h3>Transferir estoque entre locais</h3>
+      <p class="muted" style="margin-top:0;">Use isso quando mandar mercadoria do Físico pro Full de uma conta (ou qualquer outra movimentação entre locais).</p>
+      <form class="inline" id="form-transferencia">
+        <div class="field"><label>Produto *</label><select id="t-produto" required></select></div>
+        <div class="field"><label>De *</label>
+          <select id="t-origem" required></select>
+        </div>
+        <div class="field"><label>Para *</label>
+          <select id="t-destino" required></select>
+        </div>
+        <div class="field"><label>Quantidade *</label><input type="number" step="0.001" id="t-qtd" required></div>
+        <div class="field"><label>Observação</label><input type="text" id="t-obs" placeholder="ex: envio pro Full dia 30/08"></div>
+        <button type="submit">Transferir</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Saldo atual</h3>
+      <table><thead>
+        <tr><th>Produto</th><th>Local</th><th>Quantidade</th><th>Reservado</th><th></th></tr>
+      </thead><tbody id="tabela-estoque"></tbody></table>
+      <div class="empty" id="estoque-vazio" style="display:none;">Nenhum saldo de estoque ainda.</div>
+    </div>
+  </div>
+
+  <!-- ================= PRODUÇÃO ================= -->
+  <div class="view" id="view-producao">
+    <h2>Produção</h2>
+    <div class="card">
+      <h3>Abrir ordem de produção</h3>
+      <form class="inline" id="form-ordem">
+        <div class="field"><label>Produto acabado *</label><select id="o-produto" required></select></div>
+        <div class="field"><label>Quantidade planejada *</label><input type="number" step="0.001" id="o-qtd" required></div>
+        <button type="submit">Abrir ordem</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Ordens de produção</h3>
+      <table><thead>
+        <tr><th>Produto</th><th>Planejado</th><th>Produzido</th><th>Status</th><th>Custo total</th><th></th><th></th></tr>
+      </thead><tbody id="tabela-ordens"></tbody></table>
+      <div class="empty" id="ordens-vazio" style="display:none;">Nenhuma ordem de produção ainda.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// 🎨 PERSONALIZAÇÃO — pode editar os textos abaixo à vontade.
+// Isso NÃO mexe em nenhuma lógica do sistema, só em nomes/textos
+// que aparecem na tela. Troque o que estiver entre aspas.
+// ============================================================
+
+// Nome do sistema (aparece no título da aba do navegador e no topo do menu)
+const NOME_SISTEMA = 'E-Factory ERP';
+
+// Itens do menu lateral, na ordem que aparecem
+const MENU_LABELS = {
+  dashboard: 'Dashboard',
+  vendas: 'Vendas',
+  integracoes: 'Integrações',
+  produtos: 'Produtos',
+  ficha: 'Ficha Técnica',
+  estoque: 'Estoque',
+  producao: 'Produção',
+};
+
+// Nomes de cada canal de venda
+const CANAL_LABEL = {
+  ml_conta1: 'Mercado Livre - Conta 1',
+  ml_conta2: 'Mercado Livre - Conta 2',
+  ml_conta3: 'Mercado Livre - Conta 3',
+  loja_fisica: 'Loja Física'
+};
+
+// Nomes de exibição dos estoques Full de cada conta — edite aqui se mudar de responsável.
+const FULL_LABEL = {
+  full_conta1: 'ML Full - E-Factory',
+  full_conta2: 'ML Full - JG',
+  full_conta3: 'ML Full - Gustavo Baruffi'
+};
+
+// ============================================================
+// FIM DA PERSONALIZAÇÃO — daqui pra baixo é lógica do sistema.
+// ============================================================
+
+document.title = NOME_SISTEMA;
+Object.keys(MENU_LABELS).forEach(key => {
+  const el = document.querySelector(`.nav-item[data-view="${key}"]`);
+  if (el) el.textContent = MENU_LABELS[key];
+});
+
+// ============================================================
+// CONFIGURAÇÃO — cole aqui a URL e a chave "anon public" do seu
+// projeto Supabase (Project Settings → API).
+// ============================================================
+const SUPABASE_URL = "https://jrkuzyhobgzhjjyblmed.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_hTVzu8qbEYSmUeDZvFA9XQ_s4ARn1_9";
+// ============================================================
+
+let supabaseClient = null;
+const configured = SUPABASE_URL.startsWith("http") && SUPABASE_ANON_KEY.length > 20;
+
+try {
+  if (configured) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else {
+    document.getElementById('config-alert').innerHTML =
+      '<div class="config-warning">⚠️ Configure a URL e a chave do Supabase no topo do arquivo HTML (procure por SUPABASE_URL) antes de usar o sistema.</div>';
+  }
+} catch (err) {
+  console.error('Erro ao conectar no Supabase:', err);
+  document.getElementById('config-alert').innerHTML =
+    '<div class="config-warning">⚠️ Não consegui conectar ao Supabase. Verifique se a URL e a chave foram coladas certinho (com as aspas) e se há internet ativa. Detalhe técnico: ' + err.message + '</div>';
+}
+
+// ---------- navegação ----------
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('view-' + item.dataset.view).classList.add('active');
+  });
+});
+
+function fmt(n){ return n === null || n === undefined ? '-' : Number(n).toLocaleString('pt-BR', {maximumFractionDigits:3}); }
+function fmtMoeda(n){ return n === null || n === undefined ? '-' : 'R$ ' + Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+// Locais de estoque disponíveis (usado pra montar os dropdowns automaticamente,
+// pra nunca ter o nome de um Full desatualizado em algum canto esquecido)
+const LOCAIS_ESTOQUE = [
+  { value: 'fisico', label: 'Físico' },
+  { value: 'materia_prima', label: 'Matéria-prima' },
+  { value: 'full_conta1', label: FULL_LABEL.full_conta1 },
+  { value: 'full_conta2', label: FULL_LABEL.full_conta2 },
+  { value: 'full_conta3', label: FULL_LABEL.full_conta3 },
+];
+
+// Opções de local de baixa de estoque disponíveis por canal de venda.
+const LOCAL_OPCOES_POR_CANAL = {
+  loja_fisica: [{ value: 'fisico', label: 'Físico' }],
+  ml_conta1: [{ value: 'fisico', label: 'Físico' }, { value: 'full_conta1', label: FULL_LABEL.full_conta1 }],
+  ml_conta2: [{ value: 'fisico', label: 'Físico' }, { value: 'full_conta2', label: FULL_LABEL.full_conta2 }],
+  ml_conta3: [{ value: 'fisico', label: 'Físico' }, { value: 'full_conta3', label: FULL_LABEL.full_conta3 }],
+};
+
+document.getElementById('m-local').innerHTML = LOCAIS_ESTOQUE.map(l => `<option value="${l.value}">${l.label}</option>`).join('');
+document.getElementById('t-origem').innerHTML = LOCAIS_ESTOQUE.map(l => `<option value="${l.value}">${l.label}</option>`).join('');
+document.getElementById('t-destino').innerHTML = [...LOCAIS_ESTOQUE].reverse().map(l => `<option value="${l.value}">${l.label}</option>`).join('');
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+async function loadDashboard(){
+  const { data: produtos, error: errProdutos } = await supabaseClient.from('produtos').select('*');
+  const { data: saldos, error: errSaldos } = await supabaseClient.from('estoque_saldos').select('*');
+  const { data: ordens, error: errOrdens } = await supabaseClient.from('ordens_producao').select('status');
+  if (errProdutos || errSaldos || errOrdens) { console.error(errProdutos || errSaldos || errOrdens); return; }
+
+  const custoPorProduto = {};
+  produtos.forEach(p => custoPorProduto[p.id] = p.custo_atual || 0);
+
+  let valorFisico = 0, valorMateria = 0, valorFull1 = 0, valorFull2 = 0, valorFull3 = 0;
+  const totalPorProduto = {};
+
+  saldos.forEach(s => {
+    const custo = custoPorProduto[s.produto_id] || 0;
+    const valor = (s.quantidade || 0) * custo;
+    if (s.local === 'fisico') valorFisico += valor;
+    if (s.local === 'materia_prima') valorMateria += valor;
+    if (s.local === 'full_conta1') valorFull1 += valor;
+    if (s.local === 'full_conta2') valorFull2 += valor;
+    if (s.local === 'full_conta3') valorFull3 += valor;
+    totalPorProduto[s.produto_id] = (totalPorProduto[s.produto_id] || 0) + (s.quantidade || 0);
+  });
+
+  document.getElementById('dash-valor-fisico').textContent = fmtMoeda(valorFisico);
+  document.getElementById('dash-valor-materia').textContent = fmtMoeda(valorMateria);
+  document.getElementById('dash-valor-full1').textContent = fmtMoeda(valorFull1);
+  document.getElementById('dash-valor-full2').textContent = fmtMoeda(valorFull2);
+  document.getElementById('dash-valor-full3').textContent = fmtMoeda(valorFull3);
+  document.getElementById('dash-ordens-andamento').textContent = ordens.filter(o => o.status === 'em_producao').length;
+  document.getElementById('dash-produtos-ativos').textContent = produtos.filter(p => p.ativo).length;
+
+  const abaixoDoMinimo = produtos.filter(p => (totalPorProduto[p.id] || 0) < (p.estoque_minimo || 0) && p.ativo);
+  document.getElementById('dash-produtos-baixo').textContent = abaixoDoMinimo.length;
+
+  const tbody = document.getElementById('tabela-dash-baixo');
+  tbody.innerHTML = '';
+  document.getElementById('dash-baixo-vazio').style.display = abaixoDoMinimo.length ? 'none' : 'block';
+  abaixoDoMinimo.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.nome} (${p.sku_interno})</td><td>${fmt(totalPorProduto[p.id] || 0)}</td><td>${fmt(p.estoque_minimo)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // ---------- faturamento ----------
+  const agora = new Date();
+  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).toISOString();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+  const inicioAno = new Date(agora.getFullYear(), 0, 1).toISOString();
+
+  const { data: pedidos, error: errPedidos } = await supabaseClient
+    .from('pedidos_venda')
+    .select('valor_total, canal, data_pedido, status')
+    .eq('status', 'confirmado')
+    .gte('data_pedido', inicioAno);
+
+  if (!errPedidos && pedidos) {
+    let fatHoje = 0, fatMes = 0, fatAno = 0, pedidosMes = 0;
+    const porCanal = {};
+    pedidos.forEach(p => {
+      const v = Number(p.valor_total);
+      fatAno += v;
+      if (p.data_pedido >= inicioMes) { fatMes += v; pedidosMes++; porCanal[p.canal] = (porCanal[p.canal] || 0) + v; }
+      if (p.data_pedido >= inicioHoje) fatHoje += v;
+    });
+    document.getElementById('dash-fat-hoje').textContent = fmtMoeda(fatHoje);
+    document.getElementById('dash-fat-mes').textContent = fmtMoeda(fatMes);
+    document.getElementById('dash-fat-ano').textContent = fmtMoeda(fatAno);
+    document.getElementById('dash-pedidos-mes').textContent = pedidosMes;
+
+    const tbodyCanal = document.getElementById('tabela-dash-canal');
+    tbodyCanal.innerHTML = '';
+    const canaisOrdenados = Object.keys(porCanal).sort((a,b) => porCanal[b] - porCanal[a]);
+    document.getElementById('dash-canal-vazio').style.display = canaisOrdenados.length ? 'none' : 'block';
+    canaisOrdenados.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${CANAL_LABEL[c] || c}</td><td>${fmtMoeda(porCanal[c])}</td>`;
+      tbodyCanal.appendChild(tr);
+    });
+  }
+}
+
+// ============================================================
+// PRODUTOS
+// ============================================================
+let ultimosProdutosCache = [];
+let editandoProdutoId = null;
+
+async function loadProdutos(){
+  const { data, error } = await supabaseClient.from('produtos').select('*').order('nome');
+  if (error) { console.error(error); return; }
+  ultimosProdutosCache = data;
+  const tbody = document.querySelector('#tabela-produtos tbody');
+  tbody.innerHTML = '';
+  document.getElementById('produtos-vazio').style.display = data.length ? 'none' : 'block';
+  data.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.sku_interno}</td>
+      <td>${p.nome}</td>
+      <td><span class="badge ${p.tipo === 'produto_acabado' ? 'acabado' : 'materia'}">${p.tipo === 'produto_acabado' ? 'Acabado' : 'Matéria-prima'}</span></td>
+      <td>${p.unidade_medida}</td>
+      <td>${fmtMoeda(p.custo_atual)}</td>
+      <td>${fmtMoeda(p.preco_venda)}</td>
+      <td>${p.ativo ? 'Sim' : 'Não'}</td>
+      <td><button class="secondary" onclick="editarProduto('${p.id}')">Editar</button></td>
+      <td><button class="danger" onclick="excluirProduto('${p.id}')">Excluir</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  preencherSelectsDeProdutos(data);
+  loadDashboard();
+}
+
+async function editarProduto(id){
+  const produto = ultimosProdutosCache.find(p => p.id === id);
+  if (!produto) return;
+
+  document.getElementById('p-sku').value = produto.sku_interno;
+  document.getElementById('p-nome').value = produto.nome;
+  document.getElementById('p-tipo').value = produto.tipo;
+  document.getElementById('p-unidade').value = produto.unidade_medida;
+  document.getElementById('p-custo').value = produto.custo_atual || '';
+  document.getElementById('p-preco').value = produto.preco_venda || '';
+  document.getElementById('p-min').value = produto.estoque_minimo || '';
+  document.getElementById('p-sku-ml').value = produto.sku_ml || '';
+
+  const { data: anuncios } = await supabaseClient.from('produto_anuncios_ml').select('canal, item_id').eq('produto_id', id);
+  const anuncioPorCanal = {};
+  (anuncios || []).forEach(a => anuncioPorCanal[a.canal] = a.item_id);
+  document.getElementById('p-anuncio1').value = anuncioPorCanal.ml_conta1 || '';
+  document.getElementById('p-anuncio2').value = anuncioPorCanal.ml_conta2 || '';
+  document.getElementById('p-anuncio3').value = anuncioPorCanal.ml_conta3 || '';
+
+  editandoProdutoId = id;
+  document.getElementById('btn-salvar-produto').textContent = 'Salvar alterações';
+  document.getElementById('btn-cancelar-edicao-produto').style.display = 'inline-block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('btn-cancelar-edicao-produto').addEventListener('click', () => {
+  editandoProdutoId = null;
+  document.getElementById('form-produto').reset();
+  document.getElementById('btn-salvar-produto').textContent = 'Salvar produto';
+  document.getElementById('btn-cancelar-edicao-produto').style.display = 'none';
+});
+
+async function excluirProduto(id){
+  const produto = ultimosProdutosCache.find(p => p.id === id);
+  const sku = produto ? produto.sku_interno : '';
+  const nome = produto ? produto.nome : 'este produto';
+
+  const digitado = prompt(
+    `Isso vai excluir "${nome}" (SKU: ${sku}) e TODO o histórico de estoque ligado a ele, permanentemente.\n\nPra confirmar, digite exatamente o SKU do produto:`
+  );
+  if (digitado === null) return; // cancelou
+  if (digitado.trim() !== sku) {
+    alert('SKU não confere. Nada foi excluído.');
+    return;
+  }
+
+  const { error } = await supabaseClient.rpc('excluir_produto', { p_produto_id: id });
+  if (error) { alert('Não foi possível excluir: ' + error.message); return; }
+  loadProdutos();
+  loadEstoque();
+  loadFichaTecnica();
+}
+
+document.getElementById('form-produto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    sku_interno: document.getElementById('p-sku').value,
+    nome: document.getElementById('p-nome').value,
+    tipo: document.getElementById('p-tipo').value,
+    unidade_medida: document.getElementById('p-unidade').value,
+    custo_atual: parseFloat(document.getElementById('p-custo').value) || 0,
+    preco_venda: document.getElementById('p-preco').value ? parseFloat(document.getElementById('p-preco').value) : null,
+    estoque_minimo: parseFloat(document.getElementById('p-min').value) || 0,
+    sku_ml: document.getElementById('p-sku-ml').value || null,
+  };
+
+  try {
+    let produtoId = editandoProdutoId;
+    if (editandoProdutoId) {
+      const { error } = await supabaseClient.from('produtos').update(payload).eq('id', editandoProdutoId);
+      if (error) throw error;
+    } else {
+      const { data, error } = await supabaseClient.from('produtos').insert(payload).select('id').single();
+      if (error) throw error;
+      produtoId = data.id;
+    }
+
+    const anuncios = [
+      { canal: 'ml_conta1', valor: document.getElementById('p-anuncio1').value.trim() },
+      { canal: 'ml_conta2', valor: document.getElementById('p-anuncio2').value.trim() },
+      { canal: 'ml_conta3', valor: document.getElementById('p-anuncio3').value.trim() },
+    ];
+    for (const a of anuncios) {
+      if (a.valor) {
+        await supabaseClient.from('produto_anuncios_ml').upsert({ produto_id: produtoId, canal: a.canal, item_id: a.valor }, { onConflict: 'produto_id,canal' });
+      } else {
+        await supabaseClient.from('produto_anuncios_ml').delete().eq('produto_id', produtoId).eq('canal', a.canal);
+      }
+    }
+
+    editandoProdutoId = null;
+    e.target.reset();
+    document.getElementById('btn-salvar-produto').textContent = 'Salvar produto';
+    document.getElementById('btn-cancelar-edicao-produto').style.display = 'none';
+    loadProdutos();
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  }
+});
+
+function preencherSelectsDeProdutos(produtos){
+  const acabados = produtos.filter(p => p.tipo === 'produto_acabado');
+  const materias = produtos.filter(p => p.tipo === 'materia_prima');
+
+  const opts = (list) => list.map(p => `<option value="${p.id}">${p.nome} (${p.sku_interno})</option>`).join('');
+
+  document.getElementById('f-acabado').innerHTML = opts(acabados);
+  document.getElementById('f-materia').innerHTML = opts(materias);
+  document.getElementById('o-produto').innerHTML = opts(acabados);
+  document.getElementById('m-produto').innerHTML = opts(produtos);
+  document.getElementById('t-produto').innerHTML = opts(produtos);
+  document.getElementById('v-item-produto').innerHTML = opts(acabados);
+}
+
+// ============================================================
+// FICHA TÉCNICA
+// ============================================================
+document.getElementById('form-ficha').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    produto_acabado_id: document.getElementById('f-acabado').value,
+    produto_materia_prima_id: document.getElementById('f-materia').value,
+    quantidade_necessaria: parseFloat(document.getElementById('f-qtd').value),
+  };
+  const { error } = await supabaseClient.from('ficha_tecnica_itens').insert(payload);
+  if (error) { alert('Erro: ' + error.message); return; }
+  e.target.reset();
+  loadFichaTecnica();
+});
+
+async function loadFichaTecnica(){
+  const { data, error } = await supabaseClient
+    .from('ficha_tecnica_itens')
+    .select('id, quantidade_necessaria, produto_acabado:produtos!ficha_tecnica_itens_produto_acabado_id_fkey(nome), materia_prima:produtos!ficha_tecnica_itens_produto_materia_prima_id_fkey(nome, unidade_medida)');
+  if (error) { console.error(error); return; }
+
+  const container = document.getElementById('lista-fichas');
+  document.getElementById('ficha-vazio').style.display = data.length ? 'none' : 'block';
+
+  const porProduto = {};
+  data.forEach(item => {
+    const nome = item.produto_acabado ? item.produto_acabado.nome : '—';
+    if (!porProduto[nome]) porProduto[nome] = [];
+    porProduto[nome].push(item);
+  });
+
+  container.innerHTML = '';
+  Object.keys(porProduto).forEach(nomeProduto => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '16px';
+    let linhas = porProduto[nomeProduto].map(item => `
+      <tr>
+        <td>${item.materia_prima ? item.materia_prima.nome : '—'}</td>
+        <td>${fmt(item.quantidade_necessaria)} ${item.materia_prima ? item.materia_prima.unidade_medida : ''}</td>
+        <td><button class="secondary" onclick="excluirFichaItem('${item.id}')">Remover</button></td>
+      </tr>
+    `).join('');
+    div.innerHTML = `<strong>${nomeProduto}</strong>
+      <table><thead><tr><th>Matéria-prima</th><th>Qtd. por unidade</th><th></th></tr></thead>
+      <tbody>${linhas}</tbody></table>`;
+    container.appendChild(div);
+  });
+}
+
+async function excluirFichaItem(id){
+  const { error } = await supabaseClient.from('ficha_tecnica_itens').delete().eq('id', id);
+  if (error) { alert('Erro: ' + error.message); return; }
+  loadFichaTecnica();
+}
+
+// ============================================================
+// ESTOQUE
+// ============================================================
+document.getElementById('form-movimento').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const produtoId = document.getElementById('m-produto').value;
+  const local = document.getElementById('m-local').value;
+  const tipo = document.getElementById('m-tipo').value;
+  let qtd = parseFloat(document.getElementById('m-qtd').value);
+  const obs = document.getElementById('m-obs').value;
+
+  if (tipo === 'saida_manual') qtd = -Math.abs(qtd);
+  if (tipo === 'entrada_manual') qtd = Math.abs(qtd);
+  // 'ajuste' usa o sinal digitado pelo usuário
+
+  const { data: existente } = await supabaseClient
+    .from('estoque_saldos').select('*').eq('produto_id', produtoId).eq('local', local).maybeSingle();
+
+  if (existente) {
+    const { error } = await supabaseClient.from('estoque_saldos')
+      .update({ quantidade: existente.quantidade + qtd, updated_at: new Date().toISOString() })
+      .eq('id', existente.id);
+    if (error) { alert('Erro: ' + error.message); return; }
+  } else {
+    const { error } = await supabaseClient.from('estoque_saldos')
+      .insert({ produto_id: produtoId, local, quantidade: qtd });
+    if (error) { alert('Erro: ' + error.message); return; }
+  }
+
+  await supabaseClient.from('movimentacoes_estoque').insert({
+    produto_id: produtoId, local, tipo_movimento: tipo, quantidade: qtd, observacao: obs
+  });
+
+  e.target.reset();
+  loadEstoque();
+});
+
+document.getElementById('form-transferencia').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const produtoId = document.getElementById('t-produto').value;
+  const origem = document.getElementById('t-origem').value;
+  const destino = document.getElementById('t-destino').value;
+  const qtd = parseFloat(document.getElementById('t-qtd').value);
+  const obs = document.getElementById('t-obs').value;
+
+  const { error } = await supabaseClient.rpc('transferir_estoque', {
+    p_produto_id: produtoId, p_origem: origem, p_destino: destino, p_quantidade: qtd, p_observacao: obs
+  });
+  if (error) { alert('Erro na transferência: ' + error.message); return; }
+
+  e.target.reset();
+  loadEstoque();
+});
+
+async function loadEstoque(){
+  const { data, error } = await supabaseClient
+    .from('estoque_saldos')
+    .select('id, quantidade, quantidade_reservada, local, produtos(nome, sku_interno)')
+    .order('local');
+  if (error) { console.error(error); return; }
+
+  const tbody = document.getElementById('tabela-estoque');
+  tbody.innerHTML = '';
+  document.getElementById('estoque-vazio').style.display = data.length ? 'none' : 'block';
+
+  const nomeLocal = { materia_prima: 'Matéria-prima', fisico: 'Físico', full: 'Full (genérico)', ...FULL_LABEL };
+
+  data.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${s.produtos ? s.produtos.nome + ' (' + s.produtos.sku_interno + ')' : '—'}</td>
+      <td>${nomeLocal[s.local] || s.local}</td>
+      <td>${fmt(s.quantidade)}</td>
+      <td>${fmt(s.quantidade_reservada)}</td>
+      <td><button class="danger" onclick="excluirSaldoEstoque('${s.id}')">Excluir</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  loadDashboard();
+}
+
+async function excluirSaldoEstoque(id){
+  if (!confirm('Excluir este saldo de estoque? Essa ação não pode ser desfeita (o histórico de movimentações não é apagado, só o saldo atual).')) return;
+  const { error } = await supabaseClient.from('estoque_saldos').delete().eq('id', id);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  loadEstoque();
+}
+
+// ============================================================
+// PRODUÇÃO
+// ============================================================
+document.getElementById('form-ordem').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    produto_acabado_id: document.getElementById('o-produto').value,
+    quantidade_planejada: parseFloat(document.getElementById('o-qtd').value),
+    status: 'em_producao',
+  };
+  const { error } = await supabaseClient.from('ordens_producao').insert(payload);
+  if (error) { alert('Erro: ' + error.message); return; }
+  e.target.reset();
+  loadOrdens();
+});
+
+async function loadOrdens(){
+  const { data, error } = await supabaseClient
+    .from('ordens_producao')
+    .select('id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, produtos(nome)')
+    .order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+
+  const tbody = document.getElementById('tabela-ordens');
+  tbody.innerHTML = '';
+  document.getElementById('ordens-vazio').style.display = data.length ? 'none' : 'block';
+
+  data.forEach(o => {
+    const tr = document.createElement('tr');
+    const podeSerConcluida = o.status === 'em_producao' || o.status === 'rascunho';
+    tr.innerHTML = `
+      <td>${o.produtos ? o.produtos.nome : '—'}</td>
+      <td>${fmt(o.quantidade_planejada)}</td>
+      <td>${fmt(o.quantidade_produzida)}</td>
+      <td><span class="badge ${o.status}">${o.status.replace('_',' ')}</span></td>
+      <td>${fmtMoeda(o.custo_producao_total)}</td>
+      <td>${podeSerConcluida ? `<button onclick="concluirOrdem('${o.id}')">Concluir</button>` : ''}</td>
+      <td><button class="danger" onclick="excluirOrdemProducao('${o.id}', '${o.status}')">Excluir</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  loadDashboard();
+}
+
+async function excluirOrdemProducao(id, status){
+  const aviso = status === 'concluida'
+    ? 'Essa ordem já foi concluída — excluir ela NÃO desfaz a baixa de matéria-prima nem a entrada do produto acabado que já aconteceu. Só remove o registro da ordem. Quer continuar?'
+    : 'Excluir esta ordem de produção?';
+  if (!confirm(aviso)) return;
+  const { error } = await supabaseClient.from('ordens_producao').delete().eq('id', id);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  loadOrdens();
+}
+
+async function concluirOrdem(id){
+  const qtd = prompt('Quantidade produzida (unidades):');
+  if (!qtd || isNaN(parseFloat(qtd))) return;
+  const { error } = await supabaseClient.rpc('concluir_ordem_producao', {
+    p_ordem_id: id, p_quantidade_produzida: parseFloat(qtd)
+  });
+  if (error) { alert('Erro ao concluir: ' + error.message); return; }
+  loadOrdens();
+  loadEstoque();
+  loadProdutos();
+}
+
+// ============================================================
+// INTEGRAÇÕES MERCADO LIVRE
+// ============================================================
+const ML_CLIENT_ID = '563936568196493';
+const ML_REDIRECT_URI = 'https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-oauth-callback';
+const CANAIS_ML = ['ml_conta1', 'ml_conta2', 'ml_conta3'];
+
+function linkAutorizacaoML(canal){
+  return `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${ML_CLIENT_ID}&redirect_uri=${encodeURIComponent(ML_REDIRECT_URI)}&state=${canal}`;
+}
+
+async function loadIntegracoes(){
+  const { data, error } = await supabaseClient.rpc('listar_integracoes_ml');
+  const tbody = document.getElementById('tabela-integracoes');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const conectadas = {};
+  if (!error && data) data.forEach(i => conectadas[i.canal] = i);
+
+  CANAIS_ML.forEach(canal => {
+    const info = conectadas[canal];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${CANAL_LABEL[canal]}</td>
+      <td>${info && info.ml_nickname ? info.ml_nickname : '-'}</td>
+      <td>${info ? '<span class="badge concluida">Conectada</span>' : '<span class="badge cancelada">Não conectada</span>'}</td>
+      <td>${info && info.conectado_em ? new Date(info.conectado_em).toLocaleString('pt-BR') : '-'}</td>
+      <td><a href="${linkAutorizacaoML(canal)}" target="_blank"><button type="button">${info ? 'Reconectar' : 'Conectar'}</button></a></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('btn-atualizar-integracoes').addEventListener('click', loadIntegracoes);
+
+document.getElementById('btn-sincronizar-full').addEventListener('click', async () => {
+  const el = document.getElementById('resultado-sync-full');
+  el.textContent = 'Sincronizando, aguarde...';
+  try {
+    const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-full-stock');
+    const data = await resp.json();
+    if (!Array.isArray(data)) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
+    const ajustados = data.filter(d => d.ajustado).length;
+    const comErro = data.filter(d => d.erro).length;
+    el.textContent = `Concluído: ${data.length} anúncio(s) verificado(s), ${ajustados} ajustado(s)${comErro ? `, ${comErro} com erro` : ''}.`;
+    loadEstoque();
+    loadDashboard();
+  } catch (err) {
+    el.textContent = 'Erro ao sincronizar: ' + err.message;
+  }
+});
+
+// ============================================================
+// VENDAS
+// ============================================================
+let itensPedidoAtual = [];
+
+document.getElementById('v-canal').addEventListener('change', (e) => {
+  const canal = e.target.value;
+  const opcoes = LOCAL_OPCOES_POR_CANAL[canal] || [{ value: 'fisico', label: 'Físico' }];
+  const select = document.getElementById('v-local');
+  select.innerHTML = opcoes.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  document.getElementById('campo-local-baixa').style.display = canal === 'loja_fisica' ? 'none' : 'flex';
+});
+
+document.getElementById('form-add-item').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const produtoSelect = document.getElementById('v-item-produto');
+  const produtoId = produtoSelect.value;
+  const produtoNome = produtoSelect.options[produtoSelect.selectedIndex] ? produtoSelect.options[produtoSelect.selectedIndex].textContent : '';
+  const qtd = parseFloat(document.getElementById('v-item-qtd').value);
+  const preco = parseFloat(document.getElementById('v-item-preco').value);
+  if (!produtoId || !qtd || !preco) { alert('Preencha produto, quantidade e preço.'); return; }
+
+  itensPedidoAtual.push({ produto_id: produtoId, produto_nome: produtoNome, quantidade: qtd, preco_unitario: preco });
+  renderItensPedido();
+  e.target.reset();
+});
+
+function renderItensPedido(){
+  const tbody = document.getElementById('tabela-itens-pedido');
+  tbody.innerHTML = '';
+  let total = 0;
+  itensPedidoAtual.forEach((item, idx) => {
+    const subtotal = item.quantidade * item.preco_unitario;
+    total += subtotal;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${item.produto_nome}</td><td>${fmt(item.quantidade)}</td><td>${fmtMoeda(item.preco_unitario)}</td><td>${fmtMoeda(subtotal)}</td>
+      <td><button class="secondary" onclick="removerItemPedido(${idx})">Remover</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('v-total-produtos').textContent = fmtMoeda(total);
+}
+
+function removerItemPedido(idx){
+  itensPedidoAtual.splice(idx, 1);
+  renderItensPedido();
+}
+
+document.getElementById('btn-finalizar-pedido').addEventListener('click', async () => {
+  if (itensPedidoAtual.length === 0) { alert('Adicione ao menos um item ao pedido.'); return; }
+
+  const canal = document.getElementById('v-canal').value;
+  const localBaixa = canal === 'loja_fisica' ? 'fisico' : document.getElementById('v-local').value;
+  const cliente = document.getElementById('v-cliente').value;
+  const dataInput = document.getElementById('v-data').value;
+  const dataPedido = dataInput ? new Date(dataInput + 'T12:00:00').toISOString() : new Date().toISOString();
+  const frete = parseFloat(document.getElementById('v-frete').value) || 0;
+  const desconto = parseFloat(document.getElementById('v-desconto').value) || 0;
+  const taxas = parseFloat(document.getElementById('v-taxas').value) || 0;
+  const obs = document.getElementById('v-obs').value;
+
+  const { error } = await supabaseClient.rpc('criar_pedido_venda', {
+    p_canal: canal,
+    p_cliente_nome: cliente,
+    p_local_baixa_estoque: localBaixa,
+    p_data_pedido: dataPedido,
+    p_valor_frete: frete,
+    p_desconto: desconto,
+    p_taxas_canal: taxas,
+    p_observacao: obs,
+    p_itens: itensPedidoAtual.map(i => ({ produto_id: i.produto_id, quantidade: i.quantidade, preco_unitario: i.preco_unitario }))
+  });
+
+  if (error) { alert('Erro ao registrar pedido: ' + error.message); return; }
+
+  itensPedidoAtual = [];
+  renderItensPedido();
+  document.getElementById('form-pedido-header').reset();
+  document.getElementById('campo-local-baixa').style.display = 'none';
+  loadPedidos();
+  loadEstoque();
+  loadDashboard();
+});
+
+document.getElementById('form-filtro-vendas').addEventListener('submit', (e) => {
+  e.preventDefault();
+  loadPedidos();
+});
+
+async function loadPedidos(){
+  let query = supabaseClient.from('pedidos_venda').select('*').order('data_pedido', { ascending: false });
+
+  const dataInicio = document.getElementById('f-data-inicio').value;
+  const dataFim = document.getElementById('f-data-fim').value;
+  const canal = document.getElementById('f-canal').value;
+
+  if (dataInicio) query = query.gte('data_pedido', new Date(dataInicio + 'T00:00:00').toISOString());
+  if (dataFim) query = query.lte('data_pedido', new Date(dataFim + 'T23:59:59').toISOString());
+  if (canal) query = query.eq('canal', canal);
+
+  const { data, error } = await query;
+  if (error) { console.error(error); return; }
+
+  const tbody = document.getElementById('tabela-pedidos');
+  tbody.innerHTML = '';
+  document.getElementById('pedidos-vazio').style.display = data.length ? 'none' : 'block';
+
+  let faturamento = 0;
+  let confirmados = 0;
+  data.forEach(p => {
+    if (p.status === 'confirmado') { faturamento += Number(p.valor_total); confirmados++; }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
+      <td>${CANAL_LABEL[p.canal] || p.canal}</td>
+      <td>${p.cliente_nome_avulso || '-'}</td>
+      <td>${fmtMoeda(p.valor_total)}</td>
+      <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${p.status}</span></td>
+      <td>${p.status === 'confirmado' ? `<button class="danger" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}</td>
+      <td><button class="danger" onclick="excluirPedido('${p.id}')">Excluir</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('v-faturamento-filtro').textContent = fmtMoeda(faturamento);
+  document.getElementById('v-qtd-pedidos-filtro').textContent = `(${confirmados} pedido${confirmados !== 1 ? 's' : ''} confirmado${confirmados !== 1 ? 's' : ''})`;
+}
+
+async function cancelarPedido(id){
+  if (!confirm('Cancelar este pedido? O estoque será devolvido.')) return;
+  const { error } = await supabaseClient.rpc('cancelar_pedido_venda', { p_pedido_id: id });
+  if (error) { alert('Erro: ' + error.message); return; }
+  loadPedidos();
+  loadEstoque();
+  loadDashboard();
+}
+
+async function excluirPedido(id){
+  if (!confirm('Excluir este pedido definitivamente? Se ele ainda estava confirmado, o estoque será devolvido antes de apagar. Essa ação não pode ser desfeita.')) return;
+  const { error } = await supabaseClient.rpc('excluir_pedido_venda', { p_pedido_id: id });
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  loadPedidos();
+  loadEstoque();
+  loadDashboard();
+}
+
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+if (configured && supabaseClient) {
+  loadProdutos();
+  loadFichaTecnica();
+  loadEstoque();
+  loadOrdens();
+  loadPedidos();
+  loadIntegracoes();
+}
+</script>
+
+</body>
+</html>
