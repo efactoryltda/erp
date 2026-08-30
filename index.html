@@ -103,7 +103,7 @@
 
   <!-- ================= DASHBOARD ================= -->
   <div class="view active" id="view-dashboard">
-    <h2>Dashboard</h2>
+    <h2 data-t="TITULO_DASHBOARD">Dashboard</h2>
     <div class="metric-grid">
       <div class="metric-card">
         <div class="metric-label">Valor em estoque (físico)</div>
@@ -156,14 +156,14 @@
     </div>
 
     <div class="card">
-      <h3>Produtos com estoque abaixo do mínimo</h3>
+      <h3 data-t="CARD_ESTOQUE_BAIXO">Produtos com estoque abaixo do mínimo</h3>
       <table><thead><tr><th>Produto</th><th>Estoque total</th><th>Mínimo</th></tr></thead>
       <tbody id="tabela-dash-baixo"></tbody></table>
       <div class="empty" id="dash-baixo-vazio" style="display:none;">Nenhum produto abaixo do mínimo. 🎉</div>
     </div>
 
     <div class="card">
-      <h3>Vendas por canal (mês atual)</h3>
+      <h3 data-t="CARD_VENDAS_CANAL">Vendas por canal (mês atual)</h3>
       <table><thead><tr><th>Canal</th><th>Faturamento</th></tr></thead>
       <tbody id="tabela-dash-canal"></tbody></table>
       <div class="empty" id="dash-canal-vazio" style="display:none;">Nenhuma venda registrada este mês ainda.</div>
@@ -172,32 +172,32 @@
 
   <!-- ================= INTEGRAÇÕES ================= -->
   <div class="view" id="view-integracoes">
-    <h2>Integrações</h2>
+    <h2 data-t="TITULO_INTEGRACOES">Integrações</h2>
     <div class="card">
-      <h3>Contas do Mercado Livre</h3>
+      <h3 data-t="CARD_CONTAS_ML">Contas do Mercado Livre</h3>
       <p class="muted">Clique em "Conectar" pra autorizar cada conta (abre numa aba nova — faça login com a conta correspondente e autorize). Depois, clique em "Atualizar status" aqui.</p>
       <table><thead><tr><th>Conta</th><th>Nome da conta</th><th>Status</th><th>Conectado em</th><th></th></tr></thead>
         <tbody id="tabela-integracoes"></tbody>
       </table>
-      <button class="secondary" id="btn-atualizar-integracoes" style="margin-top:12px;">Atualizar status</button>
+      <button data-t="BTN_ATUALIZAR_STATUS" class="secondary" id="btn-atualizar-integracoes" style="margin-top:12px;">Atualizar status</button>
     </div>
 
     <div class="card">
-      <h3>Estoque Full</h3>
+      <h3 data-t="CARD_ESTOQUE_FULL">Estoque Full</h3>
       <p class="muted" style="margin-top:0;">Consulta o estoque real de cada anúncio conectado no Mercado Livre e corrige o saldo do Full no ERP pra bater com o real (cadastre o ID do anúncio de cada conta no produto, aba Produtos).</p>
-      <button id="btn-sincronizar-full">Sincronizar Full agora</button>
+      <button data-t="BTN_SYNC_FULL" id="btn-sincronizar-full">Sincronizar Full agora</button>
       <p class="muted" id="resultado-sync-full" style="margin-top:12px;"></p>
     </div>
   </div>
 
   <!-- ================= VENDAS ================= -->
   <div class="view" id="view-vendas">
-    <h2>Vendas</h2>
+    <h2 data-t="TITULO_VENDAS">Vendas</h2>
 
     <div class="card">
-      <h3>Registrar pedido de venda</h3>
+      <h3 data-t="CARD_REGISTRAR_PEDIDO">Registrar pedido de venda</h3>
       <form class="inline" id="form-pedido-header" style="margin-bottom:16px;">
-        <div class="field"><label>Canal *</label>
+        <div class="field"><label data-t="VENDAS_LABEL_CANAL">Canal *</label>
           <select id="v-canal" required>
             <option value="loja_fisica">Loja Física</option>
             <option value="ml_conta1">Mercado Livre - Conta 1</option>
@@ -206,23 +206,23 @@
           </select>
         </div>
         <div class="field" id="campo-local-baixa" style="display:none;">
-          <label>Baixar estoque de</label>
+          <label data-t="VENDAS_LABEL_LOCAL_BAIXA">Baixar estoque de</label>
           <select id="v-local"></select>
         </div>
-        <div class="field"><label>Cliente</label><input type="text" id="v-cliente" placeholder="Nome do cliente"></div>
-        <div class="field"><label>Data do pedido</label><input type="date" id="v-data"></div>
-        <div class="field"><label>Frete</label><input type="number" step="0.01" id="v-frete" placeholder="0.00"></div>
-        <div class="field"><label>Desconto</label><input type="number" step="0.01" id="v-desconto" placeholder="0.00"></div>
-        <div class="field"><label>Taxas do canal</label><input type="number" step="0.01" id="v-taxas" placeholder="0.00"></div>
-        <div class="field"><label>Observação</label><input type="text" id="v-obs"></div>
+        <div class="field"><label data-t="VENDAS_LABEL_CLIENTE">Cliente</label><input type="text" id="v-cliente" placeholder="Nome do cliente"></div>
+        <div class="field"><label data-t="VENDAS_LABEL_DATA">Data do pedido</label><input type="date" id="v-data"></div>
+        <div class="field"><label data-t="VENDAS_LABEL_FRETE">Frete</label><input type="number" step="0.01" id="v-frete" placeholder="0.00"></div>
+        <div class="field"><label data-t="VENDAS_LABEL_DESCONTO">Desconto</label><input type="number" step="0.01" id="v-desconto" placeholder="0.00"></div>
+        <div class="field"><label data-t="VENDAS_LABEL_TAXAS">Taxas do canal</label><input type="number" step="0.01" id="v-taxas" placeholder="0.00"></div>
+        <div class="field"><label data-t="VENDAS_LABEL_OBS">Observação</label><input type="text" id="v-obs"></div>
       </form>
 
-      <h4 style="margin-bottom:8px;">Itens do pedido</h4>
+      <h4 style="margin-bottom:8px;" data-t="SUBTITULO_ITENS_PEDIDO">Itens do pedido</h4>
       <form class="inline" id="form-add-item" style="margin-bottom:12px;">
-        <div class="field"><label>Produto</label><select id="v-item-produto"></select></div>
-        <div class="field"><label>Quantidade</label><input type="number" step="0.001" id="v-item-qtd"></div>
-        <div class="field"><label>Preço unitário</label><input type="number" step="0.01" id="v-item-preco"></div>
-        <button type="submit" class="secondary">+ Adicionar item</button>
+        <div class="field"><label data-t="VENDAS_ITEM_LABEL_PRODUTO">Produto</label><select id="v-item-produto"></select></div>
+        <div class="field"><label data-t="VENDAS_ITEM_LABEL_QTD">Quantidade</label><input type="number" step="0.001" id="v-item-qtd"></div>
+        <div class="field"><label data-t="VENDAS_ITEM_LABEL_PRECO">Preço unitário</label><input type="number" step="0.01" id="v-item-preco"></div>
+        <button data-t="BTN_ADD_ITEM" type="submit" class="secondary">+ Adicionar item</button>
       </form>
 
       <table><thead><tr><th>Produto</th><th>Qtd</th><th>Preço unit.</th><th>Subtotal</th><th></th></tr></thead>
@@ -230,15 +230,15 @@
       </table>
       <p><strong>Total dos produtos: <span id="v-total-produtos">R$ 0,00</span></strong></p>
 
-      <button id="btn-finalizar-pedido">Registrar pedido</button>
+      <button data-t="BTN_REGISTRAR_PEDIDO" id="btn-finalizar-pedido">Registrar pedido</button>
     </div>
 
     <div class="card">
-      <h3>Filtrar pedidos</h3>
+      <h3 data-t="CARD_FILTRAR_PEDIDOS">Filtrar pedidos</h3>
       <form class="inline" id="form-filtro-vendas">
-        <div class="field"><label>De</label><input type="date" id="f-data-inicio"></div>
-        <div class="field"><label>Até</label><input type="date" id="f-data-fim"></div>
-        <div class="field"><label>Canal</label>
+        <div class="field"><label data-t="FILTRO_LABEL_DE">De</label><input type="date" id="f-data-inicio"></div>
+        <div class="field"><label data-t="FILTRO_LABEL_ATE">Até</label><input type="date" id="f-data-fim"></div>
+        <div class="field"><label data-t="FILTRO_LABEL_CANAL">Canal</label>
           <select id="f-canal">
             <option value="">Todos</option>
             <option value="loja_fisica">Loja Física</option>
@@ -247,13 +247,13 @@
             <option value="ml_conta3">Mercado Livre - Conta 3</option>
           </select>
         </div>
-        <button type="submit">Filtrar</button>
+        <button data-t="BTN_FILTRAR" type="submit">Filtrar</button>
       </form>
       <p style="margin-top:12px;"><strong>Faturamento no período filtrado: <span id="v-faturamento-filtro">R$ 0,00</span></strong> <span class="muted" id="v-qtd-pedidos-filtro"></span></p>
     </div>
 
     <div class="card">
-      <h3>Pedidos</h3>
+      <h3 data-t="CARD_PEDIDOS">Pedidos</h3>
       <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
         <tbody id="tabela-pedidos"></tbody>
       </table>
@@ -263,32 +263,32 @@
 
   <!-- ================= PRODUTOS ================= -->
   <div class="view" id="view-produtos">
-    <h2>Produtos</h2>
+    <h2 data-t="TITULO_PRODUTOS">Produtos</h2>
     <div class="card">
-      <h3>Cadastrar produto</h3>
+      <h3 data-t="CARD_CADASTRAR_PRODUTO">Cadastrar produto</h3>
       <form class="inline" id="form-produto">
-        <div class="field"><label>SKU interno *</label><input type="text" id="p-sku" required></div>
-        <div class="field"><label>Nome *</label><input type="text" id="p-nome" required></div>
-        <div class="field"><label>Tipo *</label>
+        <div class="field"><label data-t="PRODUTOS_LABEL_SKU">SKU interno *</label><input type="text" id="p-sku" required></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_NOME">Nome *</label><input type="text" id="p-nome" required></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_TIPO">Tipo *</label>
           <select id="p-tipo" required>
             <option value="produto_acabado">Produto acabado</option>
             <option value="materia_prima">Matéria-prima</option>
           </select>
         </div>
-        <div class="field"><label>Unidade *</label><input type="text" id="p-unidade" placeholder="UN, KG, RL..." required></div>
-        <div class="field"><label>Custo atual</label><input type="number" step="0.0001" id="p-custo" placeholder="0.00"></div>
-        <div class="field"><label>Preço de venda</label><input type="number" step="0.01" id="p-preco" placeholder="0.00"></div>
-        <div class="field"><label>Estoque mínimo</label><input type="number" step="0.001" id="p-min" placeholder="0"></div>
-        <div class="field"><label>SKU no Mercado Livre</label><input type="text" id="p-sku-ml" placeholder="opcional"></div>
-        <div class="field"><label>ID anúncio - Conta 1</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
-        <div class="field"><label>ID anúncio - Conta 2</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
-        <div class="field"><label>ID anúncio - Conta 3</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
-        <button type="submit" id="btn-salvar-produto">Salvar produto</button>
-        <button type="button" class="secondary" id="btn-cancelar-edicao-produto" style="display:none;">Cancelar edição</button>
+        <div class="field"><label data-t="PRODUTOS_LABEL_UNIDADE">Unidade *</label><input type="text" id="p-unidade" placeholder="UN, KG, RL..." required></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_CUSTO">Custo atual</label><input type="number" step="0.0001" id="p-custo" placeholder="0.00"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_PRECO">Preço de venda</label><input type="number" step="0.01" id="p-preco" placeholder="0.00"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ESTMIN">Estoque mínimo</label><input type="number" step="0.001" id="p-min" placeholder="0"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_SKUML">SKU no Mercado Livre</label><input type="text" id="p-sku-ml" placeholder="opcional"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO1">ID anúncio - Conta 1</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO2">ID anúncio - Conta 2</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO3">ID anúncio - Conta 3</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
+        <button data-t="BTN_SALVAR_PRODUTO" type="submit" id="btn-salvar-produto">Salvar produto</button>
+        <button data-t="BTN_CANCELAR_EDICAO" type="button" class="secondary" id="btn-cancelar-edicao-produto" style="display:none;">Cancelar edição</button>
       </form>
     </div>
     <div class="card">
-      <h3>Produtos cadastrados</h3>
+      <h3 data-t="CARD_PRODUTOS_CADASTRADOS">Produtos cadastrados</h3>
       <table id="tabela-produtos"><thead>
         <tr><th>SKU</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Custo</th><th>Preço venda</th><th>Ativo</th><th></th><th></th></tr>
       </thead><tbody></tbody></table>
@@ -298,18 +298,18 @@
 
   <!-- ================= FICHA TÉCNICA ================= -->
   <div class="view" id="view-ficha">
-    <h2>Ficha Técnica (BOM)</h2>
+    <h2 data-t="TITULO_FICHA">Ficha Técnica (BOM)</h2>
     <div class="card">
-      <h3>Adicionar item à ficha técnica</h3>
+      <h3 data-t="CARD_ADD_ITEM_FICHA">Adicionar item à ficha técnica</h3>
       <form class="inline" id="form-ficha">
-        <div class="field"><label>Produto acabado *</label><select id="f-acabado" required></select></div>
-        <div class="field"><label>Matéria-prima *</label><select id="f-materia" required></select></div>
-        <div class="field"><label>Qtd. necessária (por 1 unidade) *</label><input type="number" step="0.000001" id="f-qtd" required></div>
-        <button type="submit">Adicionar</button>
+        <div class="field"><label data-t="FICHA_LABEL_ACABADO">Produto acabado *</label><select id="f-acabado" required></select></div>
+        <div class="field"><label data-t="FICHA_LABEL_MATERIA">Matéria-prima *</label><select id="f-materia" required></select></div>
+        <div class="field"><label data-t="FICHA_LABEL_QTD">Qtd. necessária (por 1 unidade) *</label><input type="number" step="0.000001" id="f-qtd" required></div>
+        <button data-t="BTN_ADICIONAR_FICHA" type="submit">Adicionar</button>
       </form>
     </div>
     <div class="card">
-      <h3>Fichas técnicas cadastradas</h3>
+      <h3 data-t="CARD_FICHAS_CADASTRADAS">Fichas técnicas cadastradas</h3>
       <div id="lista-fichas"></div>
       <div class="empty" id="ficha-vazio" style="display:none;">Nenhuma ficha técnica cadastrada ainda.</div>
     </div>
@@ -317,46 +317,46 @@
 
   <!-- ================= ESTOQUE ================= -->
   <div class="view" id="view-estoque">
-    <h2>Estoque</h2>
+    <h2 data-t="TITULO_ESTOQUE">Estoque</h2>
     <div class="card">
-      <h3>Registrar movimentação manual</h3>
+      <h3 data-t="CARD_MOVIMENTO_MANUAL">Registrar movimentação manual</h3>
       <form class="inline" id="form-movimento">
-        <div class="field"><label>Produto *</label><select id="m-produto" required></select></div>
-        <div class="field"><label>Local *</label>
+        <div class="field"><label data-t="MOVIMENTO_LABEL_PRODUTO">Produto *</label><select id="m-produto" required></select></div>
+        <div class="field"><label data-t="MOVIMENTO_LABEL_LOCAL">Local *</label>
           <select id="m-local" required></select>
         </div>
-        <div class="field"><label>Tipo *</label>
+        <div class="field"><label data-t="MOVIMENTO_LABEL_TIPO">Tipo *</label>
           <select id="m-tipo" required>
             <option value="entrada_manual">Entrada</option>
             <option value="saida_manual">Saída</option>
             <option value="ajuste">Ajuste (inventário)</option>
           </select>
         </div>
-        <div class="field"><label>Quantidade *</label><input type="number" step="0.001" id="m-qtd" required></div>
-        <div class="field"><label>Observação</label><input type="text" id="m-obs"></div>
-        <button type="submit">Registrar</button>
+        <div class="field"><label data-t="MOVIMENTO_LABEL_QTD">Quantidade *</label><input type="number" step="0.001" id="m-qtd" required></div>
+        <div class="field"><label data-t="MOVIMENTO_LABEL_OBS">Observação</label><input type="text" id="m-obs"></div>
+        <button data-t="BTN_REGISTRAR_MOVIMENTO" type="submit">Registrar</button>
       </form>
       <p class="muted">Entrada soma, Saída subtrai. Em Ajuste, use número negativo pra reduzir o saldo.</p>
     </div>
 
     <div class="card">
-      <h3>Transferir estoque entre locais</h3>
+      <h3 data-t="CARD_TRANSFERENCIA">Transferir estoque entre locais</h3>
       <p class="muted" style="margin-top:0;">Use isso quando mandar mercadoria do Físico pro Full de uma conta (ou qualquer outra movimentação entre locais).</p>
       <form class="inline" id="form-transferencia">
-        <div class="field"><label>Produto *</label><select id="t-produto" required></select></div>
-        <div class="field"><label>De *</label>
+        <div class="field"><label data-t="TRANSFERENCIA_LABEL_PRODUTO">Produto *</label><select id="t-produto" required></select></div>
+        <div class="field"><label data-t="TRANSFERENCIA_LABEL_DE">De *</label>
           <select id="t-origem" required></select>
         </div>
-        <div class="field"><label>Para *</label>
+        <div class="field"><label data-t="TRANSFERENCIA_LABEL_PARA">Para *</label>
           <select id="t-destino" required></select>
         </div>
-        <div class="field"><label>Quantidade *</label><input type="number" step="0.001" id="t-qtd" required></div>
-        <div class="field"><label>Observação</label><input type="text" id="t-obs" placeholder="ex: envio pro Full dia 30/08"></div>
-        <button type="submit">Transferir</button>
+        <div class="field"><label data-t="TRANSFERENCIA_LABEL_QTD">Quantidade *</label><input type="number" step="0.001" id="t-qtd" required></div>
+        <div class="field"><label data-t="TRANSFERENCIA_LABEL_OBS">Observação</label><input type="text" id="t-obs" placeholder="ex: envio pro Full dia 30/08"></div>
+        <button data-t="BTN_TRANSFERIR" type="submit">Transferir</button>
       </form>
     </div>
     <div class="card">
-      <h3>Saldo atual</h3>
+      <h3 data-t="CARD_SALDO_ATUAL">Saldo atual</h3>
       <table><thead>
         <tr><th>Produto</th><th>Local</th><th>Quantidade</th><th>Reservado</th><th></th></tr>
       </thead><tbody id="tabela-estoque"></tbody></table>
@@ -366,17 +366,17 @@
 
   <!-- ================= PRODUÇÃO ================= -->
   <div class="view" id="view-producao">
-    <h2>Produção</h2>
+    <h2 data-t="TITULO_PRODUCAO">Produção</h2>
     <div class="card">
-      <h3>Abrir ordem de produção</h3>
+      <h3 data-t="CARD_ABRIR_ORDEM">Abrir ordem de produção</h3>
       <form class="inline" id="form-ordem">
-        <div class="field"><label>Produto acabado *</label><select id="o-produto" required></select></div>
-        <div class="field"><label>Quantidade planejada *</label><input type="number" step="0.001" id="o-qtd" required></div>
-        <button type="submit">Abrir ordem</button>
+        <div class="field"><label data-t="PRODUCAO_LABEL_PRODUTO">Produto acabado *</label><select id="o-produto" required></select></div>
+        <div class="field"><label data-t="PRODUCAO_LABEL_QTD">Quantidade planejada *</label><input type="number" step="0.001" id="o-qtd" required></div>
+        <button data-t="BTN_ABRIR_ORDEM" type="submit">Abrir ordem</button>
       </form>
     </div>
     <div class="card">
-      <h3>Ordens de produção</h3>
+      <h3 data-t="CARD_ORDENS">Ordens de produção</h3>
       <table><thead>
         <tr><th>Produto</th><th>Planejado</th><th>Produzido</th><th>Status</th><th>Custo total</th><th></th><th></th></tr>
       </thead><tbody id="tabela-ordens"></tbody></table>
@@ -409,9 +409,9 @@ const MENU_LABELS = {
 
 // Nomes de cada canal de venda
 const CANAL_LABEL = {
-  ml_conta1: 'Mercado Livre - E-Factory',
-  ml_conta2: 'Mercado Livre - JG',
-  ml_conta3: 'Mercado Livre - Gustavo',
+  ml_conta1: 'Mercado Livre - Conta 1',
+  ml_conta2: 'Mercado Livre - Conta 2',
+  ml_conta3: 'Mercado Livre - Conta 3',
   loja_fisica: 'Loja Física'
 };
 
@@ -422,6 +422,84 @@ const FULL_LABEL = {
   full_conta3: 'ML Full - Gustavo Baruffi'
 };
 
+const TEXTOS = {
+  VENDAS_LABEL_CANAL: 'Canal *',
+  VENDAS_LABEL_LOCAL_BAIXA: 'Baixar estoque de',
+  VENDAS_LABEL_CLIENTE: 'Cliente',
+  VENDAS_LABEL_DATA: 'Data do pedido',
+  VENDAS_LABEL_FRETE: 'Frete',
+  VENDAS_LABEL_DESCONTO: 'Desconto',
+  VENDAS_LABEL_TAXAS: 'Taxas do canal',
+  VENDAS_LABEL_OBS: 'Observação',
+  VENDAS_ITEM_LABEL_PRODUTO: 'Produto',
+  VENDAS_ITEM_LABEL_QTD: 'Quantidade',
+  VENDAS_ITEM_LABEL_PRECO: 'Preço unitário',
+  FILTRO_LABEL_DE: 'De',
+  FILTRO_LABEL_ATE: 'Até',
+  FILTRO_LABEL_CANAL: 'Canal',
+  PRODUTOS_LABEL_SKU: 'SKU interno *',
+  PRODUTOS_LABEL_NOME: 'Nome *',
+  PRODUTOS_LABEL_TIPO: 'Tipo *',
+  PRODUTOS_LABEL_UNIDADE: 'Unidade *',
+  PRODUTOS_LABEL_CUSTO: 'Custo atual',
+  PRODUTOS_LABEL_PRECO: 'Preço de venda',
+  PRODUTOS_LABEL_ESTMIN: 'Estoque mínimo',
+  PRODUTOS_LABEL_SKUML: 'SKU no Mercado Livre',
+  PRODUTOS_LABEL_ANUNCIO1: 'ID anúncio - Conta 1',
+  PRODUTOS_LABEL_ANUNCIO2: 'ID anúncio - Conta 2',
+  PRODUTOS_LABEL_ANUNCIO3: 'ID anúncio - Conta 3',
+  FICHA_LABEL_ACABADO: 'Produto acabado *',
+  FICHA_LABEL_MATERIA: 'Matéria-prima *',
+  FICHA_LABEL_QTD: 'Qtd. necessária (por 1 unidade) *',
+  MOVIMENTO_LABEL_PRODUTO: 'Produto *',
+  MOVIMENTO_LABEL_LOCAL: 'Local *',
+  MOVIMENTO_LABEL_TIPO: 'Tipo *',
+  MOVIMENTO_LABEL_QTD: 'Quantidade *',
+  MOVIMENTO_LABEL_OBS: 'Observação',
+  TRANSFERENCIA_LABEL_PRODUTO: 'Produto *',
+  TRANSFERENCIA_LABEL_DE: 'De *',
+  TRANSFERENCIA_LABEL_PARA: 'Para *',
+  TRANSFERENCIA_LABEL_QTD: 'Quantidade *',
+  TRANSFERENCIA_LABEL_OBS: 'Observação',
+  PRODUCAO_LABEL_PRODUTO: 'Produto acabado *',
+  PRODUCAO_LABEL_QTD: 'Quantidade planejada *',
+  TITULO_DASHBOARD: 'Dashboard',
+  TITULO_INTEGRACOES: 'Integrações',
+  TITULO_VENDAS: 'Vendas',
+  TITULO_PRODUTOS: 'Produtos',
+  TITULO_FICHA: 'Ficha Técnica (BOM)',
+  TITULO_ESTOQUE: 'Estoque',
+  TITULO_PRODUCAO: 'Produção',
+  CARD_ESTOQUE_BAIXO: 'Produtos com estoque abaixo do mínimo',
+  CARD_VENDAS_CANAL: 'Vendas por canal (mês atual)',
+  CARD_CONTAS_ML: 'Contas do Mercado Livre',
+  CARD_ESTOQUE_FULL: 'Estoque Full',
+  CARD_REGISTRAR_PEDIDO: 'Registrar pedido de venda',
+  CARD_FILTRAR_PEDIDOS: 'Filtrar pedidos',
+  CARD_PEDIDOS: 'Pedidos',
+  CARD_CADASTRAR_PRODUTO: 'Cadastrar produto',
+  CARD_PRODUTOS_CADASTRADOS: 'Produtos cadastrados',
+  CARD_ADD_ITEM_FICHA: 'Adicionar item à ficha técnica',
+  CARD_FICHAS_CADASTRADAS: 'Fichas técnicas cadastradas',
+  CARD_MOVIMENTO_MANUAL: 'Registrar movimentação manual',
+  CARD_TRANSFERENCIA: 'Transferir estoque entre locais',
+  CARD_SALDO_ATUAL: 'Saldo atual',
+  CARD_ABRIR_ORDEM: 'Abrir ordem de produção',
+  CARD_ORDENS: 'Ordens de produção',
+  SUBTITULO_ITENS_PEDIDO: 'Itens do pedido',
+  BTN_ATUALIZAR_STATUS: 'Atualizar status',
+  BTN_SYNC_FULL: 'Sincronizar Full agora',
+  BTN_ADD_ITEM: '+ Adicionar item',
+  BTN_REGISTRAR_PEDIDO: 'Registrar pedido',
+  BTN_FILTRAR: 'Filtrar',
+  BTN_SALVAR_PRODUTO: 'Salvar produto',
+  BTN_CANCELAR_EDICAO: 'Cancelar edição',
+  BTN_ADICIONAR_FICHA: 'Adicionar',
+  BTN_REGISTRAR_MOVIMENTO: 'Registrar',
+  BTN_TRANSFERIR: 'Transferir',
+  BTN_ABRIR_ORDEM: 'Abrir ordem',
+};
+
 // ============================================================
 // FIM DA PERSONALIZAÇÃO — daqui pra baixo é lógica do sistema.
 // ============================================================
@@ -430,6 +508,15 @@ document.title = NOME_SISTEMA;
 Object.keys(MENU_LABELS).forEach(key => {
   const el = document.querySelector(`.nav-item[data-view="${key}"]`);
   if (el) el.textContent = MENU_LABELS[key];
+});
+
+document.querySelectorAll('[data-t]').forEach(el => {
+  const chave = el.dataset.t;
+  if (TEXTOS[chave] !== undefined) el.textContent = TEXTOS[chave];
+});
+document.querySelectorAll('[data-t-ph]').forEach(el => {
+  const chave = el.dataset.tPh;
+  if (TEXTOS[chave] !== undefined) el.placeholder = TEXTOS[chave];
 });
 
 // ============================================================
