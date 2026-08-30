@@ -1057,14 +1057,19 @@ document.getElementById('btn-atualizar-integracoes').addEventListener('click', l
 
 document.getElementById('btn-sincronizar-full').addEventListener('click', async () => {
   const el = document.getElementById('resultado-sync-full');
+  el.style.whiteSpace = 'pre-wrap';
   el.textContent = 'Sincronizando, aguarde...';
   try {
     const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-full-stock');
     const data = await resp.json();
     if (!Array.isArray(data)) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
     const ajustados = data.filter(d => d.ajustado).length;
-    const comErro = data.filter(d => d.erro).length;
-    el.textContent = `Concluído: ${data.length} anúncio(s) verificado(s), ${ajustados} ajustado(s)${comErro ? `, ${comErro} com erro` : ''}.`;
+    const comErro = data.filter(d => d.erro);
+    let texto = `Concluído: ${data.length} anúncio(s) verificado(s), ${ajustados} ajustado(s)${comErro.length ? `, ${comErro.length} com erro` : ''}.`;
+    if (comErro.length) {
+      texto += '\n\nDetalhe dos erros:\n' + comErro.map(e => `• Canal ${CANAL_LABEL[e.canal] || e.canal}: ${e.erro}`).join('\n');
+    }
+    el.textContent = texto;
     loadEstoque();
     loadDashboard();
   } catch (err) {
