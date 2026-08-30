@@ -254,7 +254,7 @@
 
     <div class="card">
       <h3>Pedidos</h3>
-      <table><thead><tr><th>Data</th><th>Canal</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
+      <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
         <tbody id="tabela-pedidos"></tbody>
       </table>
       <div class="empty" id="pedidos-vazio" style="display:none;">Nenhum pedido encontrado.</div>
@@ -1074,7 +1074,10 @@ document.getElementById('form-filtro-vendas').addEventListener('submit', (e) => 
 });
 
 async function loadPedidos(){
-  let query = supabaseClient.from('pedidos_venda').select('*').order('data_pedido', { ascending: false });
+  let query = supabaseClient
+    .from('pedidos_venda')
+    .select('*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))')
+    .order('data_pedido', { ascending: false });
 
   const dataInicio = document.getElementById('f-data-inicio').value;
   const dataFim = document.getElementById('f-data-fim').value;
@@ -1095,10 +1098,20 @@ async function loadPedidos(){
   let confirmados = 0;
   data.forEach(p => {
     if (p.status === 'confirmado') { faturamento += Number(p.valor_total); confirmados++; }
+
+    const itens = p.pedido_itens || [];
+    const produtosTexto = itens.length
+      ? itens.map(i => {
+          const nomeOuSku = i.produtos ? `${i.produtos.sku_interno} - ${i.produtos.nome}` : `⚠️ SKU não identificado: ${i.sku_ml_item || '?'}`;
+          return `${nomeOuSku} (${fmt(i.quantidade)}x)`;
+        }).join('<br>')
+      : '<span class="muted">-</span>';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
       <td>${CANAL_LABEL[p.canal] || p.canal}</td>
+      <td>${produtosTexto}</td>
       <td>${p.cliente_nome_avulso || '-'}</td>
       <td>${fmtMoeda(p.valor_total)}</td>
       <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${p.status}</span></td>
