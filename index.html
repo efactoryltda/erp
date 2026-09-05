@@ -81,9 +81,36 @@
   .metric-card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px 20px; }
   .metric-label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; }
   .metric-value{ font-size:26px; font-weight:700; color:var(--text); }
+  #login-overlay{
+    position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:9999;
+  }
+  #login-box{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:36px 32px; width:320px;
+  }
+  #login-box h2{ margin-top:0; font-size:20px; }
+  #login-box .field{ display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
+  #login-box .field label{ font-size:12px; color:var(--muted); }
+  #login-box .field input{ padding:9px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; }
+  #login-box button{ width:100%; margin-top:6px; }
+  #login-erro{ color:var(--danger); font-size:13px; margin-top:10px; min-height:16px; }
+  #sidebar-footer{ margin-top:auto; padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08); }
+  #sidebar-footer .email-logado{ font-size:12px; color:var(--sidebar-text); margin-bottom:8px; word-break:break-all; }
+  #btn-sair{ background:transparent; border:1px solid rgba(255,255,255,0.25); color:#fff; width:100%; padding:7px; font-size:13px; }
 </style>
 </head>
 <body>
+
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>Entrar</h2>
+    <form id="form-login">
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" required></div>
+      <div class="field"><label>Senha</label><input type="password" id="login-senha" required></div>
+      <button type="submit">Entrar</button>
+      <div id="login-erro"></div>
+    </form>
+  </div>
+</div>
 
 <div id="sidebar">
   <!-- Nome do sistema no topo do menu (estilizado com cor) — edite o texto direto aqui se quiser mudar -->
@@ -95,6 +122,10 @@
   <div class="nav-item" data-view="ficha"></div>
   <div class="nav-item" data-view="estoque"></div>
   <div class="nav-item" data-view="producao"></div>
+  <div id="sidebar-footer">
+    <div class="email-logado" id="email-logado"></div>
+    <button id="btn-sair">Sair</button>
+  </div>
 </div>
 
 <div id="main">
@@ -1236,15 +1267,48 @@ async function excluirPedido(id){
 }
 
 // ============================================================
-// INICIALIZAÇÃO
+// AUTENTICAÇÃO
 // ============================================================
-if (configured && supabaseClient) {
+function carregarApp(){
   loadProdutos();
   loadFichaTecnica();
   loadEstoque();
   loadOrdens();
   loadPedidos();
   loadIntegracoes();
+}
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const senha = document.getElementById('login-senha').value;
+  const erroEl = document.getElementById('login-erro');
+  erroEl.textContent = '';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+  if (error) { erroEl.textContent = 'E-mail ou senha incorretos.'; }
+});
+
+document.getElementById('btn-sair').addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+});
+
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+if (configured && supabaseClient) {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (session && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('email-logado').textContent = session.user.email;
+      carregarApp();
+    } else if (event === 'SIGNED_OUT') {
+      document.getElementById('login-overlay').style.display = 'flex';
+      document.getElementById('login-senha').value = '';
+    }
+  });
+} else {
+  // sem configuração válida do Supabase, não faz sentido mostrar tela de login
+  document.getElementById('login-overlay').style.display = 'none';
 }
 </script>
 
