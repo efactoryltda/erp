@@ -220,6 +220,8 @@
       <p class="muted" id="resultado-sync-full" style="margin-top:12px;"></p>
       <button id="btn-sincronizar-ads" type="button">Sincronizar Ads agora</button>
 <p class="muted" id="resultado-sync-ads" style="margin-top:12px; white-space:pre-wrap;"></p>
+      <button id="btn-sincronizar-perguntas" type="button">Sincronizar Perguntas agora</button>
+<pre id="resultado-sync-perguntas" style="white-space:pre-wrap;"></pre>
     </div>
   </div>
 
@@ -1120,6 +1122,39 @@ document.getElementById('btn-sincronizar-full').addEventListener('click', async 
     el.textContent = 'Erro ao sincronizar: ' + err.message;
   }
 });
+  <script>
+document.getElementById('btn-sincronizar-perguntas').addEventListener('click', async () => {
+  const el = document.getElementById('resultado-sync-perguntas');
+  el.textContent = 'Sincronizando perguntas em aberto, aguarde...';
+  try {
+    const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-perguntas');
+    const data = await resp.json();
+    if (!data.resultado) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
+ 
+    const CANAL_LABEL_PERG = {
+      ml_conta1: 'Conta 1', ml_conta2: 'Conta 2', ml_conta3: 'Conta 3',
+    };
+ 
+    let texto = '';
+    let totalAberto = 0;
+    for (const r of data.resultado) {
+      const nome = CANAL_LABEL_PERG[r.canal] || r.canal;
+      if (r.erro) {
+        texto += `• ${nome}: erro — ${r.erro}\n`;
+      } else {
+        totalAberto += r.perguntas_gravadas;
+        texto += `• ${nome}: ${r.perguntas_gravadas} pergunta(s) em aberto agora`;
+        if (r.perguntas_removidas) texto += ` (${r.perguntas_removidas} saíram da lista — respondidas ou anúncio fechado)`;
+        texto += '\n';
+      }
+    }
+    texto += `\nTotal em aberto nas 3 contas: ${totalAberto}`;
+    el.textContent = texto;
+  } catch (err) {
+    el.textContent = 'Erro ao sincronizar: ' + err.message;
+  }
+});
+</script>
 
 // ============================================================
 // VENDAS
