@@ -218,6 +218,8 @@
       <p class="muted" style="margin-top:0;">Consulta o estoque real de cada anúncio conectado no Mercado Livre e corrige o saldo do Full no ERP pra bater com o real (cadastre o ID do anúncio de cada conta no produto, aba Produtos).</p>
       <button data-t="BTN_SYNC_FULL" id="btn-sincronizar-full">Sincronizar Full agora</button>
       <p class="muted" id="resultado-sync-full" style="margin-top:12px;"></p>
+      <button id="btn-sincronizar-ads" type="button">Sincronizar Ads agora</button>
+<p class="muted" id="resultado-sync-ads" style="margin-top:12px; white-space:pre-wrap;"></p>
     </div>
   </div>
 
@@ -1103,6 +1105,17 @@ document.getElementById('btn-sincronizar-full').addEventListener('click', async 
     el.textContent = texto;
     loadEstoque();
     loadDashboard();
+  } catch (err) {
+    el.textContent = 'Erro ao sincronizar: ' + err.message;
+  }
+});
+  document.getElementById('btn-sincronizar-ads').addEventListener('click', async () => {
+  const el = document.getElementById('resultado-sync-ads');
+  el.textContent = 'Sincronizando métricas de Ads, aguarde...';
+  try {
+    const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-ads-metricas');
+    const data = await resp.json();
+    el.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
     el.textContent = 'Erro ao sincronizar: ' + err.message;
   }
