@@ -122,6 +122,7 @@
   <div class="nav-item" data-view="ficha"></div>
   <div class="nav-item" data-view="estoque"></div>
   <div class="nav-item" data-view="producao"></div>
+  <div class="nav-item" data-view="gestao-contas"></div>
   <div id="sidebar-footer">
     <div class="email-logado" id="email-logado"></div>
     <button id="btn-sair">Sair</button>
@@ -220,7 +221,7 @@
       <p class="muted" id="resultado-sync-full" style="margin-top:12px;"></p>
       <button id="btn-sincronizar-ads" type="button">Sincronizar Ads agora</button>
 <p class="muted" id="resultado-sync-ads" style="margin-top:12px; white-space:pre-wrap;"></p>
-      <button id="document.getElementById('btn-sincronizar-perguntas')" type="button">Sincronizar Perguntas agora</button>
+      <button id="btn-sincronizar-perguntas" type="button">Sincronizar Perguntas agora</button>
 <pre id="resultado-sync-perguntas" style="white-space:pre-wrap;"></pre>
     </div>
   </div>
@@ -419,6 +420,18 @@
     </div>
   </div>
 
+  <!-- ================= GESTÃO DE CONTAS ================= -->
+  <div class="view" id="view-gestao-contas">
+    <h2 data-t="TITULO_GESTAO_CONTAS">Gestão de Contas</h2>
+    <div class="card">
+      <h3 data-t="CARD_PERGUNTAS_ABERTAS">Perguntas em aberto (Mercado Livre)</h3>
+      <p class="muted" style="margin-top:0;">Perguntas sem resposta das 3 contas. Responda aqui pra enviar direto pro Mercado Livre.</p>
+      <button data-t="BTN_ATUALIZAR_PERGUNTAS" class="secondary" id="btn-atualizar-perguntas-lista" style="margin-bottom:12px;">Atualizar lista</button>
+      <div id="lista-perguntas-abertas"></div>
+      <div class="empty" id="perguntas-vazio" style="display:none;">Nenhuma pergunta em aberto. 🎉</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -440,6 +453,7 @@ const MENU_LABELS = {
   ficha: 'Ficha Técnica',
   estoque: 'Estoque',
   producao: 'Produção',
+  'gestao-contas': 'Gestão de Contas',
 };
 
 // Nomes de cada canal de venda
@@ -533,6 +547,9 @@ const TEXTOS = {
   BTN_REGISTRAR_MOVIMENTO: 'Registrar',
   BTN_TRANSFERIR: 'Transferir',
   BTN_ABRIR_ORDEM: 'Abrir ordem',
+  TITULO_GESTAO_CONTAS: 'Gestão de Contas',
+  CARD_PERGUNTAS_ABERTAS: 'Perguntas em aberto (Mercado Livre)',
+  BTN_ATUALIZAR_PERGUNTAS: 'Atualizar lista',
 };
 
 // ============================================================
@@ -1154,6 +1171,85 @@ document.getElementById('btn-sincronizar-perguntas').addEventListener('click', a
   }
 });
 
+// ============================================================
+// GESTÃO DE CONTAS — Perguntas em aberto (listar + responder)
+// ============================================================
+async function loadPerguntasAbertas(){
+  const cont = document.getElementById('lista-perguntas-abertas');
+  cont.innerHTML = '<p class="muted">Carregando...</p>';
+  const { data, error } = await supabaseClient
+    .from('ml_perguntas_abertas')
+    .select('*, produtos(sku_interno, nome)')
+    .order('canal', { ascending: true })
+    .order('data_pergunta', { ascending: true });
+
+  if (error) { cont.innerHTML = '<p class="muted">Erro ao carregar: ' + error.message + '</p>'; return; }
+
+  document.getElementById('perguntas-vazio').style.display = data.length ? 'none' : 'block';
+  cont.innerHTML = '';
+
+  data.forEach(p => {
+    const produtoTexto = p.produtos
+      ? `${p.produtos.sku_interno} - ${p.produtos.nome}`
+      : `⚠️ Produto não identificado (item ${p.item_id})`;
+
+    const div = document.createElement('div');
+    div.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px;';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+        <strong>${CANAL_LABEL[p.canal] || p.canal}</strong>
+        <span class="muted">${p.data_pergunta ? new Date(p.data_pergunta).toLocaleString('pt-BR') : ''}</span>
+      </div>
+      <div class="muted" style="margin-bottom:6px;">${produtoTexto}</div>
+      <div style="margin-bottom:10px;">${p.texto || ''}</div>
+      <textarea class="resposta-pergunta" rows="2" style="width:100%; font-family:inherit;" placeholder="Digite a resposta..."></textarea>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+        <button class="btn-responder-pergunta" type="button">Responder</button>
+        <span class="status-resposta muted"></span>
+      </div>
+    `;
+
+    const btn = div.querySelector('.btn-responder-pergunta');
+    const status = div.querySelector('.status-resposta');
+    const textarea = div.querySelector('.resposta-pergunta');
+
+    btn.addEventListener('click', async () => {
+      const texto = textarea.value.trim();
+      if (!texto) { alert('Digite uma resposta antes de enviar.'); return; }
+      btn.disabled = true;
+      status.style.color = '';
+      status.textContent = 'Enviando...';
+      try {
+        const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-responder-pergunta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ canal: p.canal, question_id: p.question_id, texto }),
+        });
+        const resultado = await resp.json();
+        if (resultado.ok) {
+          status.textContent = '✅ Respondida!';
+          status.style.color = 'var(--ok)';
+          textarea.disabled = true;
+          setTimeout(() => {
+            div.remove();
+            if (!cont.children.length) document.getElementById('perguntas-vazio').style.display = 'block';
+          }, 1200);
+        } else {
+          status.textContent = '❌ Erro: ' + (resultado.erro || 'falha desconhecida');
+          status.style.color = 'var(--danger)';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        status.textContent = '❌ Erro: ' + err.message;
+        status.style.color = 'var(--danger)';
+        btn.disabled = false;
+      }
+    });
+
+    cont.appendChild(div);
+  });
+}
+document.getElementById('btn-atualizar-perguntas-lista').addEventListener('click', loadPerguntasAbertas);
 
 // ============================================================
 // VENDAS
@@ -1323,6 +1419,7 @@ function carregarApp(){
   loadOrdens();
   loadPedidos();
   loadIntegracoes();
+  loadPerguntasAbertas();
 }
 
 document.getElementById('form-login').addEventListener('submit', async (e) => {
