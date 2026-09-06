@@ -119,6 +119,7 @@
   }
   .collapsible-card.open .collapsible-content-wrap{ grid-template-rows:1fr; }
   .collapsible-content-inner{ overflow:hidden; padding:0 20px 20px 20px; }
+  .btn-tipo-analise.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
 </style>
 </head>
 <body>
@@ -248,6 +249,8 @@
 <pre id="resultado-sync-perguntas" style="white-space:pre-wrap;"></pre>
       <button id="btn-sincronizar-promocoes" type="button">Sincronizar Promoções agora</button>
 <pre id="resultado-sync-promocoes" style="white-space:pre-wrap;"></pre>
+      <button id="btn-sincronizar-anuncios-metricas" type="button">Sincronizar Métricas de Anúncios agora</button>
+<pre id="resultado-sync-anuncios-metricas" style="white-space:pre-wrap;"></pre>
     </div>
   </div>
 
@@ -478,6 +481,32 @@
         </div>
       </div>
     </div>
+
+    <div class="card collapsible-card" id="card-analise-ia">
+      <div class="collapsible-header" onclick="toggleCollapsible('analise-ia')">
+        <span class="collapsible-chevron">▸</span>
+        <h3 data-t="CARD_ANALISE_IA">Gestor de Contas (IA)</h3>
+        <span class="badge-contador" id="badge-analise-ia">-</span>
+      </div>
+      <div class="collapsible-content-wrap">
+        <div class="collapsible-content-inner">
+          <p class="muted" style="margin-top:0;">Análise automática das 3 contas — vendas, estoque (Full + Físico), anúncios, ads, promoções e perguntas — com sugestões de como vender mais. Esse agente só analisa e sugere: ele nunca altera nada sozinho (não pausa anúncio, não ativa promoção, nada).</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+            <button type="button" class="secondary btn-tipo-analise active" data-tipo="diaria">Diária</button>
+            <button type="button" class="secondary btn-tipo-analise" data-tipo="semanal">Semanal</button>
+            <button type="button" class="secondary btn-tipo-analise" data-tipo="mensal">Mensal</button>
+          </div>
+          <div class="field" style="max-width:480px; margin-bottom:12px;">
+            <label>Histórico</label>
+            <select id="select-historico-analise"></select>
+          </div>
+          <button type="button" class="secondary" id="btn-gerar-analise-agora" style="margin-bottom:12px;">Gerar agora</button>
+          <p class="muted" id="status-analise-ia"></p>
+          <div id="conteudo-analise-ia" style="white-space:pre-wrap; line-height:1.6; border:1px solid var(--border); border-radius:8px; padding:16px;"></div>
+          <div class="empty" id="analise-ia-vazio" style="display:none;">Nenhuma análise gerada ainda. Clique em "Gerar agora".</div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -600,6 +629,7 @@ const TEXTOS = {
   BTN_ATUALIZAR_PERGUNTAS: 'Atualizar lista',
   CARD_PROMOCOES_ATIVAS: 'Promoções ativas e vencendo (Mercado Livre)',
   BTN_ATUALIZAR_PROMOCOES: 'Atualizar lista',
+  CARD_ANALISE_IA: 'Gestor de Contas (IA)',
 };
 
 // ============================================================
@@ -1252,6 +1282,34 @@ document.getElementById('btn-sincronizar-promocoes').addEventListener('click', a
     el.textContent = 'Erro ao sincronizar: ' + err.message;
   }
 });
+document.getElementById('btn-sincronizar-anuncios-metricas').addEventListener('click', async () => {
+  const el = document.getElementById('resultado-sync-anuncios-metricas');
+  el.textContent = 'Sincronizando métricas de anúncios, aguarde (pode levar mais tempo que os outros)...';
+  try {
+    const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-anuncios-metricas');
+    const data = await resp.json();
+    if (!data.resultado) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
+
+    const CANAL_LABEL_AM = {
+      ml_conta1: 'Conta 1', ml_conta2: 'Conta 2', ml_conta3: 'Conta 3',
+    };
+
+    let texto = '';
+    for (const r of data.resultado) {
+      const nome = CANAL_LABEL_AM[r.canal] || r.canal;
+      if (r.erro) {
+        texto += `• ${nome}: erro — ${r.erro}\n`;
+      } else {
+        texto += `• ${nome}: ${r.gravados} anúncio(s) atualizado(s) de ${r.anuncios_verificados} verificado(s)`;
+        if (r.com_erro) texto += ` — ${r.com_erro} anúncio(s) com erro`;
+        texto += '\n';
+      }
+    }
+    el.textContent = texto;
+  } catch (err) {
+    el.textContent = 'Erro ao sincronizar: ' + err.message;
+  }
+});
 
 // ============================================================
 // GESTÃO DE CONTAS — cards recolhíveis (accordion), genérico
@@ -1404,6 +1462,98 @@ async function loadPromocoesAtivas(){
   if (badge) badge.classList.toggle('pendente', vencendoEmBreve > 0);
 }
 document.getElementById('btn-atualizar-promocoes-lista').addEventListener('click', loadPromocoesAtivas);
+
+// ============================================================
+// GESTÃO DE CONTAS — Gestor de Contas (IA)
+// ============================================================
+let tipoAnaliseAtual = 'diaria';
+let analisesCache = [];
+
+function formatarPeriodoAnalise(a){
+  const ini = new Date(a.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR');
+  const fim = new Date(a.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR');
+  return ini === fim ? ini : `${ini} a ${fim}`;
+}
+
+function mostrarAnaliseSelecionada(){
+  const select = document.getElementById('select-historico-analise');
+  const conteudoEl = document.getElementById('conteudo-analise-ia');
+  const analise = analisesCache.find(a => a.id === select.value);
+  conteudoEl.textContent = analise ? analise.conteudo : '';
+}
+
+async function loadHistoricoAnalises(){
+  const select = document.getElementById('select-historico-analise');
+  const conteudoEl = document.getElementById('conteudo-analise-ia');
+  const vazioEl = document.getElementById('analise-ia-vazio');
+  const badge = document.getElementById('badge-analise-ia');
+  select.innerHTML = '<option>Carregando...</option>';
+
+  const { data, error } = await supabaseClient
+    .from('ml_analises')
+    .select('id, periodo_inicio, periodo_fim, gerado_em, conteudo')
+    .eq('tipo', tipoAnaliseAtual)
+    .order('periodo_fim', { ascending: false })
+    .limit(30);
+
+  if (error) {
+    select.innerHTML = '<option>Erro ao carregar</option>';
+    conteudoEl.textContent = '';
+    return;
+  }
+
+  analisesCache = data || [];
+
+  if (analisesCache.length === 0) {
+    select.innerHTML = '<option>Nenhuma análise ainda</option>';
+    conteudoEl.textContent = '';
+    vazioEl.style.display = 'block';
+    if (badge) badge.textContent = '-';
+    return;
+  }
+
+  vazioEl.style.display = 'none';
+  select.innerHTML = analisesCache.map(a =>
+    `<option value="${a.id}">${formatarPeriodoAnalise(a)} — gerada em ${new Date(a.gerado_em).toLocaleString('pt-BR')}</option>`
+  ).join('');
+
+  if (badge) badge.textContent = new Date(analisesCache[0].periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR');
+
+  select.value = analisesCache[0].id;
+  mostrarAnaliseSelecionada();
+}
+
+document.getElementById('select-historico-analise').addEventListener('change', mostrarAnaliseSelecionada);
+
+document.querySelectorAll('.btn-tipo-analise').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-tipo-analise').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tipoAnaliseAtual = btn.dataset.tipo;
+    loadHistoricoAnalises();
+  });
+});
+
+document.getElementById('btn-gerar-analise-agora').addEventListener('click', async () => {
+  const statusEl = document.getElementById('status-analise-ia');
+  statusEl.textContent = 'Gerando análise, isso pode levar até 1 minuto...';
+  try {
+    const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-analise-ia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: tipoAnaliseAtual }),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      statusEl.textContent = 'Erro ao gerar análise: ' + (data.erro || JSON.stringify(data));
+      return;
+    }
+    statusEl.textContent = 'Análise gerada com sucesso.';
+    await loadHistoricoAnalises();
+  } catch (err) {
+    statusEl.textContent = 'Erro ao gerar análise: ' + err.message;
+  }
+});
 
 // ============================================================
 // VENDAS
@@ -1575,6 +1725,7 @@ function carregarApp(){
   loadIntegracoes();
   loadPerguntasAbertas();
   loadPromocoesAtivas();
+  loadHistoricoAnalises();
 }
 
 document.getElementById('form-login').addEventListener('submit', async (e) => {
