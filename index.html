@@ -246,6 +246,8 @@
 <p class="muted" id="resultado-sync-ads" style="margin-top:12px; white-space:pre-wrap;"></p>
       <button id="btn-sincronizar-perguntas" type="button">Sincronizar Perguntas agora</button>
 <pre id="resultado-sync-perguntas" style="white-space:pre-wrap;"></pre>
+      <button id="btn-sincronizar-promocoes" type="button">Sincronizar Promoções agora</button>
+<pre id="resultado-sync-promocoes" style="white-space:pre-wrap;"></pre>
     </div>
   </div>
 
@@ -461,6 +463,21 @@
         </div>
       </div>
     </div>
+    <div class="card collapsible-card" id="card-promocoes-ativas">
+      <div class="collapsible-header" onclick="toggleCollapsible('promocoes-ativas')">
+        <span class="collapsible-chevron">▸</span>
+        <h3 data-t="CARD_PROMOCOES_ATIVAS">Promoções ativas e vencendo (Mercado Livre)</h3>
+        <span class="badge-contador" id="badge-promocoes-ativas">-</span>
+      </div>
+      <div class="collapsible-content-wrap">
+        <div class="collapsible-content-inner">
+          <p class="muted" style="margin-top:0;">Promoções ativas agora nas 3 contas, ordenadas pela data de término mais próxima.</p>
+          <button data-t="BTN_ATUALIZAR_PROMOCOES" class="secondary" id="btn-atualizar-promocoes-lista" style="margin-bottom:12px;">Atualizar lista</button>
+          <div id="lista-promocoes-ativas"></div>
+          <div class="empty" id="promocoes-vazio" style="display:none;">Nenhuma promoção ativa no momento.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -581,6 +598,8 @@ const TEXTOS = {
   TITULO_GESTAO_CONTAS: 'Gestão de Contas',
   CARD_PERGUNTAS_ABERTAS: 'Perguntas em aberto (Mercado Livre)',
   BTN_ATUALIZAR_PERGUNTAS: 'Atualizar lista',
+  CARD_PROMOCOES_ATIVAS: 'Promoções ativas e vencendo (Mercado Livre)',
+  BTN_ATUALIZAR_PROMOCOES: 'Atualizar lista',
 };
 
 // ============================================================
@@ -1201,6 +1220,38 @@ document.getElementById('btn-sincronizar-perguntas').addEventListener('click', a
     el.textContent = 'Erro ao sincronizar: ' + err.message;
   }
 });
+document.getElementById('btn-sincronizar-promocoes').addEventListener('click', async () => {
+  const el = document.getElementById('resultado-sync-promocoes');
+  el.textContent = 'Sincronizando promoções, aguarde...';
+  try {
+    const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-promocoes');
+    const data = await resp.json();
+    if (!data.resultado) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
+
+    const CANAL_LABEL_PROMO = {
+      ml_conta1: 'Conta 1', ml_conta2: 'Conta 2', ml_conta3: 'Conta 3',
+    };
+
+    let texto = '';
+    let totalAtivas = 0;
+    for (const r of data.resultado) {
+      const nome = CANAL_LABEL_PROMO[r.canal] || r.canal;
+      if (r.erro) {
+        texto += `• ${nome}: erro — ${r.erro}\n`;
+      } else {
+        totalAtivas += r.promocoes_ativas;
+        texto += `• ${nome}: ${r.promocoes_ativas} promoção(ões) ativa(s) agora (${r.anuncios_verificados} anúncio(s) verificado(s))`;
+        if (r.itens_com_erro) texto += ` — ${r.itens_com_erro} anúncio(s) não puderam ser consultados`;
+        texto += '\n';
+      }
+    }
+    texto += `\nTotal de promoções ativas nas 3 contas: ${totalAtivas}`;
+    el.textContent = texto;
+    loadPromocoesAtivas();
+  } catch (err) {
+    el.textContent = 'Erro ao sincronizar: ' + err.message;
+  }
+});
 
 // ============================================================
 // GESTÃO DE CONTAS — cards recolhíveis (accordion), genérico
@@ -1295,6 +1346,64 @@ async function loadPerguntasAbertas(){
   });
 }
 document.getElementById('btn-atualizar-perguntas-lista').addEventListener('click', loadPerguntasAbertas);
+
+// ============================================================
+// GESTÃO DE CONTAS — Promoções ativas e vencendo
+// ============================================================
+async function loadPromocoesAtivas(){
+  const cont = document.getElementById('lista-promocoes-ativas');
+  cont.innerHTML = '<p class="muted">Carregando...</p>';
+  const { data, error } = await supabaseClient
+    .from('ml_promocoes_ativas')
+    .select('*, produtos(sku_interno, nome)')
+    .order('data_fim', { ascending: true, nullsFirst: false });
+
+  if (error) { cont.innerHTML = '<p class="muted">Erro ao carregar: ' + error.message + '</p>'; return; }
+
+  document.getElementById('promocoes-vazio').style.display = data.length ? 'none' : 'block';
+  cont.innerHTML = '';
+
+  const AGORA = Date.now();
+  const TRES_DIAS_MS = 3 * 24 * 60 * 60 * 1000;
+  let vencendoEmBreve = 0;
+
+  const badge = document.getElementById('badge-promocoes-ativas');
+  if (badge) {
+    badge.textContent = data.length;
+  }
+
+  data.forEach(p => {
+    const produtoTexto = p.produtos
+      ? `${p.produtos.sku_interno} - ${p.produtos.nome}`
+      : `⚠️ Produto não identificado (item ${p.item_id})`;
+
+    const fimMs = p.data_fim ? new Date(p.data_fim).getTime() : null;
+    const vencendo = fimMs !== null && (fimMs - AGORA) <= TRES_DIAS_MS;
+    if (vencendo) vencendoEmBreve++;
+
+    const div = document.createElement('div');
+    div.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px;';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+        <strong>${CANAL_LABEL[p.canal] || p.canal}</strong>
+        <span class="muted">${p.tipo}${p.nome ? ' — ' + p.nome : ''}</span>
+      </div>
+      <div class="muted" style="margin-bottom:6px;">${produtoTexto}</div>
+      <div style="margin-bottom:6px;">
+        ${p.preco_promocional != null ? fmtMoeda(p.preco_promocional) : '-'}
+        ${p.preco_original != null ? `<span class="muted" style="text-decoration:line-through; margin-left:8px;">${fmtMoeda(p.preco_original)}</span>` : ''}
+      </div>
+      <div class="${vencendo ? '' : 'muted'}" style="${vencendo ? 'color:var(--danger); font-weight:600;' : ''}">
+        ${p.data_fim ? 'Termina em ' + new Date(p.data_fim).toLocaleString('pt-BR') : 'Sem data de término informada'}
+        ${vencendo ? ' ⚠️ vencendo em breve' : ''}
+      </div>
+    `;
+    cont.appendChild(div);
+  });
+
+  if (badge) badge.classList.toggle('pendente', vencendoEmBreve > 0);
+}
+document.getElementById('btn-atualizar-promocoes-lista').addEventListener('click', loadPromocoesAtivas);
 
 // ============================================================
 // VENDAS
@@ -1465,6 +1574,7 @@ function carregarApp(){
   loadPedidos();
   loadIntegracoes();
   loadPerguntasAbertas();
+  loadPromocoesAtivas();
 }
 
 document.getElementById('form-login').addEventListener('submit', async (e) => {
