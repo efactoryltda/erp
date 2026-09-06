@@ -96,6 +96,29 @@
   #sidebar-footer{ margin-top:auto; padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08); }
   #sidebar-footer .email-logado{ font-size:12px; color:var(--sidebar-text); margin-bottom:8px; word-break:break-all; }
   #btn-sair{ background:transparent; border:1px solid rgba(255,255,255,0.25); color:#fff; width:100%; padding:7px; font-size:13px; }
+  /* ---- Cards recolhíveis (accordion) ---- */
+  .collapsible-card{ padding:0; overflow:hidden; }
+  .collapsible-header{
+    display:flex; align-items:center; gap:10px; cursor:pointer;
+    padding:18px 20px; user-select:none;
+  }
+  .collapsible-header:hover{ background:#fafbfc; }
+  .collapsible-header h3{ margin:0; }
+  .collapsible-chevron{
+    display:inline-block; font-size:11px; color:var(--muted);
+    transition:transform 0.2s ease; width:12px; flex-shrink:0;
+  }
+  .collapsible-card.open .collapsible-chevron{ transform:rotate(90deg); }
+  .badge-contador{
+    margin-left:auto; font-size:12px; font-weight:700; padding:3px 10px;
+    border-radius:10px; background:#f1f2f4; color:var(--muted); flex-shrink:0;
+  }
+  .badge-contador.pendente{ background:#fde8e8; color:var(--danger); }
+  .collapsible-content-wrap{
+    display:grid; grid-template-rows:0fr; transition:grid-template-rows 0.25s ease;
+  }
+  .collapsible-card.open .collapsible-content-wrap{ grid-template-rows:1fr; }
+  .collapsible-content-inner{ overflow:hidden; padding:0 20px 20px 20px; }
 </style>
 </head>
 <body>
@@ -423,12 +446,20 @@
   <!-- ================= GESTÃO DE CONTAS ================= -->
   <div class="view" id="view-gestao-contas">
     <h2 data-t="TITULO_GESTAO_CONTAS">Gestão de Contas</h2>
-    <div class="card">
-      <h3 data-t="CARD_PERGUNTAS_ABERTAS">Perguntas em aberto (Mercado Livre)</h3>
-      <p class="muted" style="margin-top:0;">Perguntas sem resposta das 3 contas. Responda aqui pra enviar direto pro Mercado Livre.</p>
-      <button data-t="BTN_ATUALIZAR_PERGUNTAS" class="secondary" id="btn-atualizar-perguntas-lista" style="margin-bottom:12px;">Atualizar lista</button>
-      <div id="lista-perguntas-abertas"></div>
-      <div class="empty" id="perguntas-vazio" style="display:none;">Nenhuma pergunta em aberto. 🎉</div>
+    <div class="card collapsible-card" id="card-perguntas-abertas">
+      <div class="collapsible-header" onclick="toggleCollapsible('perguntas-abertas')">
+        <span class="collapsible-chevron">▸</span>
+        <h3 data-t="CARD_PERGUNTAS_ABERTAS">Perguntas em aberto (Mercado Livre)</h3>
+        <span class="badge-contador" id="badge-perguntas-abertas">-</span>
+      </div>
+      <div class="collapsible-content-wrap">
+        <div class="collapsible-content-inner">
+          <p class="muted" style="margin-top:0;">Perguntas sem resposta das 3 contas. Responda aqui pra enviar direto pro Mercado Livre.</p>
+          <button data-t="BTN_ATUALIZAR_PERGUNTAS" class="secondary" id="btn-atualizar-perguntas-lista" style="margin-bottom:12px;">Atualizar lista</button>
+          <div id="lista-perguntas-abertas"></div>
+          <div class="empty" id="perguntas-vazio" style="display:none;">Nenhuma pergunta em aberto. 🎉</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1172,6 +1203,14 @@ document.getElementById('btn-sincronizar-perguntas').addEventListener('click', a
 });
 
 // ============================================================
+// GESTÃO DE CONTAS — cards recolhíveis (accordion), genérico
+// ============================================================
+function toggleCollapsible(key){
+  const card = document.getElementById('card-' + key);
+  if (card) card.classList.toggle('open');
+}
+
+// ============================================================
 // GESTÃO DE CONTAS — Perguntas em aberto (listar + responder)
 // ============================================================
 async function loadPerguntasAbertas(){
@@ -1187,6 +1226,12 @@ async function loadPerguntasAbertas(){
 
   document.getElementById('perguntas-vazio').style.display = data.length ? 'none' : 'block';
   cont.innerHTML = '';
+
+  const badge = document.getElementById('badge-perguntas-abertas');
+  if (badge) {
+    badge.textContent = data.length;
+    badge.classList.toggle('pendente', data.length > 0);
+  }
 
   data.forEach(p => {
     const produtoTexto = p.produtos
