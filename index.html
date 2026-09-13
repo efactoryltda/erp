@@ -369,6 +369,17 @@
   <div class="view" id="view-loja">
     <h2 data-t="TITULO_LOJA">Loja Online</h2>
     <p class="muted">Aqui você cadastra o anúncio da loja a partir de um produto já existente no ERP (pelo SKU): título, descrição, fotos, promoção e preço por faixa de quantidade — tudo que aparece pro cliente no site. Só produtos acabados e ativos aparecem aqui.</p>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3 data-t="CARD_CRIAR_ANUNCIO">Criar novo anúncio</h3>
+      <p class="muted">Busque pelo SKU ou nome do produto (o mesmo já cadastrado na aba Produtos) pra criar ou editar o anúncio dele na loja.</p>
+      <div class="field" style="max-width:360px;">
+        <label data-t="LABEL_BUSCAR_ANUNCIO">Buscar por SKU ou nome</label>
+        <input type="text" id="buscar-produto-anuncio" placeholder="Ex: ROLO200">
+      </div>
+      <div id="resultado-busca-anuncio" style="margin-top:10px;"></div>
+    </div>
+
     <div class="card">
       <h3 data-t="CARD_LOJA_PRODUTOS">Produtos da loja</h3>
       <table id="tabela-loja-produtos"><thead>
@@ -712,6 +723,8 @@ const TEXTOS = {
   BTN_ATUALIZAR_PROMOCOES: 'Atualizar lista',
   CARD_ANALISE_IA: 'Gestor de Contas (IA)',
   TITULO_LOJA: 'Loja Online',
+  CARD_CRIAR_ANUNCIO: 'Criar novo anúncio',
+  LABEL_BUSCAR_ANUNCIO: 'Buscar por SKU ou nome',
   CARD_LOJA_PRODUTOS: 'Produtos da loja',
   BTN_GERENCIAR_LOJA: 'Gerenciar',
   MODAL_LOJA_LABEL_VISIVEL: 'Visível na loja',
@@ -962,6 +975,39 @@ async function loadLojaProdutos(){
     `;
     tbody.appendChild(tr);
   });
+}
+
+// ---------- Criar novo anúncio (buscar produto já cadastrado pelo SKU/nome) ----------
+
+function renderBuscaAnuncio(){
+  const termo = document.getElementById('buscar-produto-anuncio').value.trim().toLowerCase();
+  const div = document.getElementById('resultado-busca-anuncio');
+  if (!termo) { div.innerHTML = ''; return; }
+
+  const elegiveis = (ultimosProdutosCache || []).filter(p => p.tipo === 'produto_acabado' && p.ativo);
+  const encontrados = elegiveis.filter(p =>
+    p.sku_interno.toLowerCase().includes(termo) || p.nome.toLowerCase().includes(termo)
+  ).slice(0, 8);
+
+  if (!encontrados.length) {
+    div.innerHTML = '<span class="muted">Nenhum produto acabado e ativo encontrado com esse SKU/nome. Confira o cadastro na aba Produtos (tem que estar marcado como "Produto acabado" e ativo).</span>';
+    return;
+  }
+
+  div.innerHTML = encontrados.map(p => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+      <span>${p.nome} <span class="muted">(${p.sku_interno})</span>${p.titulo_loja || p.visivel_loja || p.destaque || p.promocao_preco ? ' — <span class="muted">já tem anúncio</span>' : ''}</span>
+      <button class="secondary" onclick="selecionarProdutoParaAnuncio('${p.id}')">Criar/editar anúncio</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('buscar-produto-anuncio').addEventListener('input', renderBuscaAnuncio);
+
+async function selecionarProdutoParaAnuncio(produtoId){
+  document.getElementById('buscar-produto-anuncio').value = '';
+  document.getElementById('resultado-busca-anuncio').innerHTML = '';
+  await abrirModalLoja(produtoId);
 }
 
 async function abrirModalLoja(produtoId){
