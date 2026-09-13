@@ -50,8 +50,8 @@
   form.inline{ display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
   .field{ display:flex; flex-direction:column; gap:4px; }
   .field label{ font-size:12px; color:var(--muted); }
-  .field input, .field select{
-    padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; min-width:120px;
+  .field input, .field select, .field textarea{
+    padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; min-width:120px; font-family:inherit;
   }
   button{
     background:var(--accent); color:#fff; border:none; padding:9px 16px;
@@ -368,20 +368,20 @@
   <!-- ================= LOJA ONLINE ================= -->
   <div class="view" id="view-loja">
     <h2 data-t="TITULO_LOJA">Loja Online</h2>
-    <p class="muted">Marque quais produtos aparecem no site, defina destaques/promoções e cadastre fotos e preço por faixa de quantidade (o "atacado" que aparece pro cliente). Só produtos acabados e ativos aparecem aqui.</p>
+    <p class="muted">Aqui você cadastra o anúncio da loja a partir de um produto já existente no ERP (pelo SKU): título, descrição, fotos, promoção e preço por faixa de quantidade — tudo que aparece pro cliente no site. Só produtos acabados e ativos aparecem aqui.</p>
     <div class="card">
       <h3 data-t="CARD_LOJA_PRODUTOS">Produtos da loja</h3>
       <table id="tabela-loja-produtos"><thead>
-        <tr><th>Nome</th><th>SKU</th><th>Preço venda</th><th>Visível</th><th>Destaque</th><th>Promoção</th><th>Fotos</th><th>Faixas</th><th></th></tr>
+        <tr><th>Anúncio</th><th>SKU</th><th>Preço venda</th><th>Visível</th><th>Destaque</th><th>Promoção</th><th>Fotos</th><th>Faixas</th><th></th></tr>
       </thead><tbody></tbody></table>
       <div class="empty" id="loja-produtos-vazio" style="display:none;">Nenhum produto acabado ativo cadastrado ainda.</div>
     </div>
   </div>
 
-  <!-- Modal: gerenciar produto na loja (fotos, faixas de preço, promoção) -->
+  <!-- Modal: gerenciar anúncio na loja (título, descrição, fotos, faixas de preço, promoção) -->
   <div id="modal-loja-overlay" style="display:none; position:fixed; inset:0; background:rgba(20,24,32,0.55); z-index:9998; align-items:center; justify-content:center;">
     <div style="background:var(--panel); border-radius:12px; padding:28px; width:520px; max-height:86vh; overflow-y:auto;">
-      <h3 id="modal-loja-titulo" style="margin-top:0;">Gerenciar produto na loja</h3>
+      <h3 id="modal-loja-titulo" style="margin-top:0;">Gerenciar anúncio</h3>
 
       <div class="field" style="flex-direction:row; align-items:center; gap:8px; margin-bottom:10px;">
         <input type="checkbox" id="ml-visivel" style="width:auto; min-width:auto; padding:0;">
@@ -391,6 +391,19 @@
         <input type="checkbox" id="ml-destaque" style="width:auto; min-width:auto; padding:0;">
         <label data-t="MODAL_LOJA_LABEL_DESTAQUE" for="ml-destaque">Destaque (aparece na vitrine)</label>
       </div>
+
+      <h4 style="margin-bottom:8px;">Anúncio</h4>
+      <form id="form-loja-anuncio" style="margin-bottom:20px;">
+        <div class="field" style="margin-bottom:10px;">
+          <label data-t="MODAL_LOJA_LABEL_TITULO">Título do anúncio</label>
+          <input type="text" id="ml-titulo" style="width:100%;" placeholder="Vazio = usa o nome do produto no ERP">
+        </div>
+        <div class="field" style="margin-bottom:10px;">
+          <label data-t="MODAL_LOJA_LABEL_DESCRICAO">Descrição do anúncio</label>
+          <textarea id="ml-descricao" rows="4" style="width:100%; resize:vertical;" placeholder="Texto que o cliente vê na página do produto"></textarea>
+        </div>
+        <button type="submit">Salvar anúncio</button>
+      </form>
 
       <h4 style="margin-bottom:8px;">Promoção</h4>
       <form class="inline" id="form-loja-promo" style="margin-bottom:20px;">
@@ -703,6 +716,8 @@ const TEXTOS = {
   BTN_GERENCIAR_LOJA: 'Gerenciar',
   MODAL_LOJA_LABEL_VISIVEL: 'Visível na loja',
   MODAL_LOJA_LABEL_DESTAQUE: 'Destaque (aparece na vitrine)',
+  MODAL_LOJA_LABEL_TITULO: 'Título do anúncio',
+  MODAL_LOJA_LABEL_DESCRICAO: 'Descrição do anúncio',
   MODAL_LOJA_LABEL_PROMO_PRECO: 'Preço promocional',
   MODAL_LOJA_LABEL_PROMO_INICIO: 'Início da promoção',
   MODAL_LOJA_LABEL_PROMO_FIM: 'Fim da promoção',
@@ -935,7 +950,7 @@ async function loadLojaProdutos(){
       && (!p.promocao_fim || new Date(p.promocao_fim) >= agora);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${p.nome}</td>
+      <td>${p.titulo_loja || p.nome}${p.titulo_loja ? ' <span class="muted">(produto: ' + p.nome + ')</span>' : ''}</td>
       <td>${p.sku_interno}</td>
       <td>${fmtMoeda(p.preco_venda)}</td>
       <td>${p.visivel_loja ? 'Sim' : 'Não'}</td>
@@ -943,7 +958,7 @@ async function loadLojaProdutos(){
       <td>${p.promocao_preco ? fmtMoeda(p.promocao_preco) + (promoAtiva ? ' (ativa)' : ' (fora do período)') : '-'}</td>
       <td>${contarFotos[p.id] || 0}</td>
       <td>${contarFaixas[p.id] || 0}</td>
-      <td><button class="secondary" onclick="abrirModalLoja('${p.id}')">Gerenciar</button></td>
+      <td><button class="secondary" onclick="abrirModalLoja('${p.id}')">Gerenciar anúncio</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -953,9 +968,12 @@ async function abrirModalLoja(produtoId){
   const produto = ultimosProdutosCache.find(p => p.id === produtoId);
   if (!produto) return;
   lojaProdutoAtualId = produtoId;
-  document.getElementById('modal-loja-titulo').textContent = 'Gerenciar na loja: ' + produto.nome;
+  document.getElementById('modal-loja-titulo').textContent = 'Gerenciar anúncio: ' + (produto.titulo_loja || produto.nome);
   document.getElementById('ml-visivel').checked = !!produto.visivel_loja;
   document.getElementById('ml-destaque').checked = !!produto.destaque;
+  document.getElementById('ml-titulo').value = produto.titulo_loja || '';
+  document.getElementById('ml-titulo').placeholder = 'Vazio = usa o nome do produto no ERP (' + produto.nome + ')';
+  document.getElementById('ml-descricao').value = produto.descricao || '';
   document.getElementById('ml-promo-preco').value = produto.promocao_preco || '';
   document.getElementById('ml-promo-inicio').value = produto.promocao_inicio ? produto.promocao_inicio.slice(0,16) : '';
   document.getElementById('ml-promo-fim').value = produto.promocao_fim ? produto.promocao_fim.slice(0,16) : '';
@@ -1019,6 +1037,19 @@ document.getElementById('ml-visivel').addEventListener('change', async (e) => {
 document.getElementById('ml-destaque').addEventListener('change', async (e) => {
   if (!lojaProdutoAtualId) return;
   await supabaseClient.from('produtos').update({ destaque: e.target.checked }).eq('id', lojaProdutoAtualId);
+  loadProdutos();
+});
+
+document.getElementById('form-loja-anuncio').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!lojaProdutoAtualId) return;
+  const payload = {
+    titulo_loja: document.getElementById('ml-titulo').value.trim() || null,
+    descricao: document.getElementById('ml-descricao').value.trim() || null,
+  };
+  const { error } = await supabaseClient.from('produtos').update(payload).eq('id', lojaProdutoAtualId);
+  if (error) { alert('Não foi possível salvar o anúncio: ' + error.message); return; }
+  alert('Anúncio salvo.');
   loadProdutos();
 });
 
