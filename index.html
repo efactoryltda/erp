@@ -143,6 +143,7 @@
   <div class="nav-item" data-view="vendas"></div>
   <div class="nav-item" data-view="integracoes"></div>
   <div class="nav-item" data-view="produtos"></div>
+  <div class="nav-item" data-view="loja"></div>
   <div class="nav-item" data-view="ficha"></div>
   <div class="nav-item" data-view="estoque"></div>
   <div class="nav-item" data-view="producao"></div>
@@ -344,6 +345,10 @@
         <div class="field"><label data-t="PRODUTOS_LABEL_PRECO">Preço de venda</label><input type="number" step="0.01" id="p-preco" placeholder="0.00"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ESTMIN">Estoque mínimo</label><input type="number" step="0.001" id="p-min" placeholder="0"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_SKUML">SKU no Mercado Livre</label><input type="text" id="p-sku-ml" placeholder="opcional"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_PESO">Peso da embalagem (kg)</label><input type="number" step="0.001" id="p-peso" placeholder="opcional — pro frete"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_COMPR">Comprimento (cm)</label><input type="number" step="0.1" id="p-compr" placeholder="opcional — pro frete"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_LARG">Largura (cm)</label><input type="number" step="0.1" id="p-larg" placeholder="opcional — pro frete"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ALT">Altura (cm)</label><input type="number" step="0.1" id="p-alt" placeholder="opcional — pro frete"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO1">ID anúncio - Conta 1</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO2">ID anúncio - Conta 2</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO3">ID anúncio - Conta 3</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
@@ -357,6 +362,63 @@
         <tr><th>SKU</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Custo</th><th>Preço venda</th><th>Ativo</th><th></th><th></th></tr>
       </thead><tbody></tbody></table>
       <div class="empty" id="produtos-vazio" style="display:none;">Nenhum produto cadastrado ainda.</div>
+    </div>
+  </div>
+
+  <!-- ================= LOJA ONLINE ================= -->
+  <div class="view" id="view-loja">
+    <h2 data-t="TITULO_LOJA">Loja Online</h2>
+    <p class="muted">Marque quais produtos aparecem no site, defina destaques/promoções e cadastre fotos e preço por faixa de quantidade (o "atacado" que aparece pro cliente). Só produtos acabados e ativos aparecem aqui.</p>
+    <div class="card">
+      <h3 data-t="CARD_LOJA_PRODUTOS">Produtos da loja</h3>
+      <table id="tabela-loja-produtos"><thead>
+        <tr><th>Nome</th><th>SKU</th><th>Preço venda</th><th>Visível</th><th>Destaque</th><th>Promoção</th><th>Fotos</th><th>Faixas</th><th></th></tr>
+      </thead><tbody></tbody></table>
+      <div class="empty" id="loja-produtos-vazio" style="display:none;">Nenhum produto acabado ativo cadastrado ainda.</div>
+    </div>
+  </div>
+
+  <!-- Modal: gerenciar produto na loja (fotos, faixas de preço, promoção) -->
+  <div id="modal-loja-overlay" style="display:none; position:fixed; inset:0; background:rgba(20,24,32,0.55); z-index:9998; align-items:center; justify-content:center;">
+    <div style="background:var(--panel); border-radius:12px; padding:28px; width:520px; max-height:86vh; overflow-y:auto;">
+      <h3 id="modal-loja-titulo" style="margin-top:0;">Gerenciar produto na loja</h3>
+
+      <div class="field" style="flex-direction:row; align-items:center; gap:8px; margin-bottom:10px;">
+        <input type="checkbox" id="ml-visivel" style="width:auto; min-width:auto; padding:0;">
+        <label data-t="MODAL_LOJA_LABEL_VISIVEL" for="ml-visivel">Visível na loja</label>
+      </div>
+      <div class="field" style="flex-direction:row; align-items:center; gap:8px; margin-bottom:18px;">
+        <input type="checkbox" id="ml-destaque" style="width:auto; min-width:auto; padding:0;">
+        <label data-t="MODAL_LOJA_LABEL_DESTAQUE" for="ml-destaque">Destaque (aparece na vitrine)</label>
+      </div>
+
+      <h4 style="margin-bottom:8px;">Promoção</h4>
+      <form class="inline" id="form-loja-promo" style="margin-bottom:20px;">
+        <div class="field"><label data-t="MODAL_LOJA_LABEL_PROMO_PRECO">Preço promocional</label><input type="number" step="0.01" id="ml-promo-preco" placeholder="opcional"></div>
+        <div class="field"><label data-t="MODAL_LOJA_LABEL_PROMO_INICIO">Início</label><input type="datetime-local" id="ml-promo-inicio"></div>
+        <div class="field"><label data-t="MODAL_LOJA_LABEL_PROMO_FIM">Fim</label><input type="datetime-local" id="ml-promo-fim"></div>
+        <button type="submit">Salvar promoção</button>
+      </form>
+
+      <h4 style="margin-bottom:8px;">Preço por faixa de quantidade</h4>
+      <div id="ml-faixas-lista" style="margin-bottom:10px;"></div>
+      <form class="inline" id="form-loja-faixa" style="margin-bottom:20px;">
+        <div class="field"><label data-t="MODAL_LOJA_LABEL_FAIXA_QTD">A partir de (quantidade)</label><input type="number" step="0.001" id="ml-faixa-qtd" required></div>
+        <div class="field"><label data-t="MODAL_LOJA_LABEL_FAIXA_PRECO">Preço unitário nessa faixa</label><input type="number" step="0.01" id="ml-faixa-preco" required></div>
+        <button type="submit">+ Adicionar faixa</button>
+      </form>
+
+      <h4 style="margin-bottom:8px;">Fotos</h4>
+      <div id="ml-fotos-lista" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+      <div class="field" style="margin-bottom:20px;">
+        <label data-t="MODAL_LOJA_LABEL_FOTO">Adicionar foto</label>
+        <input type="file" id="ml-foto-arquivo" accept="image/*">
+        <span class="muted" id="ml-foto-status"></span>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="secondary" id="btn-fechar-modal-loja">Fechar</button>
+      </div>
     </div>
   </div>
 
@@ -527,6 +589,7 @@ const MENU_LABELS = {
   vendas: 'Vendas',
   integracoes: 'Integrações',
   produtos: 'Produtos',
+  loja: 'Loja Online',
   ficha: 'Ficha Técnica',
   estoque: 'Estoque',
   producao: 'Produção',
@@ -538,7 +601,8 @@ const CANAL_LABEL = {
   ml_conta1: 'Mercado Livre - Conta 1',
   ml_conta2: 'Mercado Livre - Conta 2',
   ml_conta3: 'Mercado Livre - Conta 3',
-  loja_fisica: 'Loja Física'
+  loja_fisica: 'Loja Física',
+  loja_online: 'Loja Online'
 };
 
 // Nomes de exibição dos estoques Full de cada conta — edite aqui se mudar de responsável.
@@ -571,6 +635,10 @@ const TEXTOS = {
   PRODUTOS_LABEL_PRECO: 'Preço de venda',
   PRODUTOS_LABEL_ESTMIN: 'Estoque mínimo',
   PRODUTOS_LABEL_SKUML: 'SKU no Mercado Livre',
+  PRODUTOS_LABEL_PESO: 'Peso da embalagem (kg)',
+  PRODUTOS_LABEL_COMPR: 'Comprimento (cm)',
+  PRODUTOS_LABEL_LARG: 'Largura (cm)',
+  PRODUTOS_LABEL_ALT: 'Altura (cm)',
   PRODUTOS_LABEL_ANUNCIO1: 'ID anúncio - Conta 1',
   PRODUTOS_LABEL_ANUNCIO2: 'ID anúncio - Conta 2',
   PRODUTOS_LABEL_ANUNCIO3: 'ID anúncio - Conta 3',
@@ -630,6 +698,17 @@ const TEXTOS = {
   CARD_PROMOCOES_ATIVAS: 'Promoções ativas e vencendo (Mercado Livre)',
   BTN_ATUALIZAR_PROMOCOES: 'Atualizar lista',
   CARD_ANALISE_IA: 'Gestor de Contas (IA)',
+  TITULO_LOJA: 'Loja Online',
+  CARD_LOJA_PRODUTOS: 'Produtos da loja',
+  BTN_GERENCIAR_LOJA: 'Gerenciar',
+  MODAL_LOJA_LABEL_VISIVEL: 'Visível na loja',
+  MODAL_LOJA_LABEL_DESTAQUE: 'Destaque (aparece na vitrine)',
+  MODAL_LOJA_LABEL_PROMO_PRECO: 'Preço promocional',
+  MODAL_LOJA_LABEL_PROMO_INICIO: 'Início da promoção',
+  MODAL_LOJA_LABEL_PROMO_FIM: 'Fim da promoção',
+  MODAL_LOJA_LABEL_FAIXA_QTD: 'A partir de (quantidade)',
+  MODAL_LOJA_LABEL_FAIXA_PRECO: 'Preço unitário nessa faixa',
+  MODAL_LOJA_LABEL_FOTO: 'Adicionar foto',
 };
 
 // ============================================================
@@ -824,6 +903,193 @@ async function loadProdutos(){
   });
   preencherSelectsDeProdutos(data);
   loadDashboard();
+  loadLojaProdutos();
+}
+
+// ============================================================
+// LOJA ONLINE (visibilidade, destaque, promoção, fotos, faixas de preço)
+// ============================================================
+let lojaFotosCache = [];
+let lojaFaixasCache = [];
+let lojaProdutoAtualId = null;
+
+async function loadLojaProdutos(){
+  const produtosAcabados = (ultimosProdutosCache || []).filter(p => p.tipo === 'produto_acabado' && p.ativo);
+
+  const [{ data: fotos }, { data: faixas }] = await Promise.all([
+    supabaseClient.from('produtos_fotos').select('produto_id'),
+    supabaseClient.from('produtos_precos_faixas').select('produto_id'),
+  ]);
+  const contarFotos = {};
+  (fotos || []).forEach(f => contarFotos[f.produto_id] = (contarFotos[f.produto_id] || 0) + 1);
+  const contarFaixas = {};
+  (faixas || []).forEach(f => contarFaixas[f.produto_id] = (contarFaixas[f.produto_id] || 0) + 1);
+
+  const tbody = document.querySelector('#tabela-loja-produtos tbody');
+  tbody.innerHTML = '';
+  document.getElementById('loja-produtos-vazio').style.display = produtosAcabados.length ? 'none' : 'block';
+  produtosAcabados.forEach(p => {
+    const agora = new Date();
+    const promoAtiva = !!p.promocao_preco
+      && (!p.promocao_inicio || new Date(p.promocao_inicio) <= agora)
+      && (!p.promocao_fim || new Date(p.promocao_fim) >= agora);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.nome}</td>
+      <td>${p.sku_interno}</td>
+      <td>${fmtMoeda(p.preco_venda)}</td>
+      <td>${p.visivel_loja ? 'Sim' : 'Não'}</td>
+      <td>${p.destaque ? '⭐' : '-'}</td>
+      <td>${p.promocao_preco ? fmtMoeda(p.promocao_preco) + (promoAtiva ? ' (ativa)' : ' (fora do período)') : '-'}</td>
+      <td>${contarFotos[p.id] || 0}</td>
+      <td>${contarFaixas[p.id] || 0}</td>
+      <td><button class="secondary" onclick="abrirModalLoja('${p.id}')">Gerenciar</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function abrirModalLoja(produtoId){
+  const produto = ultimosProdutosCache.find(p => p.id === produtoId);
+  if (!produto) return;
+  lojaProdutoAtualId = produtoId;
+  document.getElementById('modal-loja-titulo').textContent = 'Gerenciar na loja: ' + produto.nome;
+  document.getElementById('ml-visivel').checked = !!produto.visivel_loja;
+  document.getElementById('ml-destaque').checked = !!produto.destaque;
+  document.getElementById('ml-promo-preco').value = produto.promocao_preco || '';
+  document.getElementById('ml-promo-inicio').value = produto.promocao_inicio ? produto.promocao_inicio.slice(0,16) : '';
+  document.getElementById('ml-promo-fim').value = produto.promocao_fim ? produto.promocao_fim.slice(0,16) : '';
+  document.getElementById('ml-foto-status').textContent = '';
+  document.getElementById('ml-foto-arquivo').value = '';
+
+  await carregarFaixasEFotos(produtoId);
+  document.getElementById('modal-loja-overlay').style.display = 'flex';
+}
+
+document.getElementById('btn-fechar-modal-loja').addEventListener('click', () => {
+  document.getElementById('modal-loja-overlay').style.display = 'none';
+  lojaProdutoAtualId = null;
+});
+
+async function carregarFaixasEFotos(produtoId){
+  const [{ data: faixas }, { data: fotos }] = await Promise.all([
+    supabaseClient.from('produtos_precos_faixas').select('*').eq('produto_id', produtoId).order('quantidade_minima'),
+    supabaseClient.from('produtos_fotos').select('*').eq('produto_id', produtoId).order('ordem'),
+  ]);
+  lojaFaixasCache = faixas || [];
+  lojaFotosCache = fotos || [];
+  renderFaixas();
+  renderFotos();
+}
+
+function renderFaixas(){
+  const div = document.getElementById('ml-faixas-lista');
+  if (!lojaFaixasCache.length) {
+    div.innerHTML = '<span class="muted">Nenhuma faixa cadastrada — vale o preço de venda normal pra qualquer quantidade.</span>';
+    return;
+  }
+  div.innerHTML = lojaFaixasCache.map(f => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border);">
+      <span>A partir de ${fmt(f.quantidade_minima)} un. → ${fmtMoeda(f.preco_unitario)}/un.</span>
+      <button class="danger" onclick="removerFaixa('${f.id}')">Remover</button>
+    </div>
+  `).join('');
+}
+
+function renderFotos(){
+  const div = document.getElementById('ml-fotos-lista');
+  if (!lojaFotosCache.length) {
+    div.innerHTML = '<span class="muted">Nenhuma foto cadastrada ainda.</span>';
+    return;
+  }
+  div.innerHTML = lojaFotosCache.map(f => `
+    <div style="position:relative;">
+      <img src="${f.url}" style="width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid var(--border); display:block;">
+      <button class="danger" onclick="removerFoto('${f.id}', '${f.url}')" style="position:absolute; top:-8px; right:-8px; padding:2px 7px; font-size:11px; border-radius:50%; line-height:1;">×</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('ml-visivel').addEventListener('change', async (e) => {
+  if (!lojaProdutoAtualId) return;
+  await supabaseClient.from('produtos').update({ visivel_loja: e.target.checked }).eq('id', lojaProdutoAtualId);
+  loadProdutos();
+});
+
+document.getElementById('ml-destaque').addEventListener('change', async (e) => {
+  if (!lojaProdutoAtualId) return;
+  await supabaseClient.from('produtos').update({ destaque: e.target.checked }).eq('id', lojaProdutoAtualId);
+  loadProdutos();
+});
+
+document.getElementById('form-loja-promo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!lojaProdutoAtualId) return;
+  const payload = {
+    promocao_preco: document.getElementById('ml-promo-preco').value ? parseFloat(document.getElementById('ml-promo-preco').value) : null,
+    promocao_inicio: document.getElementById('ml-promo-inicio').value || null,
+    promocao_fim: document.getElementById('ml-promo-fim').value || null,
+  };
+  const { error } = await supabaseClient.from('produtos').update(payload).eq('id', lojaProdutoAtualId);
+  if (error) { alert('Não foi possível salvar a promoção: ' + error.message); return; }
+  alert('Promoção salva.');
+  loadProdutos();
+});
+
+document.getElementById('form-loja-faixa').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!lojaProdutoAtualId) return;
+  const qtd = parseFloat(document.getElementById('ml-faixa-qtd').value);
+  const preco = parseFloat(document.getElementById('ml-faixa-preco').value);
+  if (!qtd || qtd <= 0 || isNaN(preco)) { alert('Preencha quantidade e preço válidos.'); return; }
+  const { error } = await supabaseClient.from('produtos_precos_faixas')
+    .upsert({ produto_id: lojaProdutoAtualId, quantidade_minima: qtd, preco_unitario: preco }, { onConflict: 'produto_id,quantidade_minima' });
+  if (error) { alert('Não foi possível salvar a faixa: ' + error.message); return; }
+  document.getElementById('form-loja-faixa').reset();
+  await carregarFaixasEFotos(lojaProdutoAtualId);
+  loadLojaProdutos();
+});
+
+async function removerFaixa(faixaId){
+  if (!confirm('Remover esta faixa de preço?')) return;
+  await supabaseClient.from('produtos_precos_faixas').delete().eq('id', faixaId);
+  await carregarFaixasEFotos(lojaProdutoAtualId);
+  loadLojaProdutos();
+}
+
+document.getElementById('ml-foto-arquivo').addEventListener('change', async (e) => {
+  const arquivo = e.target.files[0];
+  if (!arquivo || !lojaProdutoAtualId) return;
+  const status = document.getElementById('ml-foto-status');
+  status.textContent = 'Enviando...';
+  try {
+    const caminho = `${lojaProdutoAtualId}/${Date.now()}-${arquivo.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const { error: erroUpload } = await supabaseClient.storage.from('produtos-fotos').upload(caminho, arquivo);
+    if (erroUpload) throw erroUpload;
+    const { data: urlPublica } = supabaseClient.storage.from('produtos-fotos').getPublicUrl(caminho);
+    const proximaOrdem = lojaFotosCache.length ? Math.max(...lojaFotosCache.map(f => f.ordem)) + 1 : 1;
+    const { error: erroInsert } = await supabaseClient.from('produtos_fotos').insert({
+      produto_id: lojaProdutoAtualId, url: urlPublica.publicUrl, ordem: proximaOrdem
+    });
+    if (erroInsert) throw erroInsert;
+    status.textContent = 'Foto adicionada.';
+    e.target.value = '';
+    await carregarFaixasEFotos(lojaProdutoAtualId);
+    loadLojaProdutos();
+  } catch (err) {
+    status.textContent = 'Erro ao enviar: ' + err.message;
+  }
+});
+
+async function removerFoto(fotoId, url){
+  if (!confirm('Remover esta foto?')) return;
+  await supabaseClient.from('produtos_fotos').delete().eq('id', fotoId);
+  try {
+    const partes = url.split('/produtos-fotos/');
+    if (partes[1]) await supabaseClient.storage.from('produtos-fotos').remove([decodeURIComponent(partes[1])]);
+  } catch (err) { console.error('Não foi possível remover o arquivo do storage:', err); }
+  await carregarFaixasEFotos(lojaProdutoAtualId);
+  loadLojaProdutos();
 }
 
 async function editarProduto(id){
@@ -838,6 +1104,10 @@ async function editarProduto(id){
   document.getElementById('p-preco').value = produto.preco_venda || '';
   document.getElementById('p-min').value = produto.estoque_minimo || '';
   document.getElementById('p-sku-ml').value = produto.sku_ml || '';
+  document.getElementById('p-peso').value = produto.peso_kg || '';
+  document.getElementById('p-compr').value = produto.comprimento_cm || '';
+  document.getElementById('p-larg').value = produto.largura_cm || '';
+  document.getElementById('p-alt').value = produto.altura_cm || '';
 
   const { data: anuncios } = await supabaseClient.from('produto_anuncios_ml').select('canal, item_id').eq('produto_id', id);
   const anuncioPorCanal = {};
@@ -891,6 +1161,10 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
     preco_venda: document.getElementById('p-preco').value ? parseFloat(document.getElementById('p-preco').value) : null,
     estoque_minimo: parseFloat(document.getElementById('p-min').value) || 0,
     sku_ml: document.getElementById('p-sku-ml').value || null,
+    peso_kg: document.getElementById('p-peso').value ? parseFloat(document.getElementById('p-peso').value) : null,
+    comprimento_cm: document.getElementById('p-compr').value ? parseFloat(document.getElementById('p-compr').value) : null,
+    largura_cm: document.getElementById('p-larg').value ? parseFloat(document.getElementById('p-larg').value) : null,
+    altura_cm: document.getElementById('p-alt').value ? parseFloat(document.getElementById('p-alt').value) : null,
   };
 
   try {
