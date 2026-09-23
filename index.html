@@ -864,31 +864,22 @@ async function loadDashboard(){
   });
 
   // ---------- faturamento ----------
-  const agora = new Date();
-  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).toISOString();
-  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
-  const inicioAno = new Date(agora.getFullYear(), 0, 1).toISOString();
+  // Calculado direto no banco (funcao dashboard_faturamento) em vez de
+  // buscar todos os pedidos do ano aqui e somar no navegador -- evita o
+  // limite de 1000 linhas por consulta do Supabase (que ja estava
+  // fazendo "Faturamento hoje" aparecer menor que o real) e usa sempre o
+  // horario de Brasilia pra decidir o que e "hoje", nao o relogio de
+  // quem esta com o Dashboard aberto.
+  const { data: fatRows, error: errFat } = await supabaseClient.rpc('dashboard_faturamento');
 
-  const { data: pedidos, error: errPedidos } = await supabaseClient
-    .from('pedidos_venda')
-    .select('valor_total, canal, data_pedido, status')
-    .eq('status', 'confirmado')
-    .gte('data_pedido', inicioAno);
+  if (!errFat && fatRows && fatRows[0]) {
+    const f = fatRows[0];
+    document.getElementById('dash-fat-hoje').textContent = fmtMoeda(f.fat_hoje);
+    document.getElementById('dash-fat-mes').textContent = fmtMoeda(f.fat_mes);
+    document.getElementById('dash-fat-ano').textContent = fmtMoeda(f.fat_ano);
+    document.getElementById('dash-pedidos-mes').textContent = f.pedidos_mes;
 
-  if (!errPedidos && pedidos) {
-    let fatHoje = 0, fatMes = 0, fatAno = 0, pedidosMes = 0;
-    const porCanal = {};
-    pedidos.forEach(p => {
-      const v = Number(p.valor_total);
-      fatAno += v;
-      if (p.data_pedido >= inicioMes) { fatMes += v; pedidosMes++; porCanal[p.canal] = (porCanal[p.canal] || 0) + v; }
-      if (p.data_pedido >= inicioHoje) fatHoje += v;
-    });
-    document.getElementById('dash-fat-hoje').textContent = fmtMoeda(fatHoje);
-    document.getElementById('dash-fat-mes').textContent = fmtMoeda(fatMes);
-    document.getElementById('dash-fat-ano').textContent = fmtMoeda(fatAno);
-    document.getElementById('dash-pedidos-mes').textContent = pedidosMes;
-
+    const porCanal = f.por_canal || {};
     const tbodyCanal = document.getElementById('tabela-dash-canal');
     tbodyCanal.innerHTML = '';
     const canaisOrdenados = Object.keys(porCanal).sort((a,b) => porCanal[b] - porCanal[a]);
@@ -898,6 +889,8 @@ async function loadDashboard(){
       tr.innerHTML = `<td>${CANAL_LABEL[c] || c}</td><td>${fmtMoeda(porCanal[c])}</td>`;
       tbodyCanal.appendChild(tr);
     });
+  } else if (errFat) {
+    console.error('Erro ao carregar faturamento do dashboard:', errFat);
   }
 }
 
