@@ -5,6 +5,28 @@
 // ============================================================
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+// ------------------------------------------------------------
+// Proteção contra o erro intermitente do Supabase "JWT issued at future"
+// (PGRST303). O JWT é gerado pelo próprio gateway do Supabase a partir da
+// chave de serviço; quando o relógio dele fica alguns segundos à frente do
+// banco, a consulta é recusada. Não dá pra corrigir o iat do nosso lado —
+// então toda chamada ao Supabase passa por aqui e é repetida com espera
+// crescente (até ~19s no total) antes de desistir.
+// ------------------------------------------------------------
+const ESPERAS_RETRY_SUPABASE_MS = [300, 1000, 2500, 5000, 10000];
+
+async function fetchComRetrySupabase(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  for (let tentativa = 0; ; tentativa++) {
+    const resp = await fetch(input, init);
+    if (resp.status !== 401 || tentativa >= ESPERAS_RETRY_SUPABASE_MS.length) return resp;
+    const corpo = await resp.clone().text();
+    if (!corpo.includes('PGRST303') && !/issued at future/i.test(corpo)) return resp;
+    const espera = ESPERAS_RETRY_SUPABASE_MS[tentativa];
+    console.warn(`Supabase recusou com PGRST303 (JWT issued at future) — tentativa ${tentativa + 1}, repetindo em ${espera}ms`);
+    await new Promise((r) => setTimeout(r, espera));
+  }
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
@@ -54,7 +76,9 @@ Deno.serve(async (req) => {
     });
   }
 
-  const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    global: { fetch: fetchComRetrySupabase },
+  });
 
   const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
 

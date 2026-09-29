@@ -5,9 +5,32 @@
 // ============================================================
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+// ------------------------------------------------------------
+// Proteção contra o erro intermitente do Supabase "JWT issued at future"
+// (PGRST303). O JWT é gerado pelo próprio gateway do Supabase a partir da
+// chave de serviço; quando o relógio dele fica alguns segundos à frente do
+// banco, a consulta é recusada. Não dá pra corrigir o iat do nosso lado —
+// então toda chamada ao Supabase passa por aqui e é repetida com espera
+// crescente (até ~19s no total) antes de desistir.
+// ------------------------------------------------------------
+const ESPERAS_RETRY_SUPABASE_MS = [300, 1000, 2500, 5000, 10000];
+
+async function fetchComRetrySupabase(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  for (let tentativa = 0; ; tentativa++) {
+    const resp = await fetch(input, init);
+    if (resp.status !== 401 || tentativa >= ESPERAS_RETRY_SUPABASE_MS.length) return resp;
+    const corpo = await resp.clone().text();
+    if (!corpo.includes('PGRST303') && !/issued at future/i.test(corpo)) return resp;
+    const espera = ESPERAS_RETRY_SUPABASE_MS[tentativa];
+    console.warn(`Supabase recusou com PGRST303 (JWT issued at future) — tentativa ${tentativa + 1}, repetindo em ${espera}ms`);
+    await new Promise((r) => setTimeout(r, espera));
+  }
+}
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  { global: { fetch: fetchComRetrySupabase } }
 );
 
 const FULL_LOCAL_POR_CANAL: Record<string, string> = {
@@ -16,12 +39,19 @@ const FULL_LOCAL_POR_CANAL: Record<string, string> = {
   ml_conta3: 'full_conta3',
 };
 
-async function getAccessToken(canal: string): Promise<string | null> {
-  const { data: integ } = await supabase.from('integracoes_ml').select('*').eq('canal', canal).maybeSingle();
+// forcarRenovacao = true: usado quando o Mercado Livre recusou o token (401)
+// mesmo dentro da validade — pede um token novo antes de tentar de novo.
+async function getAccessToken(canal: string, forcarRenovacao = false): Promise<string | null> {
+  const { data: integ, error: errInteg } = await supabase.from('integracoes_ml').select('*').eq('canal', canal).maybeSingle();
+  if (errInteg) {
+    // erro do banco (não é "conta não conectada") — deixa registrado pra não confundir
+    console.error(`Erro ao ler integracoes_ml de ${canal}:`, errInteg.message);
+    return null;
+  }
   if (!integ) return null;
 
   const expiraEm = new Date(integ.expires_at).getTime();
-  if (Date.now() < expiraEm - 60000) {
+  if (!forcarRenovacao && Date.now() < expiraEm - 60000) {
     return integ.access_token;
   }
 
@@ -115,7 +145,16 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const quantidadeReal = await buscarQuantidadeFull(anuncio.item_id, token);
+      let quantidadeReal: number | null;
+      try {
+        quantidadeReal = await buscarQuantidadeFull(anuncio.item_id, token);
+      } catch (e) {
+        // token recusado pelo ML (401) — renova e tenta mais uma vez antes de desistir
+        if (!/ML retornou 401/.test(String(e))) throw e;
+        const novoToken = await getAccessToken(anuncio.canal, true);
+        if (!novoToken) throw e;
+        quantidadeReal = await buscarQuantidadeFull(anuncio.item_id, novoToken);
+      }
 
       const { data: saldoAtual } = await supabase
         .from('estoque_saldos')
