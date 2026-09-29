@@ -161,6 +161,15 @@
   .field .opcao-radio input{ margin-top:3px; min-width:0; width:auto; padding:0; flex-shrink:0; }
   .opcao-radio small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; font-weight:400; }
   .modal-botoes{ display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+  /* ---- Paginação (aba Vendas) ---- */
+  .paginacao{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding-top:14px; }
+  .paginacao-botoes{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .paginacao-botoes button{ padding:6px 12px; font-size:13px; }
+  .paginacao-botoes button:disabled{ opacity:.35; cursor:default; }
+  .paginacao-pagina{ font-size:13px; color:var(--muted); margin:0 4px; }
+  .paginacao-pagina input{ width:64px; padding:5px 6px; border:1px solid var(--border); border-radius:6px; font-size:13px; text-align:center; }
+  .paginacao-botoes select{ padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:13px; margin-left:6px; }
+  .carregando{ opacity:.45; pointer-events:none; transition:opacity .15s; }
 </style>
 </head>
 <body>
@@ -361,10 +370,27 @@
 
     <div class="card">
       <h3 data-t="CARD_PEDIDOS">Pedidos</h3>
-      <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
-        <tbody id="tabela-pedidos"></tbody>
-      </table>
+      <div class="tabela-rolavel" id="pedidos-tabela-wrap">
+        <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
+          <tbody id="tabela-pedidos"></tbody>
+        </table>
+      </div>
       <div class="empty" id="pedidos-vazio" style="display:none;">Nenhum pedido encontrado.</div>
+      <div class="paginacao" id="pedidos-paginacao">
+        <span class="muted" id="pag-info">&nbsp;</span>
+        <div class="paginacao-botoes">
+          <button type="button" class="secondary" id="pag-primeira" title="Primeira página">«</button>
+          <button type="button" class="secondary" id="pag-anterior" title="Página anterior">‹ Anterior</button>
+          <span class="paginacao-pagina">Página <input type="number" id="pag-atual" min="1" value="1"> de <span id="pag-total">1</span></span>
+          <button type="button" class="secondary" id="pag-proxima" title="Próxima página">Próxima ›</button>
+          <button type="button" class="secondary" id="pag-ultima" title="Última página">»</button>
+          <select id="pag-tamanho" title="Pedidos por página">
+            <option value="25">25 por página</option>
+            <option value="50" selected>50 por página</option>
+            <option value="100">100 por página</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2619,41 +2645,161 @@ document.getElementById('btn-finalizar-pedido').addEventListener('click', async 
   loadDashboard();
 });
 
-document.getElementById('form-filtro-vendas').addEventListener('submit', (e) => {
-  e.preventDefault();
-  loadPedidos();
-});
+// ---------- Listagem paginada de pedidos ----------
+// A tabela busca SÓ a página atual (ordem estável: data mais recente,
+// desempate pelo id). A contagem, o faturamento e os confirmados vêm da
+// função resumo_vendas_filtro, que soma dentro do banco com os mesmos
+// filtros — sem o corte de 1.000 linhas do Supabase.
+const pedidosPag = {
+  pagina: 1,
+  tamanho: 50,
+  total: null,          // total de pedidos do filtro (null = ainda não carregado)
+  filtro: { inicio: null, fimExclusivo: null, canal: null },
+  seq: 0,               // descarta respostas antigas se o usuário clicar rápido
+};
 
-async function loadPedidos(){
-  let query = supabaseClient
-    .from('pedidos_venda')
-    .select('*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))')
-    .order('data_pedido', { ascending: false });
-
+// Converte o filtro da tela em limites de data. Mesma regra de antes (dia
+// inteiro no fuso do computador, "Até" inclusivo), mas o fim vira 00:00 do
+// dia SEGUINTE com "<", pra não perder pedidos entre 23:59:59 e 00:00.
+function lerFiltroPedidos(){
   const dataInicio = document.getElementById('f-data-inicio').value;
   const dataFim = document.getElementById('f-data-fim').value;
   const canal = document.getElementById('f-canal').value;
+  let fimExclusivo = null;
+  if (dataFim) {
+    const d = new Date(dataFim + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    fimExclusivo = d.toISOString();
+  }
+  return {
+    inicio: dataInicio ? new Date(dataInicio + 'T00:00:00').toISOString() : null,
+    fimExclusivo,
+    canal: canal || null,
+  };
+}
 
-  if (dataInicio) query = query.gte('data_pedido', new Date(dataInicio + 'T00:00:00').toISOString());
-  if (dataFim) query = query.lte('data_pedido', new Date(dataFim + 'T23:59:59').toISOString());
-  if (canal) query = query.eq('canal', canal);
+function totalPaginasPedidos(){
+  return Math.max(1, Math.ceil((pedidosPag.total || 0) / pedidosPag.tamanho));
+}
 
-  const { data, error } = await query;
-  if (error) { console.error(error); return; }
+document.getElementById('form-filtro-vendas').addEventListener('submit', (e) => {
+  e.preventDefault();
+  pedidosPag.filtro = lerFiltroPedidos();
+  pedidosPag.pagina = 1;              // filtro novo sempre começa na 1ª página
+  loadPedidos();
+});
 
+function irParaPaginaPedidos(n){
+  const alvo = Math.min(Math.max(1, Math.floor(n) || 1), totalPaginasPedidos());
+  if (alvo === pedidosPag.pagina) { document.getElementById('pag-atual').value = alvo; return; }
+  pedidosPag.pagina = alvo;
+  loadPedidos();
+}
+document.getElementById('pag-primeira').addEventListener('click', () => irParaPaginaPedidos(1));
+document.getElementById('pag-anterior').addEventListener('click', () => irParaPaginaPedidos(pedidosPag.pagina - 1));
+document.getElementById('pag-proxima').addEventListener('click', () => irParaPaginaPedidos(pedidosPag.pagina + 1));
+document.getElementById('pag-ultima').addEventListener('click', () => irParaPaginaPedidos(totalPaginasPedidos()));
+document.getElementById('pag-atual').addEventListener('change', (e) => irParaPaginaPedidos(parseInt(e.target.value, 10)));
+document.getElementById('pag-tamanho').addEventListener('change', (e) => {
+  // mantém o 1º pedido visível na nova página
+  const primeiro = (pedidosPag.pagina - 1) * pedidosPag.tamanho;
+  pedidosPag.tamanho = parseInt(e.target.value, 10);
+  pedidosPag.pagina = Math.floor(primeiro / pedidosPag.tamanho) + 1;
+  loadPedidos();
+});
+
+function estadoIndicadoresPedidos(texto){
+  // nunca deixa um número antigo na tela enquanto carrega ou após erro
+  document.getElementById('v-faturamento-filtro').textContent = texto;
+  document.getElementById('v-qtd-pedidos-filtro').textContent = '';
+}
+
+function atualizarControlesPaginacao(qtdNaPagina){
+  const total = pedidosPag.total || 0;
+  const paginas = totalPaginasPedidos();
+  const de = total ? (pedidosPag.pagina - 1) * pedidosPag.tamanho + 1 : 0;
+  const ate = total ? de + qtdNaPagina - 1 : 0;
+  document.getElementById('pag-info').textContent = total
+    ? `Mostrando ${de.toLocaleString('pt-BR')}–${ate.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} pedido${total !== 1 ? 's' : ''} no filtro`
+    : 'Nenhum pedido no filtro';
+  document.getElementById('pag-atual').value = pedidosPag.pagina;
+  document.getElementById('pag-atual').max = paginas;
+  document.getElementById('pag-total').textContent = paginas.toLocaleString('pt-BR');
+  document.getElementById('pag-primeira').disabled = pedidosPag.pagina <= 1;
+  document.getElementById('pag-anterior').disabled = pedidosPag.pagina <= 1;
+  document.getElementById('pag-proxima').disabled = pedidosPag.pagina >= paginas;
+  document.getElementById('pag-ultima').disabled = pedidosPag.pagina >= paginas;
+}
+
+async function loadPedidos(){
+  const seq = ++pedidosPag.seq;
+  const f = pedidosPag.filtro;
   const tbody = document.getElementById('tabela-pedidos');
+  const wrap = document.getElementById('pedidos-tabela-wrap');
+  wrap.classList.add('carregando');
+  estadoIndicadoresPedidos('carregando…');
+  document.getElementById('pag-info').textContent = 'Carregando…';
+
+  const inicio = (pedidosPag.pagina - 1) * pedidosPag.tamanho;
+  let query = supabaseClient
+    .from('pedidos_venda')
+    .select('*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))')
+    .order('data_pedido', { ascending: false })
+    .order('id', { ascending: false })
+    .range(inicio, inicio + pedidosPag.tamanho - 1);
+  if (f.inicio) query = query.gte('data_pedido', f.inicio);
+  if (f.fimExclusivo) query = query.lt('data_pedido', f.fimExclusivo);
+  if (f.canal) query = query.eq('canal', f.canal);
+
+  const [lista, resumo] = await Promise.all([
+    query,
+    supabaseClient.rpc('resumo_vendas_filtro', { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal }),
+  ]);
+  if (seq !== pedidosPag.seq) return;          // chegou uma consulta mais nova
+  wrap.classList.remove('carregando');
+
+  if (resumo.error) {
+    console.error(resumo.error);
+    estadoIndicadoresPedidos('erro ao carregar');
+    tbody.innerHTML = '';
+    document.getElementById('pedidos-vazio').style.display = 'block';
+    document.getElementById('pedidos-vazio').textContent = 'Não foi possível carregar os pedidos: ' + resumo.error.message;
+    document.getElementById('pag-info').textContent = '';
+    return;
+  }
+  const r = (resumo.data && resumo.data[0]) || { total_pedidos: 0, pedidos_confirmados: 0, faturamento: 0 };
+  pedidosPag.total = Number(r.total_pedidos);
+
+  // página ficou além do fim (ex: excluiu o último pedido da última página) → volta pra última válida
+  if (pedidosPag.pagina > totalPaginasPedidos()) {
+    pedidosPag.pagina = totalPaginasPedidos();
+    return loadPedidos();
+  }
+  if (lista.error) {
+    console.error(lista.error);
+    estadoIndicadoresPedidos('erro ao carregar');
+    tbody.innerHTML = '';
+    document.getElementById('pedidos-vazio').style.display = 'block';
+    document.getElementById('pedidos-vazio').textContent = 'Não foi possível carregar os pedidos: ' + lista.error.message;
+    document.getElementById('pag-info').textContent = '';
+    return;
+  }
+
+  const data = lista.data || [];
+  const confirmados = Number(r.pedidos_confirmados);
+  document.getElementById('v-faturamento-filtro').textContent = fmtMoeda(r.faturamento);
+  document.getElementById('v-qtd-pedidos-filtro').textContent = `(${confirmados.toLocaleString('pt-BR')} pedido${confirmados !== 1 ? 's' : ''} confirmado${confirmados !== 1 ? 's' : ''})`;
+
   tbody.innerHTML = '';
-  document.getElementById('pedidos-vazio').style.display = data.length ? 'none' : 'block';
+  const vazio = document.getElementById('pedidos-vazio');
+  vazio.textContent = 'Nenhum pedido encontrado.';
+  vazio.style.display = data.length ? 'none' : 'block';
 
-  let faturamento = 0;
-  let confirmados = 0;
   data.forEach(p => {
-    if (p.status === 'confirmado') { faturamento += Number(p.valor_total); confirmados++; }
-
     const itens = p.pedido_itens || [];
     const produtosTexto = itens.length
       ? itens.map(i => {
-          const nomeOuSku = i.produtos ? `${i.produtos.sku_interno} - ${i.produtos.nome}` : `⚠️ SKU não identificado: ${i.sku_ml_item || '?'}`;
+          const nomeOuSku = i.produtos ? `${esc(i.produtos.sku_interno)} - ${esc(i.produtos.nome)}` : `⚠️ SKU não identificado: ${esc(i.sku_ml_item || '?')}`;
           return `${nomeOuSku} (${fmt(i.quantidade)}x)`;
         }).join('<br>')
       : '<span class="muted">-</span>';
@@ -2661,19 +2807,18 @@ async function loadPedidos(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
-      <td>${CANAL_LABEL[p.canal] || p.canal}</td>
+      <td>${CANAL_LABEL[p.canal] || esc(p.canal)}</td>
       <td>${produtosTexto}</td>
-      <td>${p.cliente_nome_avulso || '-'}</td>
+      <td>${esc(p.cliente_nome_avulso || '-')}</td>
       <td>${fmtMoeda(p.valor_total)}</td>
-      <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${p.status}</span></td>
+      <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${esc(p.status)}</span></td>
       <td>${p.status === 'confirmado' ? `<button class="danger" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}</td>
       <td><button class="danger" onclick="excluirPedido('${p.id}')">Excluir</button></td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.getElementById('v-faturamento-filtro').textContent = fmtMoeda(faturamento);
-  document.getElementById('v-qtd-pedidos-filtro').textContent = `(${confirmados} pedido${confirmados !== 1 ? 's' : ''} confirmado${confirmados !== 1 ? 's' : ''})`;
+  atualizarControlesPaginacao(data.length);
 }
 
 async function cancelarPedido(id){
