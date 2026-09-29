@@ -120,6 +120,47 @@
   .collapsible-card.open .collapsible-content-wrap{ grid-template-rows:1fr; }
   .collapsible-content-inner{ overflow:hidden; padding:0 20px 20px 20px; }
   .btn-tipo-analise.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  /* ---- Compras / Ordem de compra ---- */
+  .badge.recebida{ background:#e4f7ea; color:var(--ok); }
+  .badge.subcomp{ background:#eef0ff; color:#4338ca; }
+  .num{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  th.num{ text-align:right; }
+  .page-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .page-head h2{ margin:0; }
+  .link-voltar{ color:var(--muted); font-size:13px; cursor:pointer; display:inline-block; margin-bottom:10px; }
+  .link-voltar:hover{ color:var(--text); }
+  .oc-titulo{ display:flex; align-items:center; gap:10px; }
+  .oc-acoes{ display:flex; gap:8px; flex-wrap:wrap; }
+  .oc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px 16px; }
+  .oc-grid .field input, .oc-grid .field select{ min-width:0; width:100%; }
+  .oc-grid .field.largo{ grid-column:1 / -1; }
+  .field input:disabled, .field select:disabled{ background:#f5f6f8; color:var(--muted); }
+  .salvo-indicador{ font-size:12px; color:var(--ok); margin-left:8px; opacity:0; transition:opacity .3s; }
+  .salvo-indicador.visivel{ opacity:1; }
+  .tabela-rolavel{ overflow-x:auto; }
+  .sub{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
+  .var-sobe{ color:var(--danger); font-weight:600; }
+  .var-desce{ color:var(--ok); font-weight:600; }
+  .oc-dica{ font-size:12px; color:var(--muted); align-self:center; padding-bottom:9px; }
+  .oc-totais{ display:flex; justify-content:flex-end; gap:32px; padding-top:14px; flex-wrap:wrap; }
+  .oc-totais div{ text-align:right; }
+  .oc-totais .rotulo{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+  .oc-totais .valor{ font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .oc-totais .valor.destaque{ color:var(--accent); font-size:22px; }
+  .aviso{ background:#fff2e0; border:1px solid #f0c78a; color:#8a5a12; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; }
+  .ficha-bloco{ margin-bottom:20px; }
+  .ficha-bloco-head{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+  .ficha-total{ font-size:13px; color:var(--muted); }
+  .ficha-total strong{ color:var(--text); font-size:15px; }
+  .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(20,24,32,0.55); z-index:9998; align-items:center; justify-content:center; padding:16px; }
+  .modal-box{ background:var(--panel); border-radius:12px; padding:28px; width:480px; max-width:100%; max-height:86vh; overflow-y:auto; }
+  .modal-box h3{ margin-top:0; }
+  .modal-box .field{ margin-bottom:14px; }
+  .field .opcao-radio{ display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text); }
+  .field .opcao-radio:has(input:checked){ border-color:var(--accent); background:#fff8ef; }
+  .field .opcao-radio input{ margin-top:3px; min-width:0; width:auto; padding:0; flex-shrink:0; }
+  .opcao-radio small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; font-weight:400; }
+  .modal-botoes{ display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
 </style>
 </head>
 <body>
@@ -146,6 +187,7 @@
   <div class="nav-item" data-view="loja"></div>
   <div class="nav-item" data-view="ficha"></div>
   <div class="nav-item" data-view="estoque"></div>
+  <div class="nav-item" data-view="compras"></div>
   <div class="nav-item" data-view="producao"></div>
   <div class="nav-item" data-view="gestao-contas"></div>
   <div id="sidebar-footer">
@@ -341,7 +383,7 @@
           </select>
         </div>
         <div class="field"><label data-t="PRODUTOS_LABEL_UNIDADE">Unidade *</label><input type="text" id="p-unidade" placeholder="UN, KG, RL..." required></div>
-        <div class="field"><label data-t="PRODUTOS_LABEL_CUSTO">Custo atual</label><input type="number" step="0.0001" id="p-custo" placeholder="0.00"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_CUSTO">Custo atual</label><input type="number" step="any" min="0" id="p-custo" placeholder="0.00"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_PRECO">Preço de venda</label><input type="number" step="0.01" id="p-preco" placeholder="0.00"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ESTMIN">Estoque mínimo</label><input type="number" step="0.001" id="p-min" placeholder="0"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_SKUML">SKU no Mercado Livre</label><input type="text" id="p-sku-ml" placeholder="opcional"></div>
@@ -459,6 +501,16 @@
       </form>
     </div>
     <div class="card">
+      <h3 data-t="CARD_CUSTO_SKUS">Custo dos produtos pela ficha técnica</h3>
+      <p class="muted" style="margin-top:0;">Soma de cada componente da ficha (descendo todos os níveis: Kit → Rolo → Bloco) × o custo atual dele. O custo das matérias-primas vem das Ordens de Compra, já com o frete rateado.</p>
+      <div class="tabela-rolavel">
+        <table><thead>
+          <tr><th>Produto</th><th class="num">Custo pela ficha</th><th class="num">Custo atual (médio)</th><th>Observação</th></tr>
+        </thead><tbody id="tabela-custo-skus"></tbody></table>
+      </div>
+      <div class="empty" id="custo-skus-vazio" style="display:none;">Cadastre fichas técnicas para ver o custo calculado.</div>
+    </div>
+    <div class="card">
       <h3 data-t="CARD_FICHAS_CADASTRADAS">Fichas técnicas cadastradas</h3>
       <div id="lista-fichas"></div>
       <div class="empty" id="ficha-vazio" style="display:none;">Nenhuma ficha técnica cadastrada ainda.</div>
@@ -511,6 +563,105 @@
         <tr><th>Produto</th><th>Local</th><th>Quantidade</th><th>Reservado</th><th></th></tr>
       </thead><tbody id="tabela-estoque"></tbody></table>
       <div class="empty" id="estoque-vazio" style="display:none;">Nenhum saldo de estoque ainda.</div>
+    </div>
+  </div>
+
+  <!-- ================= COMPRAS (ORDEM DE COMPRA) ================= -->
+  <div class="view" id="view-compras">
+
+    <!-- Lista de OCs -->
+    <div id="oc-lista-wrap">
+      <div class="page-head">
+        <h2 data-t="TITULO_COMPRAS">Compras</h2>
+        <button type="button" id="btn-nova-oc" data-t="BTN_NOVA_OC">+ Nova ordem de compra</button>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card"><div class="metric-label">Comprado no mês (recebido)</div><div class="metric-value" id="oc-kpi-mes">-</div></div>
+        <div class="metric-card"><div class="metric-label">Frete + despesas no mês</div><div class="metric-value" id="oc-kpi-frete">-</div><div class="muted" id="oc-kpi-frete-pct"></div></div>
+        <div class="metric-card"><div class="metric-label">OCs em rascunho</div><div class="metric-value" id="oc-kpi-rascunho">-</div></div>
+      </div>
+      <div class="card">
+        <div class="page-head" style="margin-bottom:8px;">
+          <h3 data-t="CARD_OCS" style="margin:0;">Ordens de compra</h3>
+          <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
+            <label for="oc-filtro-status">Status</label>
+            <select id="oc-filtro-status">
+              <option value="">Todas</option>
+              <option value="rascunho">Rascunho</option>
+              <option value="recebida">Recebida</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabela-rolavel">
+          <table><thead>
+            <tr><th>Nº</th><th>Data</th><th>Fornecedor</th><th>Produtos</th><th class="num">Produtos (R$)</th><th class="num">Frete + desp.</th><th class="num">Total</th><th>Status</th><th></th></tr>
+          </thead><tbody id="tabela-ocs"></tbody></table>
+        </div>
+        <div class="empty" id="ocs-vazio" style="display:none;">Nenhuma ordem de compra ainda. Clique em "+ Nova ordem de compra" pra começar.</div>
+      </div>
+    </div>
+
+    <!-- Detalhe de uma OC -->
+    <div id="oc-detalhe-wrap" style="display:none;">
+      <span class="link-voltar" id="oc-voltar">← Voltar para a lista</span>
+      <div class="page-head">
+        <div class="oc-titulo"><h2 id="oc-titulo">Ordem de compra</h2><span id="oc-status-badge"></span></div>
+        <div class="oc-acoes" id="oc-acoes"></div>
+      </div>
+
+      <div class="card">
+        <h3><span data-t="CARD_OC_DADOS">Dados da compra</span><span class="salvo-indicador" id="oc-salvo">✓ salvo</span></h3>
+        <form id="form-oc" class="oc-grid" onsubmit="return false;">
+          <div class="field"><label data-t="OC_LABEL_FORNECEDOR" for="oc-fornecedor">Fornecedor</label><input type="text" id="oc-fornecedor" data-campo="fornecedor" data-editavel-recebida="1"></div>
+          <div class="field"><label data-t="OC_LABEL_DATA" for="oc-data">Data da compra</label><input type="date" id="oc-data" data-campo="data_compra"></div>
+          <div class="field"><label data-t="OC_LABEL_NF" for="oc-nf">Nº da nota fiscal</label><input type="text" id="oc-nf" data-campo="numero_nf" data-editavel-recebida="1"></div>
+          <div class="field"><label data-t="OC_LABEL_FRETE" for="oc-frete">Frete (R$)</label><input type="number" step="0.01" min="0" id="oc-frete" data-campo="frete"></div>
+          <div class="field"><label data-t="OC_LABEL_DESPESAS" for="oc-despesas">Outras despesas (R$)</label><input type="number" step="0.01" min="0" id="oc-despesas" data-campo="outras_despesas"></div>
+          <div class="field"><label data-t="OC_LABEL_RATEIO" for="oc-rateio">Ratear frete por</label>
+            <select id="oc-rateio" data-campo="criterio_rateio">
+              <option value="valor">Valor de cada item</option>
+              <option value="peso">Peso de cada item</option>
+            </select>
+          </div>
+          <div class="field"><label data-t="OC_LABEL_PAGAMENTO" for="oc-pagamento">Forma de pagamento</label><input type="text" id="oc-pagamento" data-campo="forma_pagamento" data-editavel-recebida="1" placeholder="ex: boleto 30 dias, PIX"></div>
+          <div class="field"><label data-t="OC_LABEL_VENCIMENTO" for="oc-vencimento">Vencimento</label><input type="date" id="oc-vencimento" data-campo="data_vencimento" data-editavel-recebida="1"></div>
+          <div class="field largo"><label data-t="OC_LABEL_OBS" for="oc-obs">Observação</label><input type="text" id="oc-obs" data-campo="observacao" data-editavel-recebida="1"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 data-t="CARD_OC_ITENS">Itens comprados</h3>
+        <form class="inline" id="form-oc-item" style="margin-bottom:6px;">
+          <div class="field"><label data-t="OC_ITEM_LABEL_PRODUTO" for="oc-i-produto">Produto *</label><select id="oc-i-produto" required></select></div>
+          <div class="field"><label data-t="OC_ITEM_LABEL_LOCAL" for="oc-i-local">Entra em *</label>
+            <select id="oc-i-local" required>
+              <option value="materia_prima">Matéria-prima</option>
+              <option value="fisico">Físico</option>
+            </select>
+          </div>
+          <div class="field"><label data-t="OC_ITEM_LABEL_UNIDADE" for="oc-i-unidade">Unidade de compra</label><input type="text" id="oc-i-unidade" placeholder="ex: BLOCO" style="width:110px; min-width:110px;"></div>
+          <div class="field"><label data-t="OC_ITEM_LABEL_QTD" for="oc-i-qtd">Qtd. comprada *</label><input type="number" step="0.001" min="0.001" id="oc-i-qtd" required style="width:120px; min-width:120px;"></div>
+          <div class="field"><label data-t="OC_ITEM_LABEL_FATOR" for="oc-i-fator">1 unid. de compra = *</label>
+            <div style="display:flex; align-items:center; gap:6px;"><input type="number" step="0.000001" min="0.000001" id="oc-i-fator" value="1" required style="width:110px; min-width:110px;"><span class="muted" id="oc-i-unid-estoque"></span></div>
+          </div>
+          <div class="field"><label data-t="OC_ITEM_LABEL_PRECO" for="oc-i-preco">Preço por unid. de compra *</label><input type="number" step="0.0001" min="0" id="oc-i-preco" required style="width:140px; min-width:140px;"></div>
+          <button type="submit" data-t="BTN_ADD_ITEM_OC">Adicionar item</button>
+        </form>
+        <div class="oc-dica" id="oc-i-dica" style="margin-bottom:14px;">&nbsp;</div>
+        <div id="oc-avisos"></div>
+        <div class="tabela-rolavel">
+          <table><thead>
+            <tr><th>Produto</th><th class="num">Comprado</th><th class="num">Entra no estoque</th><th class="num">Preço unit.</th><th class="num">Subtotal</th><th class="num">Frete rateado</th><th class="num">Custo unit. final</th><th class="num">vs. anterior</th><th></th></tr>
+          </thead><tbody id="tabela-oc-itens"></tbody></table>
+        </div>
+        <div class="empty" id="oc-itens-vazio" style="display:none;">Nenhum item ainda. Adicione os produtos comprados acima.</div>
+        <div class="oc-totais">
+          <div><div class="rotulo">Produtos</div><div class="valor" id="oc-tot-produtos">-</div></div>
+          <div><div class="rotulo">Frete + despesas</div><div class="valor" id="oc-tot-despesas">-</div></div>
+          <div><div class="rotulo">Total da compra</div><div class="valor destaque" id="oc-tot-geral">-</div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -597,6 +748,24 @@
 
 </div>
 
+  <div id="modal-producao" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="mp-titulo">Concluir ordem de produção</h3>
+      <div class="field"><label for="mp-qtd">Quantidade produzida *</label><input type="number" step="0.001" min="0.001" id="mp-qtd"></div>
+      <div class="field"><label for="mp-destino">Enviar produção para</label><select id="mp-destino"></select></div>
+      <div class="field"><label>Consumo de estoque</label>
+        <label class="opcao-radio"><input type="radio" name="mp-modo" value="direto" checked><span>Componentes da ficha<small id="mp-desc-direto">Baixa cada componente direto da ficha. Ex: o Kit 4 consome Rolos do estoque Físico.</small></span></label>
+        <label class="opcao-radio"><input type="radio" name="mp-modo" value="materia"><span>Direto da matéria-prima<small id="mp-desc-materia">Desce a ficha até as matérias-primas e baixa só elas. Ex: o Kit 4 consome os Blocos, sem precisar de Rolos em estoque.</small></span></label>
+      </div>
+      <div id="mp-previa" class="muted"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="mp-cancelar">Cancelar</button>
+        <button type="button" id="mp-confirmar">Concluir produção</button>
+      </div>
+    </div>
+  </div>
+
+
 <script>
 // ============================================================
 // 🎨 PERSONALIZAÇÃO — pode editar os textos abaixo à vontade.
@@ -616,6 +785,7 @@ const MENU_LABELS = {
   loja: 'Loja Online',
   ficha: 'Ficha Técnica',
   estoque: 'Estoque',
+  compras: 'Compras',
   producao: 'Produção',
   'gestao-contas': 'Gestão de Contas',
 };
@@ -667,7 +837,7 @@ const TEXTOS = {
   PRODUTOS_LABEL_ANUNCIO2: 'ID anúncio - Conta 2',
   PRODUTOS_LABEL_ANUNCIO3: 'ID anúncio - Conta 3',
   FICHA_LABEL_ACABADO: 'Produto acabado *',
-  FICHA_LABEL_MATERIA: 'Matéria-prima *',
+  FICHA_LABEL_MATERIA: 'Componente *',
   FICHA_LABEL_QTD: 'Qtd. necessária (por 1 unidade) *',
   MOVIMENTO_LABEL_PRODUTO: 'Produto *',
   MOVIMENTO_LABEL_LOCAL: 'Local *',
@@ -737,6 +907,34 @@ const TEXTOS = {
   MODAL_LOJA_LABEL_FAIXA_QTD: 'A partir de (quantidade)',
   MODAL_LOJA_LABEL_FAIXA_PRECO: 'Preço unitário nessa faixa',
   MODAL_LOJA_LABEL_FOTO: 'Adicionar foto',
+  // ---- Compras (ordem de compra) ----
+  TITULO_COMPRAS: 'Compras',
+  BTN_NOVA_OC: '+ Nova ordem de compra',
+  CARD_OCS: 'Ordens de compra',
+  CARD_OC_DADOS: 'Dados da compra',
+  CARD_OC_ITENS: 'Itens comprados',
+  OC_LABEL_FORNECEDOR: 'Fornecedor',
+  OC_LABEL_DATA: 'Data da compra',
+  OC_LABEL_NF: 'Nº da nota fiscal',
+  OC_LABEL_FRETE: 'Frete (R$)',
+  OC_LABEL_DESPESAS: 'Outras despesas (R$)',
+  OC_LABEL_RATEIO: 'Ratear frete por',
+  OC_LABEL_PAGAMENTO: 'Forma de pagamento',
+  OC_LABEL_VENCIMENTO: 'Vencimento',
+  OC_LABEL_OBS: 'Observação',
+  OC_ITEM_LABEL_PRODUTO: 'Produto *',
+  OC_ITEM_LABEL_LOCAL: 'Entra em *',
+  OC_ITEM_LABEL_UNIDADE: 'Unidade de compra',
+  OC_ITEM_LABEL_QTD: 'Qtd. comprada *',
+  OC_ITEM_LABEL_FATOR: '1 unid. de compra = *',
+  OC_ITEM_LABEL_PRECO: 'Preço por unid. de compra *',
+  BTN_ADD_ITEM_OC: 'Adicionar item',
+  BTN_RECEBER_OC: 'Receber (dar entrada no estoque)',
+  BTN_ESTORNAR_OC: 'Estornar recebimento',
+  BTN_CANCELAR_OC: 'Cancelar OC',
+  BTN_REABRIR_OC: 'Reabrir como rascunho',
+  BTN_EXCLUIR_OC: 'Excluir',
+  CARD_CUSTO_SKUS: 'Custo dos produtos pela ficha técnica',
 };
 
 // ============================================================
@@ -794,6 +992,19 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
 function fmt(n){ return n === null || n === undefined ? '-' : Number(n).toLocaleString('pt-BR', {maximumFractionDigits:3}); }
 function fmtMoeda(n){ return n === null || n === undefined ? '-' : 'R$ ' + Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+// Custo unitário: mostra mais casas quando o valor é pequeno (ex: custo por etiqueta R$ 0,035070)
+function fmtCusto(n){
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  const v = Number(n);
+  const casas = Math.abs(v) > 0 && Math.abs(v) < 1 ? 4 : 2;
+  const casasMax = Math.abs(v) > 0 && Math.abs(v) < 0.1 ? 6 : casas;
+  return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:casas, maximumFractionDigits:casasMax});
+}
+// Protege textos digitados (fornecedor, observação...) ao montar HTML
+function esc(t){ return String(t === null || t === undefined ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Data de hoje no horário de Brasília (não depende do fuso do computador)
+function hojeSP(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); }
+function fmtData(iso){ if (!iso) return '-'; const [a, m, d] = String(iso).slice(0, 10).split('-'); return `${d}/${m}/${a}`; }
 
 // Locais de estoque disponíveis (usado pra montar os dropdowns automaticamente,
 // pra nunca ter o nome de um Full desatualizado em algum canto esquecido)
@@ -914,7 +1125,7 @@ async function loadProdutos(){
       <td>${p.nome}</td>
       <td><span class="badge ${p.tipo === 'produto_acabado' ? 'acabado' : 'materia'}">${p.tipo === 'produto_acabado' ? 'Acabado' : 'Matéria-prima'}</span></td>
       <td>${p.unidade_medida}</td>
-      <td>${fmtMoeda(p.custo_atual)}</td>
+      <td>${fmtCusto(p.custo_atual)}</td>
       <td>${fmtMoeda(p.preco_venda)}</td>
       <td>${p.ativo ? 'Sim' : 'Não'}</td>
       <td><button class="secondary" onclick="editarProduto('${p.id}')">Editar</button></td>
@@ -1277,8 +1488,20 @@ function preencherSelectsDeProdutos(produtos){
 
   const opts = (list) => list.map(p => `<option value="${p.id}">${p.nome} (${p.sku_interno})</option>`).join('');
 
+  // Componente da ficha: matéria-prima OU produto acabado (ex: Kit 4 = 4 Rolos)
+  const optsAgrupado = (lista) => {
+    const mp = lista.filter(p => p.tipo === 'materia_prima');
+    const pa = lista.filter(p => p.tipo === 'produto_acabado');
+    return (mp.length ? `<optgroup label="Matérias-primas">${opts(mp)}</optgroup>` : '')
+         + (pa.length ? `<optgroup label="Produtos acabados">${opts(pa)}</optgroup>` : '');
+  };
+
   document.getElementById('f-acabado').innerHTML = opts(acabados);
-  document.getElementById('f-materia').innerHTML = opts(materias);
+  document.getElementById('f-materia').innerHTML = optsAgrupado(produtos);
+  const ocProdutoSel = document.getElementById('oc-i-produto');
+  const ocProdutoAntes = ocProdutoSel.value;
+  ocProdutoSel.innerHTML = '<option value="">Selecione…</option>' + optsAgrupado(produtos.filter(p => p.ativo));
+  if (ocProdutoAntes) ocProdutoSel.value = ocProdutoAntes;
   document.getElementById('o-produto').innerHTML = opts(acabados);
   document.getElementById('m-produto').innerHTML = opts(produtos);
   document.getElementById('t-produto').innerHTML = opts(produtos);
@@ -1302,36 +1525,83 @@ document.getElementById('form-ficha').addEventListener('submit', async (e) => {
 });
 
 async function loadFichaTecnica(){
-  const { data, error } = await supabaseClient
-    .from('ficha_tecnica_itens')
-    .select('id, quantidade_necessaria, produto_acabado:produtos!ficha_tecnica_itens_produto_acabado_id_fkey(nome), materia_prima:produtos!ficha_tecnica_itens_produto_materia_prima_id_fkey(nome, unidade_medida)');
-  if (error) { console.error(error); return; }
+  const [{ data, error }, { data: custos, error: errCustos }] = await Promise.all([
+    supabaseClient
+      .from('ficha_tecnica_itens')
+      .select('id, quantidade_necessaria, produto_acabado_id, produto_materia_prima_id, produto_acabado:produtos!ficha_tecnica_itens_produto_acabado_id_fkey(nome, sku_interno, custo_atual), materia_prima:produtos!ficha_tecnica_itens_produto_materia_prima_id_fkey(nome, sku_interno, unidade_medida, tipo, custo_atual)')
+      .order('created_at'),
+    supabaseClient.from('vw_custo_ficha').select('*')
+  ]);
+  if (error || errCustos) { console.error(error || errCustos); return; }
+
+  // custo de cada produto que tem ficha (calculado no banco, descendo todos os níveis)
+  const custoFicha = {};
+  (custos || []).forEach(c => custoFicha[c.produto_id] = c);
+  // custo unitário de um componente: se ele tem ficha própria (ex: Rolo), usa o custo pela ficha;
+  // senão, o custo atual (médio) dele — igual ao cálculo do banco
+  const custoComponente = (item) => custoFicha[item.produto_materia_prima_id]
+    ? Number(custoFicha[item.produto_materia_prima_id].custo_ficha)
+    : Number(item.materia_prima ? item.materia_prima.custo_atual || 0 : 0);
 
   const container = document.getElementById('lista-fichas');
   document.getElementById('ficha-vazio').style.display = data.length ? 'none' : 'block';
 
   const porProduto = {};
   data.forEach(item => {
-    const nome = item.produto_acabado ? item.produto_acabado.nome : '—';
-    if (!porProduto[nome]) porProduto[nome] = [];
-    porProduto[nome].push(item);
+    const id = item.produto_acabado_id;
+    if (!porProduto[id]) porProduto[id] = { produto: item.produto_acabado, itens: [] };
+    porProduto[id].itens.push(item);
   });
+  const idsOrdenados = Object.keys(porProduto).sort((x, y) =>
+    (porProduto[x].produto ? porProduto[x].produto.nome : '').localeCompare(porProduto[y].produto ? porProduto[y].produto.nome : ''));
 
   container.innerHTML = '';
-  Object.keys(porProduto).forEach(nomeProduto => {
+  idsOrdenados.forEach(produtoId => {
+    const grupo = porProduto[produtoId];
     const div = document.createElement('div');
-    div.style.marginBottom = '16px';
-    let linhas = porProduto[nomeProduto].map(item => `
+    div.className = 'ficha-bloco';
+    const linhas = grupo.itens.map(item => {
+      const mp = item.materia_prima;
+      const ehSub = mp && mp.tipo === 'produto_acabado';
+      const unit = custoComponente(item);
+      return `
       <tr>
-        <td>${item.materia_prima ? item.materia_prima.nome : '—'}</td>
-        <td>${fmt(item.quantidade_necessaria)} ${item.materia_prima ? item.materia_prima.unidade_medida : ''}</td>
+        <td>${mp ? esc(mp.nome) : '—'} ${ehSub ? '<span class="badge subcomp">subcomponente</span>' : ''}</td>
+        <td class="num">${fmt(item.quantidade_necessaria)} ${mp ? esc(mp.unidade_medida) : ''}</td>
+        <td class="num">${fmtCusto(unit)}</td>
+        <td class="num">${fmtMoeda(unit * Number(item.quantidade_necessaria))}</td>
         <td><button class="secondary" onclick="excluirFichaItem('${item.id}')">Remover</button></td>
-      </tr>
-    `).join('');
-    div.innerHTML = `<strong>${nomeProduto}</strong>
-      <table><thead><tr><th>Matéria-prima</th><th>Qtd. por unidade</th><th></th></tr></thead>
-      <tbody>${linhas}</tbody></table>`;
+      </tr>`;
+    }).join('');
+    const cf = custoFicha[produtoId];
+    div.innerHTML = `
+      <div class="ficha-bloco-head">
+        <strong>${grupo.produto ? esc(grupo.produto.nome) : '—'}</strong>
+        <span class="ficha-total">Custo pela ficha: <strong>${cf ? fmtMoeda(cf.custo_ficha) : '-'}</strong></span>
+      </div>
+      <div class="tabela-rolavel"><table><thead><tr><th>Componente</th><th class="num">Qtd. por unidade</th><th class="num">Custo unit. do componente</th><th class="num">Custo na ficha</th><th></th></tr></thead>
+      <tbody>${linhas}</tbody></table></div>`;
     container.appendChild(div);
+  });
+
+  // card "Custo dos produtos pela ficha técnica"
+  const tbody = document.getElementById('tabela-custo-skus');
+  tbody.innerHTML = '';
+  document.getElementById('custo-skus-vazio').style.display = idsOrdenados.length ? 'none' : 'block';
+  idsOrdenados.forEach(produtoId => {
+    const grupo = porProduto[produtoId];
+    const cf = custoFicha[produtoId];
+    const custoAtual = grupo.produto ? Number(grupo.produto.custo_atual || 0) : 0;
+    const obs = cf && cf.componentes_sem_custo > 0
+      ? `<span class="var-sobe">⚠ Sem custo: ${esc(cf.nomes_sem_custo)}</span>`
+      : (custoAtual > 0 ? '' : '<span class="muted">Ainda não produzido/comprado</span>');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${grupo.produto ? esc(grupo.produto.nome) + '<span class="sub">' + esc(grupo.produto.sku_interno) + '</span>' : '—'}</td>
+      <td class="num"><strong>${cf ? fmtMoeda(cf.custo_ficha) : '-'}</strong></td>
+      <td class="num">${custoAtual > 0 ? fmtMoeda(custoAtual) : '-'}</td>
+      <td>${obs}</td>`;
+    tbody.appendChild(tr);
   });
 }
 
@@ -1448,7 +1718,7 @@ document.getElementById('form-ordem').addEventListener('submit', async (e) => {
 async function loadOrdens(){
   const { data, error } = await supabaseClient
     .from('ordens_producao')
-    .select('id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, produtos(nome)')
+    .select('id, produto_acabado_id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, produtos(nome)')
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
 
@@ -1456,7 +1726,9 @@ async function loadOrdens(){
   tbody.innerHTML = '';
   document.getElementById('ordens-vazio').style.display = data.length ? 'none' : 'block';
 
+  ordensCache = {};
   data.forEach(o => {
+    ordensCache[o.id] = o;
     const tr = document.createElement('tr');
     const podeSerConcluida = o.status === 'em_producao' || o.status === 'rascunho';
     tr.innerHTML = `
@@ -1483,16 +1755,381 @@ async function excluirOrdemProducao(id, status){
   loadOrdens();
 }
 
+let ordensCache = {};
+let ordemEmConclusao = null;
+
+// Destinos possíveis da produção (Físico ou direto pra um Full)
+document.getElementById('mp-destino').innerHTML = LOCAIS_ESTOQUE
+  .filter(l => l.value !== 'materia_prima')
+  .map(l => `<option value="${l.value}">${l.label}</option>`).join('');
+
 async function concluirOrdem(id){
-  const qtd = prompt('Quantidade produzida (unidades):');
-  if (!qtd || isNaN(parseFloat(qtd))) return;
+  const o = ordensCache[id];
+  if (!o) return;
+  ordemEmConclusao = o;
+  document.getElementById('mp-titulo').textContent = 'Concluir produção: ' + (o.produtos ? o.produtos.nome : '');
+  document.getElementById('mp-qtd').value = o.quantidade_planejada;
+  document.getElementById('mp-destino').value = 'fisico';
+  document.querySelector('input[name="mp-modo"][value="direto"]').checked = true;
+
+  // mostra o que cada modo vai consumir, pra decidir com clareza
+  const { data: ficha } = await supabaseClient
+    .from('ficha_tecnica_itens')
+    .select('quantidade_necessaria, componente:produtos!ficha_tecnica_itens_produto_materia_prima_id_fkey(nome, tipo)')
+    .eq('produto_acabado_id', o.produto_acabado_id);
+  const itens = ficha || [];
+  const temSub = itens.some(i => i.componente && i.componente.tipo === 'produto_acabado');
+  document.getElementById('mp-desc-direto').textContent = itens.length
+    ? 'Baixa: ' + itens.map(i => `${fmt(i.quantidade_necessaria)} × ${i.componente ? i.componente.nome : '?'}`).join(', ') + ' (por unidade). Produtos acabados saem do Físico, matérias-primas do estoque de Matéria-prima.'
+    : 'Este produto ainda não tem ficha técnica.';
+  document.getElementById('mp-desc-materia').textContent = temSub
+    ? 'Desce a ficha até as matérias-primas e baixa só elas (os subcomponentes não precisam estar em estoque).'
+    : 'Esta ficha só tem matérias-primas, então os dois modos dão o mesmo resultado.';
+  document.getElementById('mp-previa').textContent = itens.length ? '' : '⚠ Cadastre a ficha técnica antes de concluir.';
+  document.getElementById('modal-producao').style.display = 'flex';
+}
+
+function fecharModalProducao(){
+  document.getElementById('modal-producao').style.display = 'none';
+  ordemEmConclusao = null;
+}
+document.getElementById('mp-cancelar').addEventListener('click', fecharModalProducao);
+
+document.getElementById('mp-confirmar').addEventListener('click', async () => {
+  if (!ordemEmConclusao) return;
+  const qtd = parseFloat(document.getElementById('mp-qtd').value);
+  if (!qtd || qtd <= 0) { alert('Informe a quantidade produzida.'); return; }
+  const btn = document.getElementById('mp-confirmar');
+  btn.disabled = true;
   const { error } = await supabaseClient.rpc('concluir_ordem_producao', {
-    p_ordem_id: id, p_quantidade_produzida: parseFloat(qtd)
+    p_ordem_id: ordemEmConclusao.id,
+    p_quantidade_produzida: qtd,
+    p_local_destino: document.getElementById('mp-destino').value,
+    p_consumir_da_materia_prima: document.querySelector('input[name="mp-modo"]:checked').value === 'materia'
   });
+  btn.disabled = false;
   if (error) { alert('Erro ao concluir: ' + error.message); return; }
+  fecharModalProducao();
   loadOrdens();
   loadEstoque();
   loadProdutos();
+  loadFichaTecnica();
+});
+
+// ============================================================
+// COMPRAS — ORDEM DE COMPRA
+// Cada OC registra o que foi comprado (matéria-prima ou produto
+// acabado), o frete e as despesas. O banco rateia o frete entre os
+// itens (por valor ou peso) e calcula o custo unitário final de cada
+// um. Ao "Receber", dá entrada no estoque e atualiza o custo médio.
+// ============================================================
+let ocAtual = null;          // cabeçalho da OC aberta (linha de vw_ordens_compra_resumo)
+let ocListaCache = [];
+const OC_STATUS_LABEL = { rascunho: 'Rascunho', recebida: 'Recebida', cancelada: 'Cancelada' };
+const OC_CAMPOS_RECALCULO = ['frete', 'outras_despesas', 'criterio_rateio', 'data_compra'];
+
+function badgeOC(status){ return `<span class="badge ${status}">${OC_STATUS_LABEL[status] || status}</span>`; }
+function produtoDoCache(id){ return (ultimosProdutosCache || []).find(p => p.id === id); }
+
+async function loadCompras(){
+  const { data, error } = await supabaseClient
+    .from('vw_ordens_compra_resumo')
+    .select('*')
+    .order('data_compra', { ascending: false })
+    .order('numero', { ascending: false })
+    .limit(500);
+  if (error) { console.error(error); return; }
+  ocListaCache = data || [];
+
+  // indicadores do mês (mês de Brasília), só OCs recebidas
+  const mes = hojeSP().slice(0, 7);
+  const doMes = ocListaCache.filter(o => o.status === 'recebida' && String(o.data_compra).slice(0, 7) === mes);
+  const totMes = doMes.reduce((acc, o) => acc + Number(o.total_geral || 0), 0);
+  const despMes = doMes.reduce((acc, o) => acc + Number(o.total_despesas || 0), 0);
+  const prodMes = doMes.reduce((acc, o) => acc + Number(o.total_produtos || 0), 0);
+  document.getElementById('oc-kpi-mes').textContent = fmtMoeda(totMes);
+  document.getElementById('oc-kpi-frete').textContent = fmtMoeda(despMes);
+  document.getElementById('oc-kpi-frete-pct').textContent = prodMes > 0
+    ? (despMes / prodMes * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% sobre o valor dos produtos' : '';
+  document.getElementById('oc-kpi-rascunho').textContent = ocListaCache.filter(o => o.status === 'rascunho').length;
+
+  renderListaOCs();
+}
+
+function renderListaOCs(){
+  const filtro = document.getElementById('oc-filtro-status').value;
+  const lista = ocListaCache.filter(o => !filtro || o.status === filtro);
+  const tbody = document.getElementById('tabela-ocs');
+  tbody.innerHTML = '';
+  document.getElementById('ocs-vazio').style.display = lista.length ? 'none' : 'block';
+  lista.forEach(o => {
+    const resumo = o.produtos_resumo || '<span class="muted">sem itens</span>';
+    const resumoCurto = o.produtos_resumo && o.produtos_resumo.length > 60 ? esc(o.produtos_resumo.slice(0, 60)) + '…' : (o.produtos_resumo ? esc(o.produtos_resumo) : resumo);
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => abrirOC(o.id);
+    tr.innerHTML = `
+      <td><strong>#${o.numero}</strong></td>
+      <td>${fmtData(o.data_compra)}</td>
+      <td>${o.fornecedor ? esc(o.fornecedor) : '<span class="muted">—</span>'}</td>
+      <td>${resumoCurto}<span class="sub">${o.qtd_itens} ${o.qtd_itens === 1 ? 'item' : 'itens'}</span></td>
+      <td class="num">${fmtMoeda(o.total_produtos)}</td>
+      <td class="num">${fmtMoeda(o.total_despesas)}</td>
+      <td class="num"><strong>${fmtMoeda(o.total_geral)}</strong></td>
+      <td>${badgeOC(o.status)}</td>
+      <td><button class="secondary">Abrir</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById('oc-filtro-status').addEventListener('change', renderListaOCs);
+
+function mostrarListaOC(){
+  document.getElementById('oc-detalhe-wrap').style.display = 'none';
+  document.getElementById('oc-lista-wrap').style.display = 'block';
+  ocAtual = null;
+  loadCompras();
+}
+document.getElementById('oc-voltar').addEventListener('click', mostrarListaOC);
+
+document.getElementById('btn-nova-oc').addEventListener('click', async () => {
+  const { data, error } = await supabaseClient
+    .from('ordens_compra')
+    .insert({ data_compra: hojeSP() })
+    .select('id')
+    .single();
+  if (error) { alert('Erro ao criar OC: ' + error.message); return; }
+  await abrirOC(data.id);
+  document.getElementById('oc-fornecedor').focus();
+});
+
+async function abrirOC(id){
+  const { data, error } = await supabaseClient.from('vw_ordens_compra_resumo').select('*').eq('id', id).single();
+  if (error) { alert('Erro ao abrir OC: ' + error.message); return; }
+  ocAtual = data;
+
+  document.getElementById('oc-lista-wrap').style.display = 'none';
+  document.getElementById('oc-detalhe-wrap').style.display = 'block';
+  document.getElementById('oc-titulo').textContent = 'Ordem de compra #' + data.numero;
+  document.getElementById('oc-status-badge').innerHTML = badgeOC(data.status);
+
+  // preenche o cabeçalho; em OC recebida só alguns campos continuam editáveis
+  document.querySelectorAll('#form-oc [data-campo]').forEach(el => {
+    const v = data[el.dataset.campo];
+    el.value = v === null || v === undefined ? '' : v;
+    el.disabled = data.status === 'cancelada' || (data.status === 'recebida' && !el.dataset.editavelRecebida);
+  });
+  document.getElementById('form-oc-item').style.display = data.status === 'rascunho' ? 'flex' : 'none';
+  document.getElementById('oc-i-dica').style.display = data.status === 'rascunho' ? 'block' : 'none';
+
+  renderAcoesOC();
+  await loadItensOC();
+}
+
+function renderAcoesOC(){
+  const box = document.getElementById('oc-acoes');
+  const st = ocAtual.status;
+  const botoes = [];
+  if (st === 'rascunho') {
+    botoes.push(`<button type="button" onclick="receberOC()">${TEXTOS.BTN_RECEBER_OC}</button>`);
+    botoes.push(`<button type="button" class="secondary" onclick="mudarStatusOC('cancelada')">${TEXTOS.BTN_CANCELAR_OC}</button>`);
+    botoes.push(`<button type="button" class="danger" onclick="excluirOC()">${TEXTOS.BTN_EXCLUIR_OC}</button>`);
+  } else if (st === 'recebida') {
+    botoes.push(`<button type="button" class="secondary" onclick="estornarOC()">${TEXTOS.BTN_ESTORNAR_OC}</button>`);
+  } else if (st === 'cancelada') {
+    botoes.push(`<button type="button" class="secondary" onclick="mudarStatusOC('rascunho')">${TEXTOS.BTN_REABRIR_OC}</button>`);
+    botoes.push(`<button type="button" class="danger" onclick="excluirOC()">${TEXTOS.BTN_EXCLUIR_OC}</button>`);
+  }
+  box.innerHTML = botoes.join('');
+}
+
+// Salva cada campo do cabeçalho assim que ele muda
+document.querySelectorAll('#form-oc [data-campo]').forEach(el => {
+  el.addEventListener('change', async () => {
+    if (!ocAtual) return;
+    const campo = el.dataset.campo;
+    let valor = el.value;
+    if (el.type === 'number') valor = valor === '' ? 0 : parseFloat(valor);
+    else if (valor === '') valor = campo === 'data_compra' ? hojeSP() : null;
+    const { error } = await supabaseClient.from('ordens_compra').update({ [campo]: valor }).eq('id', ocAtual.id);
+    if (error) { alert('Erro ao salvar: ' + error.message); await abrirOC(ocAtual.id); return; }
+    ocAtual[campo] = valor;
+    const ind = document.getElementById('oc-salvo');
+    ind.classList.add('visivel'); setTimeout(() => ind.classList.remove('visivel'), 1500);
+    if (OC_CAMPOS_RECALCULO.includes(campo)) {
+      ocAtual.total_despesas = Number(ocAtual.frete || 0) + Number(ocAtual.outras_despesas || 0);
+      await loadItensOC();
+    }
+  });
+});
+
+async function loadItensOC(){
+  if (!ocAtual) return;
+  const { data, error } = await supabaseClient
+    .from('vw_oc_itens').select('*')
+    .eq('ordem_compra_id', ocAtual.id)
+    .order('created_at');
+  if (error) { console.error(error); return; }
+  const itens = data || [];
+  const editavel = ocAtual.status === 'rascunho';
+  const tbody = document.getElementById('tabela-oc-itens');
+  tbody.innerHTML = '';
+  document.getElementById('oc-itens-vazio').style.display = itens.length ? 'none' : 'block';
+
+  itens.forEach(i => {
+    const localLabel = i.local_entrada === 'materia_prima' ? 'Matéria-prima' : 'Físico';
+    const unidCompra = i.unidade_compra || i.unidade_medida;
+    let variacao = '<span class="muted">primeira compra</span>';
+    if (i.custo_compra_anterior > 0 && i.custo_unitario_final !== null) {
+      const pct = (Number(i.custo_unitario_final) / Number(i.custo_compra_anterior) - 1) * 100;
+      const txt = (pct > 0 ? '▲ +' : pct < 0 ? '▼ ' : '= ') + pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+      const cls = pct > 0.05 ? 'var-sobe' : pct < -0.05 ? 'var-desce' : 'muted';
+      variacao = `<span class="${cls}">${txt}</span><span class="sub">antes ${fmtCusto(i.custo_compra_anterior)}</span>`;
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="min-width:170px;">${esc(i.produto_nome)}<span class="sub">${esc(i.sku_interno)}</span></td>
+      <td class="num">${fmt(i.quantidade_compra)} ${esc(unidCompra)}</td>
+      <td class="num">${fmt(i.quantidade_estoque)} ${esc(i.unidade_medida)}${Number(i.fator_conversao) !== 1 ? `<span class="sub">1 ${esc(unidCompra)} = ${fmt(i.fator_conversao)} ${esc(i.unidade_medida)}</span>` : ''}<span class="sub">→ ${localLabel}</span></td>
+      <td class="num">${fmtMoeda(i.preco_unitario_compra)}</td>
+      <td class="num">${fmtMoeda(i.subtotal)}</td>
+      <td class="num">${i.frete_rateado === null ? '<span class="var-sobe">?</span>' : fmtMoeda(i.frete_rateado)}</td>
+      <td class="num"><strong>${fmtCusto(i.custo_unitario_final)}</strong><span class="sub">por ${esc(i.unidade_medida)}</span></td>
+      <td class="num">${variacao}</td>
+      <td>${editavel ? `<button class="secondary" title="Remover item" style="padding:5px 10px;" onclick="removerItemOC('${i.id}')">✕</button>` : ''}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // totais
+  const totProdutos = itens.reduce((acc, i) => acc + Number(i.subtotal || 0), 0);
+  const despesas = Number(ocAtual.frete || 0) + Number(ocAtual.outras_despesas || 0);
+  document.getElementById('oc-tot-produtos').textContent = fmtMoeda(totProdutos);
+  document.getElementById('oc-tot-despesas').textContent = fmtMoeda(despesas);
+  document.getElementById('oc-tot-geral').textContent = fmtMoeda(totProdutos + despesas);
+
+  // avisos
+  const avisos = [];
+  if (ocAtual.criterio_rateio === 'peso') {
+    const semPeso = itens.filter(i => !(Number(i.peso_kg) > 0)).map(i => i.produto_nome);
+    if (semPeso.length) avisos.push(`Rateio por peso: ${esc(semPeso.join(', '))} ${semPeso.length === 1 ? 'está' : 'estão'} sem peso cadastrado (aba Produtos). Cadastre o peso ou troque o rateio para "valor".`);
+  }
+  if (despesas > 0 && itens.length && itens.every(i => i.frete_rateado === null)) {
+    avisos.push('Não há base para ratear o frete (itens sem valor ou sem peso).');
+  }
+  document.getElementById('oc-avisos').innerHTML = avisos.map(a => `<div class="aviso">⚠ ${a}</div>`).join('');
+}
+
+// ---- adicionar item ----
+async function aoEscolherProdutoOC(){
+  const id = document.getElementById('oc-i-produto').value;
+  const p = produtoDoCache(id);
+  document.getElementById('oc-i-unid-estoque').textContent = p ? p.unidade_medida : '';
+  if (!p) { atualizarDicaItemOC(); return; }
+  document.getElementById('oc-i-local').value = p.tipo === 'materia_prima' ? 'materia_prima' : 'fisico';
+  document.getElementById('oc-i-unidade').value = p.unidade_medida;
+  document.getElementById('oc-i-fator').value = 1;
+  document.getElementById('oc-i-preco').placeholder = '';
+
+  // traz a unidade, o fator e o preço da última compra desse produto
+  const { data } = await supabaseClient
+    .from('ordem_compra_itens')
+    .select('unidade_compra, fator_conversao, preco_unitario_compra')
+    .eq('produto_id', id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (data && data.length && document.getElementById('oc-i-produto').value === id) {
+    const u = data[0];
+    if (u.unidade_compra) document.getElementById('oc-i-unidade').value = u.unidade_compra;
+    document.getElementById('oc-i-fator').value = Number(u.fator_conversao);
+    document.getElementById('oc-i-preco').placeholder = 'última: ' + Number(u.preco_unitario_compra).toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+  }
+  atualizarDicaItemOC();
+}
+
+function atualizarDicaItemOC(){
+  const p = produtoDoCache(document.getElementById('oc-i-produto').value);
+  const qtd = parseFloat(document.getElementById('oc-i-qtd').value) || 0;
+  const fator = parseFloat(document.getElementById('oc-i-fator').value) || 0;
+  const preco = parseFloat(document.getElementById('oc-i-preco').value) || 0;
+  const dica = document.getElementById('oc-i-dica');
+  if (!p || !qtd) {
+    dica.innerHTML = 'Dica: se você compra em uma unidade diferente da do estoque (ex: compra BLOCO, controla ROLO ou ETIQUETA), informe quantas unidades de estoque vêm em 1 unidade de compra.';
+    return;
+  }
+  const unid = document.getElementById('oc-i-unidade').value || p.unidade_medida;
+  const qtdEst = qtd * fator;
+  const precoPorEstoque = fator > 0 ? preco / fator : 0;
+  dica.innerHTML = `= <strong>${fmt(qtdEst)} ${esc(p.unidade_medida)}</strong> no estoque · subtotal <strong>${fmtMoeda(qtd * preco)}</strong>`
+    + (fator !== 1 && preco > 0 ? ` · ${fmtCusto(precoPorEstoque)} por ${esc(p.unidade_medida)} (sem frete)` : '')
+    + (unid !== p.unidade_medida && fator === 1 ? ' · <span class="var-sobe">confira o fator: a unidade de compra é diferente da unidade do estoque</span>' : '');
+}
+
+document.getElementById('oc-i-produto').addEventListener('change', aoEscolherProdutoOC);
+['oc-i-qtd', 'oc-i-fator', 'oc-i-preco', 'oc-i-unidade'].forEach(id =>
+  document.getElementById(id).addEventListener('input', atualizarDicaItemOC));
+
+document.getElementById('form-oc-item').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!ocAtual) return;
+  const produtoId = document.getElementById('oc-i-produto').value;
+  if (!produtoId) { alert('Escolha o produto.'); return; }
+  const payload = {
+    ordem_compra_id: ocAtual.id,
+    produto_id: produtoId,
+    local_entrada: document.getElementById('oc-i-local').value,
+    unidade_compra: document.getElementById('oc-i-unidade').value.trim().toUpperCase() || null,
+    quantidade_compra: parseFloat(document.getElementById('oc-i-qtd').value),
+    fator_conversao: parseFloat(document.getElementById('oc-i-fator').value),
+    preco_unitario_compra: parseFloat(document.getElementById('oc-i-preco').value),
+  };
+  const { error } = await supabaseClient.from('ordem_compra_itens').insert(payload);
+  if (error) { alert('Erro ao adicionar item: ' + error.message); return; }
+  e.target.reset();
+  document.getElementById('oc-i-fator').value = 1;
+  document.getElementById('oc-i-preco').placeholder = '';
+  document.getElementById('oc-i-unid-estoque').textContent = '';
+  atualizarDicaItemOC();
+  await loadItensOC();
+  document.getElementById('oc-i-produto').focus();
+});
+
+async function removerItemOC(id){
+  const { error } = await supabaseClient.from('ordem_compra_itens').delete().eq('id', id);
+  if (error) { alert('Erro ao remover: ' + error.message); return; }
+  loadItensOC();
+}
+
+// ---- ações ----
+async function receberOC(){
+  const tot = document.getElementById('oc-tot-geral').textContent;
+  const qtdItens = document.querySelectorAll('#tabela-oc-itens tr').length;
+  if (!qtdItens) { alert('Adicione os itens antes de receber.'); return; }
+  if (!confirm(`Receber a OC #${ocAtual.numero} (${tot})?\n\nIsso vai:\n• dar entrada dos ${qtdItens} ${qtdItens === 1 ? 'item' : 'itens'} no estoque\n• atualizar o custo médio de cada produto (já com o frete rateado)\n\nDepois de recebida, a OC fica travada (dá pra estornar se precisar corrigir).`)) return;
+  const { error } = await supabaseClient.rpc('receber_ordem_compra', { p_ordem_id: ocAtual.id });
+  if (error) { alert('Não foi possível receber: ' + error.message); return; }
+  await abrirOC(ocAtual.id);
+  loadEstoque(); loadProdutos(); loadFichaTecnica();
+}
+
+async function estornarOC(){
+  if (!confirm(`Estornar o recebimento da OC #${ocAtual.numero}?\n\nIsso tira do estoque o que ela deu entrada, volta o custo dos produtos para o valor de antes e deixa a OC em rascunho para você corrigir e receber de novo.`)) return;
+  const { error } = await supabaseClient.rpc('estornar_ordem_compra', { p_ordem_id: ocAtual.id });
+  if (error) { alert('Não foi possível estornar: ' + error.message); return; }
+  await abrirOC(ocAtual.id);
+  loadEstoque(); loadProdutos(); loadFichaTecnica();
+}
+
+async function mudarStatusOC(novo){
+  if (novo === 'cancelada' && !confirm(`Cancelar a OC #${ocAtual.numero}? Ela fica registrada como cancelada (não mexe em estoque nem custo).`)) return;
+  const { error } = await supabaseClient.from('ordens_compra').update({ status: novo }).eq('id', ocAtual.id);
+  if (error) { alert('Erro: ' + error.message); return; }
+  abrirOC(ocAtual.id);
+}
+
+async function excluirOC(){
+  if (!confirm(`Excluir a OC #${ocAtual.numero} e todos os itens dela? Essa ação não pode ser desfeita.`)) return;
+  const { error } = await supabaseClient.from('ordens_compra').delete().eq('id', ocAtual.id);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  mostrarListaOC();
 }
 
 // ============================================================
@@ -2065,6 +2702,7 @@ function carregarApp(){
   loadFichaTecnica();
   loadEstoque();
   loadOrdens();
+  loadCompras();
   loadPedidos();
   loadIntegracoes();
   loadPerguntasAbertas();
