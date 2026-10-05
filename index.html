@@ -170,6 +170,24 @@
   .paginacao-pagina input{ width:64px; padding:5px 6px; border:1px solid var(--border); border-radius:6px; font-size:13px; text-align:center; }
   .paginacao-botoes select{ padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:13px; margin-left:6px; }
   .carregando{ opacity:.45; pointer-events:none; transition:opacity .15s; }
+
+  /* ---------- Campo de busca com autocomplete (substitui <select>) ---------- */
+  .ac-wrap{ position:relative; display:flex; flex-direction:column; }
+  .ac-wrap > select.ac-origem{ display:none; }
+  .field .ac-wrap input.ac-input{ min-width:240px; width:100%; box-sizing:border-box; }
+  .field .ac-wrap.ac-curto input.ac-input{ min-width:150px; }
+  .ac-lista{
+    position:absolute; top:calc(100% + 2px); left:0; min-width:100%; max-width:min(520px, 92vw);
+    max-height:300px; overflow-y:auto; background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; box-shadow:0 8px 24px rgba(20,24,32,0.14); z-index:200; display:none; padding:4px 0;
+  }
+  .ac-lista.aberta{ display:block; }
+  .ac-item{ padding:7px 12px; font-size:14px; cursor:pointer; display:flex; justify-content:space-between; gap:12px; white-space:nowrap; }
+  .ac-item .ac-grupo{ font-size:11px; color:var(--muted); }
+  .ac-item.ativo, .ac-item:hover{ background:#fff3e3; }
+  .ac-item mark{ background:none; color:var(--accent); font-weight:700; }
+  .ac-vazio{ padding:8px 12px; font-size:13px; color:var(--muted); }
+  .busca-tabela{ padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:100%; max-width:380px; margin-bottom:12px; box-sizing:border-box; font-family:inherit; }
 </style>
 </head>
 <body>
@@ -363,6 +381,8 @@
             <option value="ml_conta3">Mercado Livre - Conta 3</option>
           </select>
         </div>
+        <div class="field"><label data-t="FILTRO_LABEL_PRODUTO" for="f-produto">Produto</label><select id="f-produto"><option value="">Todos os produtos</option></select></div>
+        <div class="field"><label data-t="FILTRO_LABEL_BUSCA" for="f-busca">Cliente, nº do pedido ou SKU</label><input type="text" id="f-busca" data-t-ph="FILTRO_PH_BUSCA" placeholder="ex: maria, 2000018…, ROLO200"></div>
         <button data-t="BTN_FILTRAR" type="submit">Filtrar</button>
       </form>
       <p style="margin-top:12px;"><strong>Faturamento no período filtrado: <span id="v-faturamento-filtro">R$ 0,00</span></strong> <span class="muted" id="v-qtd-pedidos-filtro"></span></p>
@@ -431,6 +451,7 @@
     </div>
     <div class="card">
       <h3 data-t="CARD_PRODUTOS_CADASTRADOS">Produtos cadastrados</h3>
+      <input type="search" class="busca-tabela" id="busca-produtos" data-t-ph="PH_BUSCA_PRODUTOS" placeholder="Buscar por SKU, nome ou SKU do ML…" autocomplete="off">
       <table id="tabela-produtos"><thead>
         <tr><th>SKU</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Custo</th><th>Preço venda</th><th>Ativo</th><th></th><th></th></tr>
       </thead><tbody></tbody></table>
@@ -590,6 +611,7 @@
     </div>
     <div class="card">
       <h3 data-t="CARD_SALDO_ATUAL">Saldo atual</h3>
+      <input type="search" class="busca-tabela" id="busca-estoque" data-t-ph="PH_BUSCA_ESTOQUE" placeholder="Buscar produto, SKU ou local…" autocomplete="off">
       <table><thead>
         <tr><th>Produto</th><th>Local</th><th>Quantidade</th><th>Reservado</th><th></th></tr>
       </thead><tbody id="tabela-estoque"></tbody></table>
@@ -898,6 +920,11 @@ const TEXTOS = {
   CARD_REGISTRAR_PEDIDO: 'Registrar pedido de venda',
   CARD_FILTRAR_PEDIDOS: 'Filtrar pedidos',
   CARD_PEDIDOS: 'Pedidos',
+  FILTRO_LABEL_PRODUTO: 'Produto',
+  FILTRO_LABEL_BUSCA: 'Cliente, nº do pedido ou SKU',
+  FILTRO_PH_BUSCA: 'ex: maria, 2000018…, ROLO200',
+  PH_BUSCA_PRODUTOS: 'Buscar por SKU, nome ou SKU do ML…',
+  PH_BUSCA_ESTOQUE: 'Buscar produto, SKU ou local…',
   BTN_REVINCULAR: 'Revincular itens sem produto',
   TEXTO_REVINCULAR_AJUDA: 'Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.',
   CARD_CADASTRAR_PRODUTO: 'Cadastrar produto',
@@ -1040,6 +1067,204 @@ function fmtCusto(n){
 }
 // Protege textos digitados (fornecedor, observação...) ao montar HTML
 function esc(t){ return String(t === null || t === undefined ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ============================================================
+// CAMPO DE BUSCA COM AUTOCOMPLETE
+// Transforma um <select> num campo de digitar com sugestões.
+// O <select> original continua existindo (escondido) e continua sendo
+// a "fonte da verdade": todo o resto do sistema lê/escreve nele como
+// antes (.value, evento 'change'), então nenhuma outra lógica muda.
+// ============================================================
+function normalizarBusca(t){
+  return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+function criarAutocomplete(select, cfg = {}){
+  if (!select || select.dataset.ac) return;
+  select.dataset.ac = '1';
+  const obrigatorio = select.required;
+  select.required = false;                 // a validação passa pro campo visível
+  select.classList.add('ac-origem');
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-wrap' + (cfg.curto ? ' ac-curto' : '');
+  select.parentNode.insertBefore(wrap, select);
+  wrap.appendChild(select);
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'ac-input';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  if (obrigatorio) input.required = true;
+  if (select.id) {
+    input.id = select.id + '-busca';
+    const label = document.querySelector(`label[for="${select.id}"]`);
+    if (label) label.htmlFor = input.id;
+  }
+  wrap.insertBefore(input, select);
+
+  const lista = document.createElement('div');
+  lista.className = 'ac-lista';
+  wrap.appendChild(lista);
+
+  let opcoes = [];        // { value, label, grupo, busca }
+  let filtradas = [];
+  let ativo = -1;
+  let placeholderVazio = cfg.placeholder || 'Digite para buscar…';
+
+  function lerOpcoes(){
+    opcoes = [];
+    placeholderVazio = cfg.placeholder || 'Digite para buscar…';
+    Array.from(select.options).forEach(o => {
+      if (o.value === '') {
+        // opção vazia ("Todos", "Selecione…") vira o texto de fundo do campo
+        if (o.textContent.trim() && !cfg.placeholder) placeholderVazio = o.textContent.trim();
+        return;
+      }
+      const grupo = o.parentElement && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement.label : '';
+      opcoes.push({ value: o.value, label: o.textContent, grupo, busca: normalizarBusca(o.textContent) });
+    });
+    input.placeholder = placeholderVazio;
+  }
+
+  function rotuloAtual(){
+    const o = select.options[select.selectedIndex];
+    return o && o.value !== '' ? o.textContent : '';
+  }
+
+  function sincronizar(){
+    input.value = rotuloAtual();
+    validar();
+  }
+
+  function validar(){
+    input.setCustomValidity(obrigatorio && !select.value ? 'Escolha um item da lista (digite e clique numa sugestão).' : '');
+  }
+
+  function escolher(valor){
+    const mudou = select.value !== valor;
+    setValorNativo(valor);
+    sincronizar();
+    fechar();
+    if (mudou) select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function filtrar(){
+    const q = normalizarBusca(input.value);
+    const partes = q.split(/\s+/).filter(Boolean);
+    filtradas = !partes.length ? opcoes.slice()
+      : opcoes
+          .filter(o => partes.every(p => o.busca.includes(p)))
+          .map(o => ({ o, nota: o.busca.startsWith(q) ? 0 : (o.busca.includes(' ' + partes[0]) || o.busca.includes('(' + partes[0]) ? 1 : 2) }))
+          .sort((a, b) => a.nota - b.nota)
+          .map(x => x.o);
+    ativo = filtradas.length ? 0 : -1;
+    desenhar(partes);
+  }
+
+  function destacar(texto, partes){
+    let html = esc(texto);
+    if (!partes.length) return html;
+    // destaca o 1º trecho digitado (ignorando acentos/maiúsculas)
+    const norm = normalizarBusca(texto);
+    const i = norm.indexOf(partes[0]);
+    if (i < 0) return html;
+    return esc(texto.slice(0, i)) + '<mark>' + esc(texto.slice(i, i + partes[0].length)) + '</mark>' + esc(texto.slice(i + partes[0].length));
+  }
+
+  function desenhar(partes = []){
+    const LIMITE = 60;
+    if (!filtradas.length) {
+      lista.innerHTML = '<div class="ac-vazio">Nenhum resultado.</div>';
+    } else {
+      lista.innerHTML = filtradas.slice(0, LIMITE).map((o, i) =>
+        `<div class="ac-item${i === ativo ? ' ativo' : ''}" data-i="${i}"><span>${destacar(o.label, partes)}</span>${o.grupo ? `<span class="ac-grupo">${esc(o.grupo)}</span>` : ''}</div>`
+      ).join('') + (filtradas.length > LIMITE ? `<div class="ac-vazio">+${filtradas.length - LIMITE} resultados — continue digitando…</div>` : '');
+    }
+    lista.classList.add('aberta');
+  }
+
+  function fechar(){ lista.classList.remove('aberta'); ativo = -1; }
+
+  function moverAtivo(delta){
+    if (!lista.classList.contains('aberta')) { filtrar(); return; }
+    const max = Math.min(filtradas.length, 60) - 1;
+    if (max < 0) return;
+    ativo = Math.max(0, Math.min(max, ativo + delta));
+    lista.querySelectorAll('.ac-item').forEach((el, i) => el.classList.toggle('ativo', i === ativo));
+    const el = lista.querySelector('.ac-item.ativo');
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }
+
+  input.addEventListener('focus', () => { input.select(); filtrar(); });
+  input.addEventListener('input', () => {
+    filtrar();
+    // apagou tudo num campo que aceita vazio ("Todos") → limpa a escolha na hora
+    if (!input.value.trim() && Array.from(select.options).some(o => o.value === '') && select.value !== '') {
+      setValorNativo('');
+      validar();
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); moverAtivo(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moverAtivo(-1); }
+    else if (e.key === 'Enter') {
+      if (lista.classList.contains('aberta') && ativo >= 0 && filtradas[ativo]) {
+        e.preventDefault();               // escolhe a sugestão em vez de enviar o formulário
+        escolher(filtradas[ativo].value);
+      }
+    } else if (e.key === 'Escape') { sincronizar(); fechar(); }
+  });
+  input.addEventListener('blur', () => {
+    // saiu do campo: se sobrou exatamente 1 sugestão, escolhe ela; senão volta pro valor escolhido
+    if (lista.classList.contains('aberta') && input.value.trim() && filtradas.length === 1) {
+      escolher(filtradas[0].value);
+    } else {
+      sincronizar();
+      fechar();
+    }
+  });
+  // mousedown (e não click) pra escolher antes do blur do campo
+  lista.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const item = e.target.closest('.ac-item');
+    if (item) escolher(filtradas[Number(item.dataset.i)].value);
+  });
+
+  // Quando o sistema troca o valor do <select> por código (ex: editar, limpar
+  // formulário), o campo visível acompanha.
+  const proto = HTMLSelectElement.prototype;
+  const descValor = Object.getOwnPropertyDescriptor(proto, 'value');
+  const descIndice = Object.getOwnPropertyDescriptor(proto, 'selectedIndex');
+  function setValorNativo(v){ descValor.set.call(select, v); }
+  Object.defineProperty(select, 'value', {
+    configurable: true,
+    get(){ return descValor.get.call(select); },
+    set(v){ descValor.set.call(select, v); sincronizar(); },
+  });
+  Object.defineProperty(select, 'selectedIndex', {
+    configurable: true,
+    get(){ return descIndice.get.call(select); },
+    set(v){ descIndice.set.call(select, v); sincronizar(); },
+  });
+  select.focus = () => input.focus();
+  select.addEventListener('change', sincronizar);
+  if (select.form) select.form.addEventListener('reset', () => setTimeout(sincronizar, 0));
+
+  // Quando a lista de opções é recarregada (ex: produto novo cadastrado)
+  new MutationObserver(() => { lerOpcoes(); sincronizar(); }).observe(select, { childList: true, subtree: true });
+
+  lerOpcoes();
+  sincronizar();
+}
+
+// Campos de produto e filtros que viram busca digitada
+['v-item-produto', 'm-produto', 't-produto', 'f-acabado', 'f-materia', 'oc-i-produto', 'o-produto', 'f-produto']
+  .forEach(id => criarAutocomplete(document.getElementById(id)));
+criarAutocomplete(document.getElementById('f-canal'), { curto: true });
+criarAutocomplete(document.getElementById('oc-filtro-status'), { curto: true });
 // Data de hoje no horário de Brasília (não depende do fuso do computador)
 function hojeSP(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); }
 function fmtData(iso){ if (!iso) return '-'; const [a, m, d] = String(iso).slice(0, 10).split('-'); return `${d}/${m}/${a}`; }
@@ -1153,10 +1378,26 @@ async function loadProdutos(){
   const { data, error } = await supabaseClient.from('produtos').select('*').order('nome');
   if (error) { console.error(error); return; }
   ultimosProdutosCache = data;
+  renderTabelaProdutos();
+  preencherSelectsDeProdutos(data);
+  loadDashboard();
+  loadLojaProdutos();
+}
+
+// Desenha a tabela de produtos aplicando a busca digitada (filtra na hora, sem ir ao banco)
+function renderTabelaProdutos(){
+  const data = ultimosProdutosCache || [];
+  const partes = normalizarBusca(document.getElementById('busca-produtos').value).split(/\s+/).filter(Boolean);
+  const visiveis = !partes.length ? data : data.filter(p => {
+    const alvo = normalizarBusca([p.sku_interno, p.nome, p.sku_ml, ...(p.skus_alternativos || [])].join(' '));
+    return partes.every(x => alvo.includes(x));
+  });
   const tbody = document.querySelector('#tabela-produtos tbody');
   tbody.innerHTML = '';
-  document.getElementById('produtos-vazio').style.display = data.length ? 'none' : 'block';
-  data.forEach(p => {
+  const vazio = document.getElementById('produtos-vazio');
+  vazio.textContent = data.length ? 'Nenhum produto encontrado para essa busca.' : 'Nenhum produto cadastrado ainda.';
+  vazio.style.display = visiveis.length ? 'none' : 'block';
+  visiveis.forEach(p => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${p.sku_interno}</td>
@@ -1171,10 +1412,8 @@ async function loadProdutos(){
     `;
     tbody.appendChild(tr);
   });
-  preencherSelectsDeProdutos(data);
-  loadDashboard();
-  loadLojaProdutos();
 }
+document.getElementById('busca-produtos').addEventListener('input', renderTabelaProdutos);
 
 // ============================================================
 // LOJA ONLINE (visibilidade, destaque, promoção, fotos, faixas de preço)
@@ -1537,16 +1776,23 @@ function preencherSelectsDeProdutos(produtos){
          + (pa.length ? `<optgroup label="Produtos acabados">${opts(pa)}</optgroup>` : '');
   };
 
-  document.getElementById('f-acabado').innerHTML = opts(acabados);
-  document.getElementById('f-materia').innerHTML = optsAgrupado(produtos);
+  // opção vazia no topo: o campo começa em branco e a pessoa digita pra escolher
+  const vazio = '<option value=""></option>';
+  document.getElementById('f-acabado').innerHTML = vazio + opts(acabados);
+  document.getElementById('f-materia').innerHTML = vazio + optsAgrupado(produtos);
   const ocProdutoSel = document.getElementById('oc-i-produto');
   const ocProdutoAntes = ocProdutoSel.value;
   ocProdutoSel.innerHTML = '<option value="">Selecione…</option>' + optsAgrupado(produtos.filter(p => p.ativo));
   if (ocProdutoAntes) ocProdutoSel.value = ocProdutoAntes;
-  document.getElementById('o-produto').innerHTML = opts(acabados);
-  document.getElementById('m-produto').innerHTML = opts(produtos);
-  document.getElementById('t-produto').innerHTML = opts(produtos);
-  document.getElementById('v-item-produto').innerHTML = opts(acabados);
+  document.getElementById('o-produto').innerHTML = vazio + opts(acabados);
+  document.getElementById('m-produto').innerHTML = vazio + opts(produtos);
+  document.getElementById('t-produto').innerHTML = vazio + opts(produtos);
+  document.getElementById('v-item-produto').innerHTML = vazio + opts(acabados);
+  // filtro de pedidos por produto (mantém o que estava escolhido)
+  const fProduto = document.getElementById('f-produto');
+  const fProdutoAntes = fProduto.value;
+  fProduto.innerHTML = '<option value="">Todos os produtos</option>' + optsAgrupado(produtos);
+  if (fProdutoAntes) fProduto.value = fProdutoAntes;
 }
 
 // ============================================================
@@ -1712,14 +1958,28 @@ async function loadEstoque(){
     .select('id, quantidade, quantidade_reservada, local, produtos(nome, sku_interno)')
     .order('local');
   if (error) { console.error(error); return; }
+  estoqueCache = data;
+  renderTabelaEstoque();
+  loadDashboard();
+}
+
+let estoqueCache = [];
+function renderTabelaEstoque(){
+  const data = estoqueCache || [];
+  const nomeLocal = { materia_prima: 'Matéria-prima', fisico: 'Físico', full: 'Full (genérico)', ...FULL_LABEL };
+  const partes = normalizarBusca(document.getElementById('busca-estoque').value).split(/\s+/).filter(Boolean);
+  const visiveis = !partes.length ? data : data.filter(s => {
+    const alvo = normalizarBusca([s.produtos?.nome, s.produtos?.sku_interno, nomeLocal[s.local] || s.local].join(' '));
+    return partes.every(x => alvo.includes(x));
+  });
 
   const tbody = document.getElementById('tabela-estoque');
   tbody.innerHTML = '';
-  document.getElementById('estoque-vazio').style.display = data.length ? 'none' : 'block';
+  const vazio = document.getElementById('estoque-vazio');
+  vazio.textContent = data.length ? 'Nenhum saldo encontrado para essa busca.' : 'Nenhum saldo de estoque ainda.';
+  vazio.style.display = visiveis.length ? 'none' : 'block';
 
-  const nomeLocal = { materia_prima: 'Matéria-prima', fisico: 'Físico', full: 'Full (genérico)', ...FULL_LABEL };
-
-  data.forEach(s => {
+  visiveis.forEach(s => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${s.produtos ? s.produtos.nome + ' (' + s.produtos.sku_interno + ')' : '—'}</td>
@@ -1730,8 +1990,8 @@ async function loadEstoque(){
     `;
     tbody.appendChild(tr);
   });
-  loadDashboard();
 }
+document.getElementById('busca-estoque').addEventListener('input', renderTabelaEstoque);
 
 async function excluirSaldoEstoque(id){
   if (!confirm('Excluir este saldo de estoque? Essa ação não pode ser desfeita (o histórico de movimentações não é apagado, só o saldo atual).')) return;
@@ -2698,7 +2958,7 @@ const pedidosPag = {
   pagina: 1,
   tamanho: 50,
   total: null,          // total de pedidos do filtro (null = ainda não carregado)
-  filtro: { inicio: null, fimExclusivo: null, canal: null },
+  filtro: { inicio: null, fimExclusivo: null, canal: null, produto: null, texto: null },
   seq: 0,               // descarta respostas antigas se o usuário clicar rápido
 };
 
@@ -2715,10 +2975,14 @@ function lerFiltroPedidos(){
     d.setDate(d.getDate() + 1);
     fimExclusivo = d.toISOString();
   }
+  const produto = document.getElementById('f-produto').value;
+  const texto = document.getElementById('f-busca').value.trim();
   return {
     inicio: dataInicio ? new Date(dataInicio + 'T00:00:00').toISOString() : null,
     fimExclusivo,
     canal: canal || null,
+    produto: produto || null,
+    texto: texto || null,
   };
 }
 
@@ -2785,20 +3049,47 @@ async function loadPedidos(){
   document.getElementById('pag-info').textContent = 'Carregando…';
 
   const inicio = (pedidosPag.pagina - 1) * pedidosPag.tamanho;
-  let query = supabaseClient
-    .from('pedidos_venda')
-    .select('*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))')
-    .order('data_pedido', { ascending: false })
-    .order('id', { ascending: false })
-    .range(inicio, inicio + pedidosPag.tamanho - 1);
-  if (f.inicio) query = query.gte('data_pedido', f.inicio);
-  if (f.fimExclusivo) query = query.lt('data_pedido', f.fimExclusivo);
-  if (f.canal) query = query.eq('canal', f.canal);
+  const SELECT_PEDIDOS = '*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))';
+  let lista, resumo;
 
-  const [lista, resumo] = await Promise.all([
-    query,
-    supabaseClient.rpc('resumo_vendas_filtro', { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal }),
-  ]);
+  if (!f.produto && !f.texto) {
+    // Sem filtro de produto/texto: exatamente a mesma consulta de antes
+    let query = supabaseClient
+      .from('pedidos_venda')
+      .select(SELECT_PEDIDOS)
+      .order('data_pedido', { ascending: false })
+      .order('id', { ascending: false })
+      .range(inicio, inicio + pedidosPag.tamanho - 1);
+    if (f.inicio) query = query.gte('data_pedido', f.inicio);
+    if (f.fimExclusivo) query = query.lt('data_pedido', f.fimExclusivo);
+    if (f.canal) query = query.eq('canal', f.canal);
+
+    [lista, resumo] = await Promise.all([
+      query,
+      supabaseClient.rpc('resumo_vendas_filtro', { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal }),
+    ]);
+  } else {
+    // Com produto e/ou texto: o banco acha os pedidos da página (funções do Lote 2)
+    const params = { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto };
+    const [ids, res] = await Promise.all([
+      supabaseClient.rpc('listar_pedidos_filtro_ids', { ...params, p_limite: pedidosPag.tamanho, p_offset: inicio }),
+      supabaseClient.rpc('resumo_vendas_filtro_v2', params),
+    ]);
+    resumo = res;
+    if (ids.error) {
+      lista = { data: null, error: ids.error };
+    } else if (!ids.data.length) {
+      lista = { data: [], error: null };
+    } else {
+      const idsPagina = ids.data.map(x => (typeof x === 'string' ? x : x.listar_pedidos_filtro_ids || Object.values(x)[0]));
+      lista = await supabaseClient
+        .from('pedidos_venda')
+        .select(SELECT_PEDIDOS)
+        .in('id', idsPagina)
+        .order('data_pedido', { ascending: false })
+        .order('id', { ascending: false });
+    }
+  }
   if (seq !== pedidosPag.seq) return;          // chegou uma consulta mais nova
   wrap.classList.remove('carregando');
 
