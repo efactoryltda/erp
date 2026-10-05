@@ -169,6 +169,7 @@ Deno.serve(async (req) => {
 
     const itens = (order.order_items || []).map((oi: any) => ({
       sku_ml: String(oi.item?.seller_sku || oi.item?.id || ''),
+      ml_item_id: oi.item?.id ? String(oi.item.id) : null,
       quantidade: oi.quantity,
       preco_unitario: oi.unit_price,
     }));
@@ -200,21 +201,29 @@ Deno.serve(async (req) => {
     }
 
     for (const item of itens) {
-      // tenta achar o produto pelo SKU do Mercado Livre (mesmo produto, independente da conta),
-      // depois pelo SKU interno
+      // Acha o produto no banco (função encontrar_produto_por_sku): tenta SKU do ML,
+      // SKU interno, SKUs alternativos e, por último, o ID do anúncio cadastrado no
+      // produto — ignorando maiúsculas/minúsculas e espaços. Se der erro, o item entra
+      // sem produto (como antes) pra revisão, e pode ser revinculado depois.
       let produtoId: string | null = null;
-      const { data: porSkuMl } = await supabase.from('produtos').select('id').eq('sku_ml', item.sku_ml).maybeSingle();
-      if (porSkuMl) {
-        produtoId = porSkuMl.id;
-      } else {
-        const { data: porSkuInterno } = await supabase.from('produtos').select('id').eq('sku_interno', item.sku_ml).maybeSingle();
-        if (porSkuInterno) produtoId = porSkuInterno.id;
+      const { data: achado, error: errBusca } = await supabase.rpc('encontrar_produto_por_sku', {
+        p_sku: item.sku_ml,
+        p_item_id: item.ml_item_id,
+      });
+      if (errBusca) {
+        console.error('Erro ao buscar produto pelo SKU', item.sku_ml, errBusca.message);
+      } else if (achado) {
+        produtoId = achado as string;
       }
 
       await supabase.from('pedido_itens').insert({
         pedido_id: novoPedido.id,
         produto_id: produtoId,
         sku_ml_item: item.sku_ml,
+        ml_item_id: item.ml_item_id,
+        // item sem produto não baixa estoque — fica marcado pra não devolver
+        // estoque que nunca saiu, se o pedido for cancelado/excluído depois
+        estoque_baixado: !!produtoId,
         quantidade: item.quantidade,
         preco_unitario: item.preco_unitario,
         subtotal: item.quantidade * item.preco_unitario,

@@ -370,6 +370,10 @@
 
     <div class="card">
       <h3 data-t="CARD_PEDIDOS">Pedidos</h3>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+        <button type="button" class="secondary" id="btn-revincular-itens" data-t="BTN_REVINCULAR">Revincular itens sem produto</button>
+        <span class="muted" id="resultado-revincular" data-t="TEXTO_REVINCULAR_AJUDA">Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.</span>
+      </div>
       <div class="tabela-rolavel" id="pedidos-tabela-wrap">
         <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
           <tbody id="tabela-pedidos"></tbody>
@@ -413,7 +417,8 @@
         <div class="field"><label data-t="PRODUTOS_LABEL_PRECO">Preço de venda</label><input type="number" step="0.01" id="p-preco" placeholder="0.00"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ESTMIN">Estoque mínimo</label><input type="number" step="0.001" id="p-min" placeholder="0"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_SKUML">SKU no Mercado Livre</label><input type="text" id="p-sku-ml" placeholder="opcional"></div>
-        <div class="field"><label data-t="PRODUTOS_LABEL_PESO">Peso da embalagem (kg)</label><input type="number" step="0.001" id="p-peso" placeholder="opcional — pro frete"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_SKUS_ALT">SKUs antigos/alternativos (ML)</label><input type="text" id="p-skus-alt" data-t-ph="PRODUTOS_PH_SKUS_ALT" placeholder="separe por vírgula — ex: KIT4ROLOETIQUETA200"></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_PESO">Peso da embalagem (kg)</label><input type="number" step="0.00001" min="0" id="p-peso" placeholder="opcional — pro frete"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_COMPR">Comprimento (cm)</label><input type="number" step="0.1" id="p-compr" placeholder="opcional — pro frete"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_LARG">Largura (cm)</label><input type="number" step="0.1" id="p-larg" placeholder="opcional — pro frete"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ALT">Altura (cm)</label><input type="number" step="0.1" id="p-alt" placeholder="opcional — pro frete"></div>
@@ -855,6 +860,8 @@ const TEXTOS = {
   PRODUTOS_LABEL_PRECO: 'Preço de venda',
   PRODUTOS_LABEL_ESTMIN: 'Estoque mínimo',
   PRODUTOS_LABEL_SKUML: 'SKU no Mercado Livre',
+  PRODUTOS_LABEL_SKUS_ALT: 'SKUs antigos/alternativos (ML)',
+  PRODUTOS_PH_SKUS_ALT: 'separe por vírgula — ex: KIT4ROLOETIQUETA200',
   PRODUTOS_LABEL_PESO: 'Peso da embalagem (kg)',
   PRODUTOS_LABEL_COMPR: 'Comprimento (cm)',
   PRODUTOS_LABEL_LARG: 'Largura (cm)',
@@ -891,6 +898,8 @@ const TEXTOS = {
   CARD_REGISTRAR_PEDIDO: 'Registrar pedido de venda',
   CARD_FILTRAR_PEDIDOS: 'Filtrar pedidos',
   CARD_PEDIDOS: 'Pedidos',
+  BTN_REVINCULAR: 'Revincular itens sem produto',
+  TEXTO_REVINCULAR_AJUDA: 'Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.',
   CARD_CADASTRAR_PRODUTO: 'Cadastrar produto',
   CARD_PRODUTOS_CADASTRADOS: 'Produtos cadastrados',
   CARD_ADD_ITEM_FICHA: 'Adicionar item à ficha técnica',
@@ -1013,6 +1022,9 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     item.classList.add('active');
     document.getElementById('view-' + item.dataset.view).classList.add('active');
+    if (item.dataset.view === 'gestao-contas' && Date.now() - perguntasUltimaSync > 5 * 60 * 1000) {
+      sincronizarPerguntasEListar();
+    }
   });
 });
 
@@ -1411,6 +1423,7 @@ async function editarProduto(id){
   document.getElementById('p-preco').value = produto.preco_venda || '';
   document.getElementById('p-min').value = produto.estoque_minimo || '';
   document.getElementById('p-sku-ml').value = produto.sku_ml || '';
+  document.getElementById('p-skus-alt').value = (produto.skus_alternativos || []).join(', ');
   document.getElementById('p-peso').value = produto.peso_kg || '';
   document.getElementById('p-compr').value = produto.comprimento_cm || '';
   document.getElementById('p-larg').value = produto.largura_cm || '';
@@ -1467,7 +1480,9 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
     custo_atual: parseFloat(document.getElementById('p-custo').value) || 0,
     preco_venda: document.getElementById('p-preco').value ? parseFloat(document.getElementById('p-preco').value) : null,
     estoque_minimo: parseFloat(document.getElementById('p-min').value) || 0,
-    sku_ml: document.getElementById('p-sku-ml').value || null,
+    sku_ml: document.getElementById('p-sku-ml').value.trim() || null,
+    // lista separada por vírgula → array sem repetidos e sem vazios
+    skus_alternativos: [...new Set(document.getElementById('p-skus-alt').value.split(/[,;\n]/).map(x => x.trim()).filter(Boolean))],
     peso_kg: document.getElementById('p-peso').value ? parseFloat(document.getElementById('p-peso').value) : null,
     comprimento_cm: document.getElementById('p-compr').value ? parseFloat(document.getElementById('p-compr').value) : null,
     largura_cm: document.getElementById('p-larg').value ? parseFloat(document.getElementById('p-larg').value) : null,
@@ -2410,7 +2425,36 @@ async function loadPerguntasAbertas(){
     cont.appendChild(div);
   });
 }
-document.getElementById('btn-atualizar-perguntas-lista').addEventListener('click', loadPerguntasAbertas);
+// Busca as perguntas no Mercado Livre (mesma função do botão em Integrações)
+// e depois recarrega a lista. Antes, "Atualizar lista" só relia o banco.
+let perguntasSyncEmAndamento = null;
+let perguntasUltimaSync = 0;
+async function sincronizarPerguntasEListar(){
+  if (perguntasSyncEmAndamento) return perguntasSyncEmAndamento;   // evita duas sincronizações ao mesmo tempo
+  const btn = document.getElementById('btn-atualizar-perguntas-lista');
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Buscando no Mercado Livre...';
+  perguntasSyncEmAndamento = (async () => {
+    try {
+      const resp = await fetch('https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-perguntas');
+      const data = await resp.json();
+      const erros = (data.resultado || []).filter(r => r.erro);
+      if (!data.resultado) console.error('Sync perguntas:', data);
+      else if (erros.length) console.error('Sync perguntas com erro:', erros);
+      perguntasUltimaSync = Date.now();
+    } catch (err) {
+      console.error('Erro ao sincronizar perguntas:', err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+      perguntasSyncEmAndamento = null;
+    }
+    await loadPerguntasAbertas();
+  })();
+  return perguntasSyncEmAndamento;
+}
+document.getElementById('btn-atualizar-perguntas-lista').addEventListener('click', sincronizarPerguntasEListar);
 
 // ============================================================
 // GESTÃO DE CONTAS — Promoções ativas e vencendo
@@ -2821,6 +2865,19 @@ async function loadPedidos(){
   atualizarControlesPaginacao(data.length);
 }
 
+document.getElementById('btn-revincular-itens').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-revincular-itens');
+  const el = document.getElementById('resultado-revincular');
+  btn.disabled = true;
+  el.textContent = 'Revinculando...';
+  const { data, error } = await supabaseClient.rpc('revincular_itens_sem_produto');
+  btn.disabled = false;
+  if (error) { el.textContent = 'Erro: ' + error.message; return; }
+  el.textContent = `✅ ${data.vinculados} item(ns) vinculado(s). Ainda sem produto: ${data.ainda_sem_produto}` +
+    (data.ainda_sem_produto ? ' — cadastre o SKU (ou um SKU alternativo) no produto e clique de novo.' : '.');
+  loadPedidos();
+});
+
 async function cancelarPedido(id){
   if (!confirm('Cancelar este pedido? O estoque será devolvido.')) return;
   const { error } = await supabaseClient.rpc('cancelar_pedido_venda', { p_pedido_id: id });
@@ -2851,6 +2908,7 @@ function carregarApp(){
   loadPedidos();
   loadIntegracoes();
   loadPerguntasAbertas();
+  sincronizarPerguntasEListar();
   loadPromocoesAtivas();
   loadHistoricoAnalises();
 }
