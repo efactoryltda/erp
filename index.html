@@ -322,6 +322,17 @@
       <button id="btn-sincronizar-anuncios-metricas" type="button">Sincronizar Métricas de Anúncios agora</button>
 <pre id="resultado-sync-anuncios-metricas" style="white-space:pre-wrap;"></pre>
     </div>
+
+    <div class="card">
+      <h3 data-t="CARD_LIQUIDO_ML">Valor líquido (Mercado Livre)</h3>
+      <p class="muted" style="margin-top:0;">Vendas novas já recebem o líquido automaticamente (o que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas do Mercado Pago). O faturamento não muda. Use o botão abaixo só pra preencher vendas ANTIGAS — ele não altera faturamento, estoque nem status.</p>
+      <form class="inline" id="form-backfill-liquido" onsubmit="return false;">
+        <div class="field"><label for="bf-desde">Preencher vendas a partir de</label><input type="date" id="bf-desde" required></div>
+        <button type="button" class="secondary" id="btn-backfill-liquido" data-t="BTN_BACKFILL_LIQUIDO">Preencher líquido das vendas antigas</button>
+        <button type="button" class="secondary" id="btn-parar-backfill" style="display:none;">Parar</button>
+      </form>
+      <pre id="resultado-backfill-liquido" style="white-space:pre-wrap; margin-top:12px;"></pre>
+    </div>
   </div>
 
   <!-- ================= VENDAS ================= -->
@@ -386,6 +397,7 @@
         <button data-t="BTN_FILTRAR" type="submit">Filtrar</button>
       </form>
       <p style="margin-top:12px;"><strong>Faturamento no período filtrado: <span id="v-faturamento-filtro">R$ 0,00</span></strong> <span class="muted" id="v-qtd-pedidos-filtro"></span></p>
+      <p style="margin-top:4px;"><strong><span data-t="TEXTO_LIQUIDO_PERIODO">Líquido Mercado Livre (o que entra):</span> <span id="v-liquido-filtro">-</span></strong> <span class="muted" id="v-liquido-detalhe"></span></p>
     </div>
 
     <div class="card">
@@ -395,7 +407,7 @@
         <span class="muted" id="resultado-revincular" data-t="TEXTO_REVINCULAR_AJUDA">Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.</span>
       </div>
       <div class="tabela-rolavel" id="pedidos-tabela-wrap">
-        <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th>Status</th><th></th><th></th></tr></thead>
+        <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th></th><th></th></tr></thead>
           <tbody id="tabela-pedidos"></tbody>
         </table>
       </div>
@@ -917,6 +929,9 @@ const TEXTOS = {
   CARD_VENDAS_CANAL: 'Vendas por canal (mês atual)',
   CARD_CONTAS_ML: 'Contas do Mercado Livre',
   CARD_ESTOQUE_FULL: 'Estoque Full',
+  CARD_LIQUIDO_ML: 'Valor líquido (Mercado Livre)',
+  BTN_BACKFILL_LIQUIDO: 'Preencher líquido das vendas antigas',
+  TEXTO_LIQUIDO_PERIODO: 'Líquido Mercado Livre (o que entra):',
   CARD_REGISTRAR_PEDIDO: 'Registrar pedido de venda',
   CARD_FILTRAR_PEDIDOS: 'Filtrar pedidos',
   CARD_PEDIDOS: 'Pedidos',
@@ -3020,6 +3035,47 @@ function estadoIndicadoresPedidos(texto){
   // nunca deixa um número antigo na tela enquanto carrega ou após erro
   document.getElementById('v-faturamento-filtro').textContent = texto;
   document.getElementById('v-qtd-pedidos-filtro').textContent = '';
+  document.getElementById('v-liquido-filtro').textContent = texto;
+  document.getElementById('v-liquido-detalhe').textContent = '';
+}
+
+// Célula "Líquido" de um pedido. Só informativo: o faturamento (Total) não muda.
+function celulaLiquido(p){
+  if (p.valor_liquido !== null && p.valor_liquido !== undefined) {
+    const partes = [
+      `Total: ${fmtMoeda(p.valor_total)}`,
+      `− Tarifa ML: ${fmtMoeda(p.liquido_tarifa_ml || 0)}`,
+      `− Frete pago pelo vendedor: ${fmtMoeda(p.liquido_frete_vendedor || 0)}`,
+      `− Taxas Mercado Pago: ${fmtMoeda(p.liquido_taxas_mp || 0)}`,
+      `= Líquido: ${fmtMoeda(p.valor_liquido)}`,
+    ].join('\n');
+    const aviso = p.liquido_status === 'estornado' ? ' <span class="muted">(estornado)</span>'
+      : p.liquido_status === 'reembolso_parcial' ? ' <span class="muted">(reembolso parcial)</span>' : '';
+    return `<span title="${esc(partes)}">${fmtMoeda(p.valor_liquido)}</span>${aviso}`;
+  }
+  if (!p.ml_order_id) return '<span class="muted">-</span>';
+  const motivo = p.liquido_status === 'pendente' ? 'pagamento ainda pendente no Mercado Pago'
+    : p.liquido_status === 'erro' ? 'não foi possível consultar no Mercado Pago (tenta de novo depois)'
+    : 'ainda não calculado';
+  return `<span class="muted" title="${esc(motivo)}">—</span>`;
+}
+
+// Total líquido do filtro (mesmos filtros do faturamento)
+async function carregarLiquidoFiltro(f, seq){
+  const { data, error } = await supabaseClient.rpc('resumo_liquido_filtro', {
+    p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto,
+  });
+  if (seq !== pedidosPag.seq) return;
+  const el = document.getElementById('v-liquido-filtro');
+  const det = document.getElementById('v-liquido-detalhe');
+  if (error) { console.error(error); el.textContent = 'indisponível'; det.textContent = ''; return; }
+  const r = (data && data[0]) || { liquido: 0, pedidos_com_liquido: 0, pedidos_ml_sem_liquido: 0, bruto_dos_com_liquido: 0 };
+  const com = Number(r.pedidos_com_liquido), sem = Number(r.pedidos_ml_sem_liquido);
+  el.textContent = fmtMoeda(r.liquido);
+  const pct = Number(r.bruto_dos_com_liquido) > 0 ? (Number(r.liquido) / Number(r.bruto_dos_com_liquido) * 100) : null;
+  det.textContent = `(${com.toLocaleString('pt-BR')} venda${com !== 1 ? 's' : ''} com líquido` +
+    (pct !== null ? ` · ${pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do bruto delas` : '') + ')' +
+    (sem ? ` · ${sem.toLocaleString('pt-BR')} venda${sem !== 1 ? 's' : ''} do ML ainda sem líquido` : '');
 }
 
 function atualizarControlesPaginacao(qtdNaPagina){
@@ -3121,6 +3177,7 @@ async function loadPedidos(){
   }
 
   const data = lista.data || [];
+  carregarLiquidoFiltro(f, seq);
   const confirmados = Number(r.pedidos_confirmados);
   document.getElementById('v-faturamento-filtro').textContent = fmtMoeda(r.faturamento);
   document.getElementById('v-qtd-pedidos-filtro').textContent = `(${confirmados.toLocaleString('pt-BR')} pedido${confirmados !== 1 ? 's' : ''} confirmado${confirmados !== 1 ? 's' : ''})`;
@@ -3146,6 +3203,7 @@ async function loadPedidos(){
       <td>${produtosTexto}</td>
       <td>${esc(p.cliente_nome_avulso || '-')}</td>
       <td>${fmtMoeda(p.valor_total)}</td>
+      <td>${celulaLiquido(p)}</td>
       <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${esc(p.status)}</span></td>
       <td>${p.status === 'confirmado' ? `<button class="danger" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}</td>
       <td><button class="danger" onclick="excluirPedido('${p.id}')">Excluir</button></td>
@@ -3167,6 +3225,56 @@ document.getElementById('btn-revincular-itens').addEventListener('click', async 
   el.textContent = `✅ ${data.vinculados} item(ns) vinculado(s). Ainda sem produto: ${data.ainda_sem_produto}` +
     (data.ainda_sem_produto ? ' — cadastre o SKU (ou um SKU alternativo) no produto e clique de novo.' : '.');
   loadPedidos();
+});
+
+// ---------- Valor líquido do ML ----------
+const URL_SYNC_LIQUIDO = 'https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-liquido';
+
+// Automático: só vendas dos últimos 3 dias que ainda estão sem líquido
+// (ex: pagamento aprovou depois da importação). Não é o backfill.
+async function sincronizarLiquidoRecente(){
+  try {
+    const resp = await fetch(URL_SYNC_LIQUIDO + '?dias=3&limite=40');
+    const r = await resp.json();
+    if (r.preenchidos > 0) loadPedidos();
+  } catch (err) {
+    console.error('Erro ao atualizar líquido recente:', err);
+  }
+}
+
+let backfillParar = false;
+document.getElementById('btn-parar-backfill').addEventListener('click', () => { backfillParar = true; });
+document.getElementById('btn-backfill-liquido').addEventListener('click', async () => {
+  const desde = document.getElementById('bf-desde').value;
+  const el = document.getElementById('resultado-backfill-liquido');
+  if (!desde) { el.textContent = 'Escolha a data inicial.'; return; }
+  if (!confirm(`Preencher o valor líquido das vendas do Mercado Livre desde ${fmtData(desde)}?\n\nIsso só grava o líquido. Faturamento, estoque e status NÃO mudam.`)) return;
+
+  const btn = document.getElementById('btn-backfill-liquido');
+  const btnParar = document.getElementById('btn-parar-backfill');
+  btn.disabled = true; btnParar.style.display = 'inline-block'; backfillParar = false;
+  const execucao = new Date().toISOString();       // cada venda é tentada no máximo 1 vez nesta rodada
+  const tot = { preenchidos: 0, pendentes: 0, erros: 0 };
+  const errosExemplo = [];
+  try {
+    for (let rodada = 1; rodada <= 200 && !backfillParar; rodada++) {
+      const resp = await fetch(`${URL_SYNC_LIQUIDO}?desde=${desde}&limite=40&execucao=${encodeURIComponent(execucao)}`);
+      const r = await resp.json();
+      if (r.erro) { el.textContent = 'Erro: ' + r.erro; break; }
+      tot.preenchidos += r.preenchidos; tot.pendentes += r.pendentes; tot.erros += r.erros;
+      (r.detalhes_erro || []).forEach(d => { if (errosExemplo.length < 10) errosExemplo.push(d); });
+      el.textContent = `Processando… ${tot.preenchidos} preenchida(s), ${tot.pendentes} pendente(s), ${tot.erros} com erro. Faltam: ${r.restantes ?? '?'}`;
+      if (!r.processados || !r.restantes) break;
+    }
+    el.textContent = (backfillParar ? 'Interrompido. ' : 'Concluído. ') +
+      `${tot.preenchidos} venda(s) com líquido preenchido, ${tot.pendentes} com pagamento pendente, ${tot.erros} com erro.` +
+      (errosExemplo.length ? '\n\nExemplos de erro:\n• ' + errosExemplo.join('\n• ') : '');
+    loadPedidos();
+  } catch (err) {
+    el.textContent = 'Erro: ' + err.message;
+  } finally {
+    btn.disabled = false; btnParar.style.display = 'none';
+  }
 });
 
 async function cancelarPedido(id){
@@ -3197,6 +3305,7 @@ function carregarApp(){
   loadOrdens();
   loadCompras();
   loadPedidos();
+  sincronizarLiquidoRecente();
   loadIntegracoes();
   loadPerguntasAbertas();
   sincronizarPerguntasEListar();

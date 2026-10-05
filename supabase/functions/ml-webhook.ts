@@ -102,6 +102,74 @@ async function baixarEstoque(produtoId: string, local: string, quantidade: numbe
   });
 }
 
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+// ------------------------------------------------------------
+// Cálculo do líquido de UM pedido do ML a partir dos pagamentos no
+// Mercado Pago. (Mesma função usada no ml-sync-liquido.)
+// Devolve null em valor_liquido quando ainda não dá pra saber
+// (pagamento pendente) — aí a venda é tentada de novo depois.
+// ------------------------------------------------------------
+async function calcularLiquido(order: any, token: string) {
+  const pagamentos = order.payments || [];
+  if (!pagamentos.length) return { valor_liquido: null, liquido_status: 'sem_pagamento' };
+
+  let liquido = 0, tarifa = 0, frete = 0, taxas = 0;
+  let aprovados = 0, estornados = 0, pendentes = 0, reembolsoParcial = false;
+
+  for (const p of pagamentos) {
+    const resp = await fetch(`https://api.mercadopago.com/v1/payments/${p.id}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (resp.status === 401) return { erro401: true } as any;
+    if (!resp.ok) return { valor_liquido: null, liquido_status: 'erro', detalhe: `Mercado Pago HTTP ${resp.status}` };
+    const mp = await resp.json();
+
+    if (['refunded', 'cancelled', 'charged_back', 'rejected'].includes(mp.status)) { estornados++; continue; }
+    if (mp.status !== 'approved') { pendentes++; continue; }
+
+    aprovados++;
+    liquido += Number(mp.transaction_details?.net_received_amount ?? 0);
+    for (const c of mp.charges_details || []) {
+      if (c.accounts?.from !== 'collector') continue;           // só o que é cobrado do vendedor
+      const v = Number(c.amounts?.original || 0) - Number(c.amounts?.refunded || 0);
+      if (c.type === 'shipping') frete += v;
+      else if (String(c.name || '').startsWith('ml_')) tarifa += v;
+      else taxas += v;
+    }
+    if (Number(mp.transaction_amount_refunded || 0) > 0) reembolsoParcial = true;
+  }
+
+  if (pendentes > 0 && aprovados === 0) return { valor_liquido: null, liquido_status: 'pendente' };
+
+  return {
+    valor_liquido: r2(liquido),
+    liquido_tarifa_ml: r2(tarifa),
+    liquido_frete_vendedor: r2(frete),
+    liquido_taxas_mp: r2(taxas),
+    liquido_status: aprovados === 0 && estornados > 0 ? 'estornado' : (reembolsoParcial ? 'reembolso_parcial' : 'ok'),
+  };
+}
+
+// Calcula e grava SÓ as colunas de líquido do pedido (nunca mexe em
+// faturamento, estoque ou status). Qualquer erro aqui só é registrado
+// no log — não atrapalha a importação do pedido.
+async function gravarLiquido(order: any, canal: string, token: string) {
+  try {
+    let calc: any = await calcularLiquido(order, token);
+    if (calc.erro401) {
+      const novo = await getAccessToken(canal, true);
+      calc = novo ? await calcularLiquido(order, novo) : { valor_liquido: null, liquido_status: 'erro' };
+      if (calc.erro401) calc = { valor_liquido: null, liquido_status: 'erro' };
+    }
+    if (calc.detalhe) console.error('Líquido do pedido', order.id, calc.detalhe);
+    delete calc.detalhe;
+    calc.liquido_atualizado_em = new Date().toISOString();
+    const { error } = await supabase.from('pedidos_venda').update(calc).eq('ml_order_id', String(order.id));
+    if (error) console.error('Erro ao gravar líquido do pedido', order.id, error.message);
+  } catch (e) {
+    console.error('Erro ao calcular líquido do pedido', order.id, e);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const body = await req.json();
@@ -145,9 +213,14 @@ Deno.serve(async (req) => {
       return new Response('ok', { status: 200 });
     }
 
-    // evita importar o mesmo pedido duas vezes
-    const { data: existente } = await supabase.from('pedidos_venda').select('id').eq('ml_order_id', String(order.id)).maybeSingle();
+    // evita importar o mesmo pedido duas vezes. Pedido que já existe: só
+    // atualiza o valor líquido (ex: pagamento aprovou depois, estorno) —
+    // nada de estoque, status ou faturamento.
+    // Pedidos importados ANTES do Lote 3 (liquido_status vazio) não são tocados
+    // aqui — esses só recebem líquido pelo backfill, depois da sua aprovação.
+    const { data: existente } = await supabase.from('pedidos_venda').select('id, liquido_status').eq('ml_order_id', String(order.id)).maybeSingle();
     if (existente) {
+      if (existente.liquido_status) await gravarLiquido(order, canal, accessToken);
       return new Response('ok', { status: 200 });
     }
 
@@ -235,6 +308,9 @@ Deno.serve(async (req) => {
         console.error('Produto não encontrado pro SKU ML:', item.sku_ml, '— item registrado sem baixa de estoque.');
       }
     }
+
+    // valor líquido (o que entra de fato) — ao lado do faturamento, sem alterá-lo
+    await gravarLiquido(order, canal, accessToken);
 
     return new Response('ok', { status: 200 });
   } catch (e) {
