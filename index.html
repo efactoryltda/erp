@@ -765,8 +765,9 @@
     <h2 data-t="TITULO_FICHA">Ficha Técnica (BOM)</h2>
     <div class="card">
       <h3 data-t="CARD_ADD_ITEM_FICHA">Adicionar item à ficha técnica</h3>
+      <p class="muted" style="margin-top:-6px;" data-t="FICHA_AJUDA_ETAPAS">O produto feito pode ser um produto acabado ou uma matéria-prima feita aqui (ex: Chapa Cortada ← Chapa; Caixa ← Chapa Cortada). Assim a produção pode ser feita em etapas.</p>
       <form class="inline" id="form-ficha">
-        <div class="field"><label data-t="FICHA_LABEL_ACABADO">Produto acabado *</label><select id="f-acabado" required></select></div>
+        <div class="field"><label data-t="FICHA_LABEL_ACABADO">Produto feito *</label><select id="f-acabado" required></select></div>
         <div class="field"><label data-t="FICHA_LABEL_MATERIA">Matéria-prima *</label><select id="f-materia" required></select></div>
         <div class="field"><label data-t="FICHA_LABEL_QTD">Qtd. necessária (por 1 unidade) *</label><input type="number" step="0.000001" id="f-qtd" required></div>
         <button data-t="BTN_ADICIONAR_FICHA" type="submit">Adicionar</button>
@@ -944,7 +945,7 @@
     <div class="card">
       <h3 data-t="CARD_ABRIR_ORDEM">Abrir ordem de produção</h3>
       <form class="inline" id="form-ordem">
-        <div class="field"><label data-t="PRODUCAO_LABEL_PRODUTO">Produto acabado *</label><select id="o-produto" required></select></div>
+        <div class="field"><label data-t="PRODUCAO_LABEL_PRODUTO">Produto (com ficha técnica) *</label><select id="o-produto" required></select></div>
         <div class="field"><label data-t="PRODUCAO_LABEL_QTD">Quantidade planejada *</label><input type="number" step="0.001" id="o-qtd" required></div>
         <button data-t="BTN_ABRIR_ORDEM" type="submit">Abrir ordem</button>
       </form>
@@ -1079,6 +1080,7 @@
         <label class="opcao-radio"><input type="radio" name="mp-modo" value="direto" checked><span>Componentes da ficha<small id="mp-desc-direto">Baixa cada componente direto da ficha. Ex: o Kit 4 consome Rolos do estoque Físico.</small></span></label>
         <label class="opcao-radio"><input type="radio" name="mp-modo" value="materia"><span>Direto da matéria-prima<small id="mp-desc-materia">Desce a ficha até as matérias-primas e baixa só elas. Ex: o Kit 4 consome os Blocos, sem precisar de Rolos em estoque.</small></span></label>
       </div>
+      <div id="mp-aviso-custo" style="display:none; color:#b5610a; font-size:13px; margin-bottom:8px;"></div>
       <div id="mp-previa" class="muted"></div>
       <div class="modal-botoes">
         <button type="button" class="secondary" id="mp-cancelar">Cancelar</button>
@@ -1181,8 +1183,9 @@ const TEXTOS = {
   PRODUTOS_LABEL_ANUNCIO1: 'ID anúncio - Conta 1',
   PRODUTOS_LABEL_ANUNCIO2: 'ID anúncio - Conta 2',
   PRODUTOS_LABEL_ANUNCIO3: 'ID anúncio - Conta 3',
-  FICHA_LABEL_ACABADO: 'Produto acabado *',
+  FICHA_LABEL_ACABADO: 'Produto feito *',
   FICHA_LABEL_MATERIA: 'Componente *',
+  FICHA_AJUDA_ETAPAS: 'O produto feito pode ser um produto acabado ou uma matéria-prima feita aqui (ex: Chapa Cortada ← Chapa; Caixa ← Chapa Cortada). Assim a produção pode ser feita em etapas.',
   FICHA_LABEL_QTD: 'Qtd. necessária (por 1 unidade) *',
   MOVIMENTO_LABEL_PRODUTO: 'Produto *',
   MOVIMENTO_LABEL_LOCAL: 'Local *',
@@ -1194,7 +1197,7 @@ const TEXTOS = {
   TRANSFERENCIA_LABEL_PARA: 'Para *',
   TRANSFERENCIA_LABEL_QTD: 'Quantidade *',
   TRANSFERENCIA_LABEL_OBS: 'Observação',
-  PRODUCAO_LABEL_PRODUTO: 'Produto acabado *',
+  PRODUCAO_LABEL_PRODUTO: 'Produto (com ficha técnica) *',
   PRODUCAO_LABEL_QTD: 'Quantidade planejada *',
   TITULO_DASHBOARD: 'Dashboard',
   TITULO_INTEGRACOES: 'Integrações',
@@ -2094,13 +2097,18 @@ function preencherSelectsDeProdutos(produtos){
 
   // opção vazia no topo: o campo começa em branco e a pessoa digita pra escolher
   const vazio = '<option value=""></option>';
-  document.getElementById('f-acabado').innerHTML = vazio + opts(acabados);
+  // ficha: o produto feito pode ser acabado OU matéria-prima feita aqui (ex: Chapa Cortada) — Lote 6
+  const fAcabado = document.getElementById('f-acabado');
+  const fAcabadoAntes = fAcabado.value;
+  fAcabado.innerHTML = vazio + optsAgrupado(produtos.filter(p => p.ativo));
+  if (fAcabadoAntes) fAcabado.value = fAcabadoAntes;
   document.getElementById('f-materia').innerHTML = vazio + optsAgrupado(produtos);
   const ocProdutoSel = document.getElementById('oc-i-produto');
   const ocProdutoAntes = ocProdutoSel.value;
   ocProdutoSel.innerHTML = '<option value="">Selecione…</option>' + optsAgrupado(produtos.filter(p => p.ativo));
   if (ocProdutoAntes) ocProdutoSel.value = ocProdutoAntes;
-  document.getElementById('o-produto').innerHTML = vazio + opts(acabados);
+  producaoProdutos = produtos;
+  atualizarOpcoesProducao();
   document.getElementById('m-produto').innerHTML = vazio + opts(produtos);
   document.getElementById('t-produto').innerHTML = vazio + opts(produtos);
   document.getElementById('v-item-produto').innerHTML = vazio + opts(acabados);
@@ -2142,6 +2150,9 @@ async function loadFichaTecnica(){
     supabaseClient.from('vw_custo_ficha').select('*')
   ]);
   if (error || errCustos) { console.error(error || errCustos); return; }
+
+  producaoComFicha = new Set((data || []).map(i => i.produto_acabado_id));
+  atualizarOpcoesProducao();
 
   // custo de cada produto que tem ficha (calculado no banco, descendo todos os níveis)
   const custoFicha = {};
@@ -2324,7 +2335,23 @@ async function excluirSaldoEstoque(id){
 
 // ============================================================
 // PRODUÇÃO
+// Lote 6: produção em etapas — qualquer produto com ficha (inclusive
+// matéria-prima feita aqui, ex: Chapa Cortada). O destino segue o tipo:
+// matéria-prima → estoque Matéria-prima; acabado → Físico ou Full.
 // ============================================================
+let producaoProdutos = [], producaoComFicha = new Set();
+function atualizarOpcoesProducao(){
+  const sel = document.getElementById('o-produto');
+  if (!sel) return;
+  const antes = sel.value;
+  const lista = producaoProdutos.filter(p => p.ativo && producaoComFicha.has(p.id));
+  const opt = (l) => l.map(p => `<option value="${p.id}">${esc(p.nome)} (${esc(p.sku_interno)})</option>`).join('');
+  const pa = lista.filter(p => p.tipo === 'produto_acabado'), mp = lista.filter(p => p.tipo === 'materia_prima');
+  sel.innerHTML = '<option value=""></option>'
+    + (pa.length ? `<optgroup label="Produtos acabados">${opt(pa)}</optgroup>` : '')
+    + (mp.length ? `<optgroup label="Matérias-primas feitas aqui (ex: chapa cortada)">${opt(mp)}</optgroup>` : '');
+  if (antes) sel.value = antes;
+}
 document.getElementById('form-ordem').addEventListener('submit', async (e) => {
   e.preventDefault();
   const payload = {
@@ -2341,7 +2368,7 @@ document.getElementById('form-ordem').addEventListener('submit', async (e) => {
 async function loadOrdens(){
   const { data, error } = await supabaseClient
     .from('ordens_producao')
-    .select('id, produto_acabado_id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, produtos(nome)')
+    .select('id, produto_acabado_id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, produtos(nome, tipo)')
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
 
@@ -2381,10 +2408,26 @@ async function excluirOrdemProducao(id, status){
 let ordensCache = {};
 let ordemEmConclusao = null;
 
-// Destinos possíveis da produção (Físico ou direto pra um Full)
-document.getElementById('mp-destino').innerHTML = LOCAIS_ESTOQUE
-  .filter(l => l.value !== 'materia_prima')
-  .map(l => `<option value="${l.value}">${l.label}</option>`).join('');
+// Destinos possíveis da produção: produto acabado → Físico ou direto pra um Full;
+// matéria-prima feita aqui (ex: chapa cortada) → estoque Matéria-prima (Lote 6)
+function montarDestinosProducao(tipo){
+  const sel = document.getElementById('mp-destino');
+  const lista = tipo === 'materia_prima'
+    ? LOCAIS_ESTOQUE.filter(l => l.value === 'materia_prima')
+    : LOCAIS_ESTOQUE.filter(l => l.value !== 'materia_prima');
+  sel.innerHTML = lista.map(l => `<option value="${l.value}">${l.label}</option>`).join('');
+  sel.value = lista[0].value;
+  sel.disabled = lista.length === 1;
+}
+montarDestinosProducao('produto_acabado');
+let mpAvisoCusto = { direto: '', materia: '' };
+function mostrarAvisoCustoProducao(){
+  const modo = (document.querySelector('input[name="mp-modo"]:checked') || {}).value || 'direto';
+  const el = document.getElementById('mp-aviso-custo');
+  el.textContent = mpAvisoCusto[modo] || '';
+  el.style.display = mpAvisoCusto[modo] ? 'block' : 'none';
+}
+document.querySelectorAll('input[name="mp-modo"]').forEach(r => r.addEventListener('change', mostrarAvisoCustoProducao));
 
 async function concluirOrdem(id){
   const o = ordensCache[id];
@@ -2392,22 +2435,37 @@ async function concluirOrdem(id){
   ordemEmConclusao = o;
   document.getElementById('mp-titulo').textContent = 'Concluir produção: ' + (o.produtos ? o.produtos.nome : '');
   document.getElementById('mp-qtd').value = o.quantidade_planejada;
-  document.getElementById('mp-destino').value = 'fisico';
+  montarDestinosProducao(o.produtos ? o.produtos.tipo : 'produto_acabado');
   document.querySelector('input[name="mp-modo"][value="direto"]').checked = true;
 
   // mostra o que cada modo vai consumir, pra decidir com clareza
   const { data: ficha } = await supabaseClient
     .from('ficha_tecnica_itens')
-    .select('quantidade_necessaria, componente:produtos!ficha_tecnica_itens_produto_materia_prima_id_fkey(nome, tipo)')
+    .select('produto_materia_prima_id, quantidade_necessaria, componente:produtos!ficha_tecnica_itens_produto_materia_prima_id_fkey(nome, tipo, custo_atual)')
     .eq('produto_acabado_id', o.produto_acabado_id);
   const itens = ficha || [];
-  const temSub = itens.some(i => i.componente && i.componente.tipo === 'produto_acabado');
+  // algum componente tem ficha própria? (ex: Caixa ← Chapa Cortada ← Chapa)
+  const idsComp = itens.map(i => i.produto_materia_prima_id);
+  const [{ data: sub }, { data: cf }] = await Promise.all([
+    idsComp.length ? supabaseClient.from('ficha_tecnica_itens').select('produto_acabado_id').in('produto_acabado_id', idsComp) : Promise.resolve({ data: [] }),
+    supabaseClient.from('vw_custo_ficha').select('componentes_sem_custo, nomes_sem_custo').eq('produto_id', o.produto_acabado_id).maybeSingle(),
+  ]);
+  const temSub = (sub || []).length > 0;
+  // aviso de custo: componente sem custo não deixa o custo médio mudar (Lote 6)
+  const nomeProd = o.produtos ? o.produtos.nome : 'o produto';
+  const semCustoDireto = itens.filter(i => i.componente && !(Number(i.componente.custo_atual) > 0)).map(i => i.componente.nome);
+  const fimAviso = ` — a produção acontece normal, mas o custo de "${nomeProd}" não muda até esse custo ser cadastrado.`;
+  mpAvisoCusto = {
+    direto: semCustoDireto.length ? '⚠ Sem custo: ' + semCustoDireto.join(', ') + fimAviso : '',
+    materia: cf && cf.componentes_sem_custo > 0 ? '⚠ Sem custo: ' + cf.nomes_sem_custo + fimAviso : '',
+  };
+  mostrarAvisoCustoProducao();
   document.getElementById('mp-desc-direto').textContent = itens.length
     ? 'Baixa: ' + itens.map(i => `${fmt(i.quantidade_necessaria)} × ${i.componente ? i.componente.nome : '?'}`).join(', ') + ' (por unidade). Produtos acabados saem do Físico, matérias-primas do estoque de Matéria-prima.'
     : 'Este produto ainda não tem ficha técnica.';
   document.getElementById('mp-desc-materia').textContent = temSub
-    ? 'Desce a ficha até as matérias-primas e baixa só elas (os subcomponentes não precisam estar em estoque).'
-    : 'Esta ficha só tem matérias-primas, então os dois modos dão o mesmo resultado.';
+    ? 'Desce a ficha até o início (ex: Caixa → Chapa Cortada → Chapa) e baixa só os itens da ponta. Use quando cortar e colar de uma vez, sem passar pelo estoque intermediário.'
+    : 'Nenhum componente desta ficha tem ficha própria, então os dois modos dão o mesmo resultado.';
   document.getElementById('mp-previa').textContent = itens.length ? '' : '⚠ Cadastre a ficha técnica antes de concluir.';
   document.getElementById('modal-producao').style.display = 'flex';
 }
