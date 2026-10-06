@@ -4,8 +4,8 @@
 > Documento de contexto. Cole isso no "Project knowledge" de um Claude Project
 > pra qualquer chat novo já nascer sabendo do estado atual do projeto.
 > Atualize este arquivo de vez em quando (peça pro Claude regenerar) conforme
-> o sistema evoluir. **Última atualização: 2026-10-06** (Lote 4 — Contas a
-> receber e cancelamentos do ML — ver seção "Contas a receber (Lote 4)").
+> o sistema evoluir. **Última atualização: 2026-10-06** (Lotes 4 a 7 —
+> Contas a receber, Consumo próprio, Produção em etapas e Condição de pagamento).
 
 ## Visão geral
 
@@ -932,6 +932,47 @@ preparado (`sql/2026-10-06_lote6_producao_em_etapas.sql`).
   custo". **Antes de ligar Caixa D3/D7 às cortadas, cadastrar o custo das
   chapas** (OC ou cadastro), senão Kit 6 Rolo 127 / Kit 6 Rolo 200 / Kit 8 Rolo
   200 também perdem o custo no lucro do contas a receber.
+
+## Condição de pagamento (Lote 7 — 2026-10-06)
+
+Venda da **Loja Física** escolhe a condição de pagamento e gera as parcelas
+direto no Contas a receber (`sql/2026-10-06_lote7_condicao_pagamento.sql`).
+Decisões do dono: baixa **manual** com alerta de vencida; forma de pagamento
+**opcional** (padrão = última usada, guardada no navegador); dias **corridos**
+a partir da data da venda, sem ajuste de dia útil.
+- Tabela `condicoes_pagamento` (`nome` único, `parcelas` jsonb
+  `[{pct, dias}]` somando 100%, `ativo`, `ordem`). Iniciais: À vista, 30 dias,
+  30/60, 30/60/90, Entrada 30% + 30 dias. Tela "Gerenciar condições" no PDV
+  (criar / desativar / reativar). Opção "Personalizada…" no PDV pra montar na
+  hora.
+- PDV: bloco "Pagamento" só aparece em Loja Física; padrão À vista; prévia
+  das parcelas com data e valor **editáveis** (centavos que sobram vão pra
+  última; não deixa registrar se a soma ≠ total do pedido). Grava com
+  `criar_pedido_venda_parcelado(...9 params do criar_pedido_venda, p_parcelas
+  [{valor, vencimento}], p_forma_pagamento, p_condicao)` — tudo numa
+  transação. Outros canais continuam em `criar_pedido_venda`.
+- `lancamentos_financeiros` ganhou `parcela_num`, `parcela_total`,
+  `recebido_em`, `forma_pagamento`; `pedidos_venda` ganhou
+  `condicao_pagamento`, `forma_pagamento`. Índice único agora é
+  (`pedido_id`, `parcela_num`) para `origem = 'pedido'`. As 26 vendas físicas
+  antigas viraram parcela 1/1 recebida.
+- Parcela com vencimento no dia da venda já nasce **recebida**; as futuras
+  ficam **a receber** até o botão **Recebi** (individual ou em lote com
+  checkbox) → `baixar_parcelas(ids, data, forma)`; `desfazer_baixa_parcela(id)`
+  desfaz. Para `origem = 'pedido'` o status vem do lançamento (não vira
+  "recebido" sozinho pela data).
+- **Vencida** = parcela do PDV em aberto com vencimento antes de hoje
+  (Brasília). Faixa vermelha no topo do Contas a receber (todas as vencidas,
+  qualquer filtro) com "Ver vencidas"; status "Vencidas (venda física)" no
+  filtro; resumo traz `qtd_vencido` / `valor_vencido`.
+- Trigger `sync_lancamento_pedido`: cancelar pedido → parcelas em aberto
+  estornadas, recebidas ganham aviso "verificar devolução"; mudar o valor do
+  pedido → parcela única acompanha, várias parcelas redistribuem só as em
+  aberto.
+- Conferido no SQL: contas a receber (resumo e gráfico) idênticos antes/depois;
+  faturamento e estoque intactos; teste completo (30/70, soma errada recusada,
+  vencida, baixa, baixa dupla, desfazer, mudança de valor, cancelamento) dentro
+  de transação desfeita.
 
 ## Credenciais e onde ficam
 
