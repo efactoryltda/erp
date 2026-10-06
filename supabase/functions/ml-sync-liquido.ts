@@ -145,6 +145,23 @@ function analisarPagamento(mp: any) {
   };
 }
 
+// Pedido em que o comprador pagou frete DENTRO do transaction_amount (shipping_amount = 0):
+// o "bruto" do pagamento fica maior que o valor dos produtos. Aqui o excesso sai do
+// bruto e do frete ao mesmo tempo (o líquido não muda) — assim bruto = faturamento do ERP.
+// (Mesma função colada no ml-webhook e no ml-sync-liquido.)
+function ajustarFreteComprador(lidos: any[], order: any) {
+  const produtos = r2((order.order_items || []).reduce((s: number, i: any) => s + Number(i.unit_price || 0) * Number(i.quantity || 0), 0));
+  const validos = lidos.filter((a) => a.tipo === 'valido' || a.tipo === 'aguardando');
+  if (!validos.length || produtos <= 0) return;
+  const excesso = r2(validos.reduce((s, a) => s + a.bruto, 0) - produtos);
+  if (excesso <= 0) return;
+  const alvo = validos.reduce((m, a) => (a.bruto > m.bruto ? a : m), validos[0]);
+  if (alvo.bruto - excesso <= 0) return;
+  alvo.bruto = r2(alvo.bruto - excesso);
+  if (alvo.tipo === 'valido') alvo.frete = r2(alvo.frete - excesso);
+  alvo.frete_comprador_no_bruto = excesso;
+}
+
 // Colunas de líquido do Lote 3 (pedidos_venda) a partir dos pagamentos lidos.
 // (Mesma função colada no ml-webhook e no ml-sync-liquido.)
 function agregarLote3(lidos: any[]) {
@@ -175,6 +192,7 @@ async function calcularLiquido(order: any, token: string) {
     if (!resp.ok) return { valor_liquido: null, liquido_status: 'erro', detalhe: `Mercado Pago HTTP ${resp.status}` };
     lidos.push(analisarPagamento(await resp.json()));
   }
+  ajustarFreteComprador(lidos, order);
   return agregarLote3(lidos);
 }
 

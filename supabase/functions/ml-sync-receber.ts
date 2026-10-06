@@ -154,6 +154,23 @@ function analisarPagamento(mp: any) {
   };
 }
 
+// Pedido em que o comprador pagou frete DENTRO do transaction_amount (shipping_amount = 0):
+// o "bruto" do pagamento fica maior que o valor dos produtos. Aqui o excesso sai do
+// bruto e do frete ao mesmo tempo (o líquido não muda) — assim bruto = faturamento do ERP.
+// (Mesma função colada no ml-webhook e no ml-sync-liquido.)
+function ajustarFreteComprador(lidos: any[], order: any) {
+  const produtos = r2((order.order_items || []).reduce((s: number, i: any) => s + Number(i.unit_price || 0) * Number(i.quantity || 0), 0));
+  const validos = lidos.filter((a) => a.tipo === 'valido' || a.tipo === 'aguardando');
+  if (!validos.length || produtos <= 0) return;
+  const excesso = r2(validos.reduce((s, a) => s + a.bruto, 0) - produtos);
+  if (excesso <= 0) return;
+  const alvo = validos.reduce((m, a) => (a.bruto > m.bruto ? a : m), validos[0]);
+  if (alvo.bruto - excesso <= 0) return;
+  alvo.bruto = r2(alvo.bruto - excesso);
+  if (alvo.tipo === 'valido') alvo.frete = r2(alvo.frete - excesso);
+  alvo.frete_comprador_no_bruto = excesso;
+}
+
 // Colunas de líquido do Lote 3 (pedidos_venda) a partir dos pagamentos lidos.
 // (Mesma função colada no ml-webhook e no ml-sync-liquido.)
 function agregarLote3(lidos: any[]) {
@@ -232,10 +249,14 @@ Deno.serve(async (req) => {
     for (const pay of order.payments || []) {
       const mp = await mlGet(`https://api.mercadopago.com/v1/payments/${pay.id}`, p.canal, tokens);
       if (!ok2xx(mp.status) || !mp.json) { erro(`${p.ml_order_id}: pagamento ${pay.id} HTTP ${mp.status}`); return; }
-      const a = analisarPagamento(mp.json);
+      const a: any = analisarPagamento(mp.json);
+      a.payment_id = String(pay.id);
       lidos.push(a);
-      if (a.tipo === 'ignorar') continue;
+    }
+    ajustarFreteComprador(lidos, order);
 
+    for (const a of lidos) {
+      if (a.tipo === 'ignorar') continue;
       let status: string;
       if (a.tipo === 'estornado') status = 'estornado';
       else if (a.tipo === 'aguardando') status = 'aguardando';
@@ -244,15 +265,18 @@ Deno.serve(async (req) => {
       else status = 'aguardando';
       if (a.ajuste !== 0) resumo.com_ajuste++;
 
+      const obs = [a.parcial ? 'Reembolso parcial — líquido = recebido − valor devolvido' : null,
+                   a.frete_comprador_no_bruto ? `Frete pago pelo comprador (R$ ${a.frete_comprador_no_bruto}) tirado do bruto e do frete` : null]
+                  .filter(Boolean).join(' | ') || null;
       linhas.push({
         natureza: 'receber', origem: 'ml', canal: p.canal, categoria: 'venda',
-        pedido_id: p.id, ml_order_id: String(order.id), ml_payment_id: String(pay.id),
+        pedido_id: p.id, ml_order_id: String(order.id), ml_payment_id: a.payment_id,
         data_competencia: order.date_created,
         data_liberacao: a.data_liberacao,
         status, ml_payment_status: a.status_mp, ml_release_status: a.release_status, parcelas: a.parcelas,
         valor_bruto: a.bruto, tarifa: a.tarifa, frete: a.frete, taxas: a.taxas, outros_ajustes: a.ajuste,
         valor_reembolsado: a.reembolsado, valor_liquido: a.liquido,
-        observacao: a.parcial ? 'Reembolso parcial — líquido = recebido − valor devolvido' : null,
+        observacao: obs,
         dados_ml: a.resumo, sincronizado_em: new Date().toISOString(), updated_at: new Date().toISOString(),
       });
     }
