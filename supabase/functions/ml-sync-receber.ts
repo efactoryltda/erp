@@ -51,6 +51,7 @@ const CORS_HEADERS = {
 };
 
 class LimiteML extends Error {}
+const ok2xx = (s: number) => s >= 200 && s < 300;
 
 async function getAccessToken(canal: string, forcarRenovacao = false): Promise<string | null> {
   const { data: integ, error } = await supabase.from('integracoes_ml').select('*').eq('canal', canal).maybeSingle();
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
     if (!tokens[p.canal]) { erro(`${p.ml_order_id}: conta ${p.canal} sem token`); return; }
 
     const o = await mlGet(`https://api.mercadolibre.com/orders/${p.ml_order_id}`, p.canal, tokens);
-    if (o.status !== 200 || !o.json) {
+    if (!ok2xx(o.status) || !o.json) {        // o ML às vezes responde 206 (conteúdo parcial) — é sucesso
       erro(`${p.ml_order_id}: pedido HTTP ${o.status}`);
       // pedido que não existe mais / sem acesso: marca como lido pra não travar a fila
       if ([403, 404].includes(o.status)) await supabase.from('pedidos_venda').update({ receber_sincronizado_em: new Date().toISOString() }).eq('id', p.id);
@@ -226,7 +227,7 @@ Deno.serve(async (req) => {
     const lidos: any[] = [];
     for (const pay of order.payments || []) {
       const mp = await mlGet(`https://api.mercadopago.com/v1/payments/${pay.id}`, p.canal, tokens);
-      if (mp.status !== 200 || !mp.json) { erro(`${p.ml_order_id}: pagamento ${pay.id} HTTP ${mp.status}`); return; }
+      if (!ok2xx(mp.status) || !mp.json) { erro(`${p.ml_order_id}: pagamento ${pay.id} HTTP ${mp.status}`); return; }
       const a = analisarPagamento(mp.json);
       lidos.push(a);
       if (a.tipo === 'ignorar') continue;
@@ -276,7 +277,7 @@ Deno.serve(async (req) => {
       if (p.local_baixa === 'fisico' && recente && !desde && order.shipping?.id) {
         const sh = await mlGet(`https://api.mercadolibre.com/shipments/${order.shipping.id}`, p.canal, tokens);
         const saiu = sh.json?.status_history?.date_shipped || ['shipped', 'delivered'].includes(sh.json?.status);
-        devolver = sh.status === 200 && !saiu;
+        devolver = ok2xx(sh.status) && !saiu;
       }
       const { error: errCanc } = await supabase.rpc('registrar_cancelamento_ml', { p_pedido_id: p.id, p_devolver_estoque: devolver });
       if (errCanc) erro(`${p.ml_order_id}: cancelar no ERP: ${errCanc.message}`);
