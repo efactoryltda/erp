@@ -506,8 +506,8 @@ implementar):
 - Script de deploy: `sql/022_dashboard_faturamento.sql` (cria/substitui a
   função + grant, e traz 2 queries de verificação: o resultado da própria
   função, e uma contagem total de pedidos confirmados desde janeiro pra
-  confirmar se de fato passa de 1000). **Front-end já commitado e no ar,
-  backend (rodar o SQL) ainda pendente do lado do dono — ver Pendências.**
+  confirmar se de fato passa de 1000). Front-end e SQL no ar (confirmado
+  pelo dono em 2026-10-05).
 - **Lição geral pra qualquer consulta futura no Dashboard/relatórios**:
   nunca somar/agregar no navegador buscando a tabela inteira sem
   `.order()` + `.limit()` explícito (ou, melhor ainda, sem uma função de
@@ -844,11 +844,9 @@ das 3 contas). Tudo publicado em produção no mesmo dia.
 
 ## Módulos construídos (status)
 
-- 🟡 Dashboard (faturamento, estoque baixo, vendas por canal) — front-end
-  corrigido e no ar desde 2026-09-23 (faturamento agora via RPC
-  `dashboard_faturamento`, sem risco de teto de linhas); falta rodar
-  `sql/022_dashboard_faturamento.sql` no Supabase pra função existir de
-  fato no banco — ver Pendências
+- ✅ Dashboard (faturamento, estoque baixo, vendas por canal) — faturamento
+  via RPC `dashboard_faturamento` (sem risco de teto de linhas), SQL
+  rodado e confirmado pelo dono
 - ✅ Produtos (CRUD completo, com edição; peso com 5 casas; SKUs
   alternativos; busca na lista — 2026-10-05)
 - ✅ Ficha Técnica (BOM)
@@ -902,14 +900,15 @@ das 3 contas). Tudo publicado em produção no mesmo dia.
 
 ## Pendências específicas em aberto no momento
 
-- **Nova (2026-10-05): conferir o valor líquido da primeira venda nova** —
-  comparar a coluna "Líquido" (aba Vendas) com o "Você recebe" do painel
-  do ML. Se aparecer "—" em venda nova, checar se o "Verify JWT" do
-  `ml-webhook`/`ml-sync-liquido` ficou ligado.
-- **Nova (2026-10-05): backfill do valor líquido das vendas antigas —
-  AGUARDANDO APROVAÇÃO DO DONO.** 2.320 vendas ML sem líquido em
-  2026-10-05. Não rodar sem o dono pedir (botão em Integrações, com data
-  inicial).
+- ✅ (2026-10-05) Valor líquido das vendas novas conferido pelo dono contra
+  o "Você recebe" do painel do ML — batendo.
+- **(2026-10-05) Backfill do valor líquido das vendas antigas — APROVADO
+  pelo dono** e rodado por ele pelo botão em Integrações (data inicial
+  28/07/2026, antes da venda ML mais antiga, de 29/07/2026). 2.320 vendas
+  ML estavam sem líquido. Conferir no fim: vendas que ficarem com erro ou
+  pendente podem ser tentadas de novo pelo mesmo botão; vendas "estornado"
+  (líquido 0) são pedidos cancelados/devolvidos no ML que no ERP ainda
+  estão como confirmados — revisar.
 - **Nova (2026-10-05): mapear os 285 itens com SKU antigo** — no produto
   certo, preencher "SKUs antigos/alternativos" e clicar em "Revincular
   itens sem produto" (aba Vendas). Sugestões do Claude, a confirmar pelo
@@ -919,17 +918,6 @@ das 3 contas). Tudo publicado em produção no mesmo dia.
   KIT6ROLO127; ADESIVOACNE, KIT50CAIXAS191212, KIT25CAIXAS19X14X16 → dono
   precisa indicar.
 - Opcional (2026-10-05): apagar a Edge Function temporária `ml-diagnostico`.
-- **Nova (2026-09-23): rodar `sql/022_dashboard_faturamento.sql` no SQL
-  Editor do Supabase.** Corrige o card "Faturamento hoje"/mês/ano do
-  Dashboard, que estava mostrando valores menores que o real (causa:
-  teto de ~1000 linhas por consulta do Supabase sendo ultrapassado numa
-  busca sem paginação). O front-end já está no ar chamando a função nova
-  (`dashboard_faturamento`) — até o SQL ser rodado, os cards de
-  faturamento do Dashboard não vão carregar (function does not exist).
-  Depois de rodar, conferir se os números batem com uma soma manual dos
-  pedidos confirmados do dia. *(Em 2026-10-05 o diagnóstico mostrou que a
-  função `dashboard_faturamento` já existe no banco — provavelmente já foi
-  rodado; confirmar com o dono e remover este item.)*
 - Sincronização de estoque Full confirmada funcionando automaticamente via
   pg_cron (testada em 2026-09-05, `status_code: 200`).
 - Sincronização de métricas de Mercado Ads confirmada funcionando
