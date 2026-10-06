@@ -102,51 +102,111 @@ async function baixarEstoque(produtoId: string, local: string, quantidade: numbe
   });
 }
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
+const r2 = (n: number) => (Math.round(n * 100) / 100) || 0;   // || 0 evita "-0"
 
 // ------------------------------------------------------------
-// Cálculo do líquido de UM pedido do ML a partir dos pagamentos no
-// Mercado Pago. (Mesma função usada no ml-sync-liquido.)
+// UM pagamento do Mercado Pago → valores separados.
+// (Mesma função colada no ml-webhook e no ml-sync-liquido.)
+//   bruto  = transaction_amount (preço dos produtos — igual ao faturamento)
+//   tarifa = cobranças "ml_*" pagas pelo vendedor
+//   frete  = frete cobrado do vendedor − parte que o comprador pagou (shipping_amount)
+//   taxas  = demais taxas do vendedor − créditos recebidos do comprador (ex: financing_transfer)
+//   líquido= net_received_amount (− reembolso parcial, + taxas devolvidas)
+//   ajuste = bruto − tarifa − frete − taxas − líquido (normalmente 0,00)
+// Validado em 06/10/2026: 59,75−6,81−9,75−0,06=43,13; 36,95−4,21−(17,14−9,99)−0,04=25,55;
+// 21,45−1,88−(16,94−9,99)−(3,90+0,59−3,90)=12,03.
+// ------------------------------------------------------------
+function analisarPagamento(mp: any) {
+  const st = String(mp.status || '');
+  let tarifa = 0, freteCobrado = 0, taxas = 0, creditos = 0, taxasDevolvidas = 0;
+  const charges: any[] = [];
+  for (const c of mp.charges_details || []) {
+    const orig = Number(c.amounts?.original || 0);
+    const dev = Number(c.amounts?.refunded || 0);
+    const v = orig - dev;
+    const de = c.accounts?.from, para = c.accounts?.to;
+    charges.push([c.name, c.type, de, para, orig, dev]);
+    if (de === 'collector') {
+      taxasDevolvidas += dev;
+      if (c.type === 'shipping') freteCobrado += v;
+      else if (String(c.name || '').startsWith('ml_')) tarifa += v;
+      else taxas += v;
+    } else if (para === 'collector') {
+      creditos += v;
+    }
+  }
+  const bruto = Number(mp.transaction_amount || 0);
+  const reembolsado = Number(mp.transaction_amount_refunded || 0);
+  const net = Number(mp.transaction_details?.net_received_amount ?? 0);
+  const frete = freteCobrado - Number(mp.shipping_amount || 0);
+  const taxasLiq = taxas - creditos;
+
+  // tipo: valido (aprovado/em disputa), aguardando, estornado, ignorar (nunca foi pago)
+  let tipo: 'valido' | 'aguardando' | 'estornado' | 'ignorar';
+  if (['approved', 'in_mediation'].includes(st)) tipo = 'valido';
+  else if (['refunded', 'charged_back'].includes(st)) tipo = 'estornado';
+  else if (['pending', 'in_process', 'authorized'].includes(st)) tipo = 'aguardando';
+  else tipo = 'ignorar';                                  // rejected, cancelled (nunca entrou dinheiro)
+
+  let liquido = 0;
+  if (tipo === 'valido') liquido = net - reembolsado + (reembolsado > 0 ? taxasDevolvidas : 0);
+  const parcial = tipo === 'valido' && reembolsado > 0;
+
+  const valores = tipo === 'valido'
+    ? { tarifa: r2(tarifa), frete: r2(frete), taxas: r2(taxasLiq), liquido: r2(liquido),
+        ajuste: r2(bruto - tarifa - frete - taxasLiq - liquido) }
+    : { tarifa: 0, frete: 0, taxas: 0, liquido: 0, ajuste: 0 };
+
+  return {
+    tipo, parcial,
+    bruto: r2(bruto),
+    reembolsado: r2(reembolsado),
+    ...valores,
+    data_liberacao: mp.money_release_date || null,
+    release_status: mp.money_release_status || null,
+    status_mp: st,
+    parcelas: mp.installments ?? null,
+    resumo: {
+      status: st, status_detail: mp.status_detail, date_approved: mp.date_approved,
+      money_release_date: mp.money_release_date, money_release_status: mp.money_release_status,
+      money_release_schema: mp.money_release_schema ?? null,
+      transaction_amount: mp.transaction_amount, shipping_amount: mp.shipping_amount,
+      net_received_amount: net, transaction_amount_refunded: reembolsado, charges,
+    },
+  };
+}
+
+// Colunas de líquido do Lote 3 (pedidos_venda) a partir dos pagamentos lidos.
+// (Mesma função colada no ml-webhook e no ml-sync-liquido.)
+function agregarLote3(lidos: any[]) {
+  if (!lidos.length) return { valor_liquido: null, liquido_status: 'sem_pagamento' };
+  const validos = lidos.filter((a) => a.tipo === 'valido');
+  const soma = (k: string) => r2(validos.reduce((s, a) => s + Number(a[k] || 0), 0));
+  if (validos.length) return {
+    valor_liquido: soma('liquido'), liquido_tarifa_ml: soma('tarifa'), liquido_frete_vendedor: soma('frete'),
+    liquido_taxas_mp: r2(soma('taxas') + soma('ajuste')),            // inclui o ajuste: bruto − tarifa − frete − taxas = líquido
+    liquido_status: validos.some((a) => a.parcial) ? 'reembolso_parcial' : 'ok',
+  };
+  if (lidos.some((a) => a.tipo === 'aguardando')) return { valor_liquido: null, liquido_status: 'pendente' };
+  return { valor_liquido: 0, liquido_tarifa_ml: 0, liquido_frete_vendedor: 0, liquido_taxas_mp: 0, liquido_status: 'estornado' };
+}
+
+// ------------------------------------------------------------
+// Líquido de UM pedido do ML a partir dos pagamentos no Mercado Pago.
 // Devolve null em valor_liquido quando ainda não dá pra saber
 // (pagamento pendente) — aí a venda é tentada de novo depois.
 // ------------------------------------------------------------
 async function calcularLiquido(order: any, token: string) {
   const pagamentos = order.payments || [];
   if (!pagamentos.length) return { valor_liquido: null, liquido_status: 'sem_pagamento' };
-
-  let liquido = 0, tarifa = 0, frete = 0, taxas = 0;
-  let aprovados = 0, estornados = 0, pendentes = 0, reembolsoParcial = false;
-
+  const lidos: any[] = [];
   for (const p of pagamentos) {
     const resp = await fetch(`https://api.mercadopago.com/v1/payments/${p.id}`, { headers: { Authorization: `Bearer ${token}` } });
     if (resp.status === 401) return { erro401: true } as any;
     if (!resp.ok) return { valor_liquido: null, liquido_status: 'erro', detalhe: `Mercado Pago HTTP ${resp.status}` };
-    const mp = await resp.json();
-
-    if (['refunded', 'cancelled', 'charged_back', 'rejected'].includes(mp.status)) { estornados++; continue; }
-    if (mp.status !== 'approved') { pendentes++; continue; }
-
-    aprovados++;
-    liquido += Number(mp.transaction_details?.net_received_amount ?? 0);
-    for (const c of mp.charges_details || []) {
-      if (c.accounts?.from !== 'collector') continue;           // só o que é cobrado do vendedor
-      const v = Number(c.amounts?.original || 0) - Number(c.amounts?.refunded || 0);
-      if (c.type === 'shipping') frete += v;
-      else if (String(c.name || '').startsWith('ml_')) tarifa += v;
-      else taxas += v;
-    }
-    if (Number(mp.transaction_amount_refunded || 0) > 0) reembolsoParcial = true;
+    lidos.push(analisarPagamento(await resp.json()));
   }
-
-  if (pendentes > 0 && aprovados === 0) return { valor_liquido: null, liquido_status: 'pendente' };
-
-  return {
-    valor_liquido: r2(liquido),
-    liquido_tarifa_ml: r2(tarifa),
-    liquido_frete_vendedor: r2(frete),
-    liquido_taxas_mp: r2(taxas),
-    liquido_status: aprovados === 0 && estornados > 0 ? 'estornado' : (reembolsoParcial ? 'reembolso_parcial' : 'ok'),
-  };
+  return agregarLote3(lidos);
 }
 
 // Calcula e grava SÓ as colunas de líquido do pedido (nunca mexe em
@@ -218,11 +278,32 @@ Deno.serve(async (req) => {
     // nada de estoque, status ou faturamento.
     // Pedidos importados ANTES do Lote 3 (liquido_status vazio) não são tocados
     // aqui — esses só recebem líquido pelo backfill, depois da sua aprovação.
-    const { data: existente } = await supabase.from('pedidos_venda').select('id, liquido_status').eq('ml_order_id', String(order.id)).maybeSingle();
+    const { data: existente } = await supabase.from('pedidos_venda')
+      .select('id, liquido_status, status, local_baixa_estoque').eq('ml_order_id', String(order.id)).maybeSingle();
     if (existente) {
       if (existente.liquido_status) await gravarLiquido(order, canal, accessToken);
+      // Lote 4: venda cancelada no ML → sai do faturamento. Estoque só volta se saiu
+      // do estoque FÍSICO e o envio nunca foi despachado. Full: não devolve (a
+      // sincronização do Full já corrige o saldo real).
+      if (order.status === 'cancelled' && existente.status === 'confirmado') {
+        let devolver = false;
+        if (existente.local_baixa_estoque === 'fisico' && order.shipping?.id) {
+          try {
+            const sh = await fetch(`https://api.mercadolibre.com/shipments/${order.shipping.id}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            const shj = await sh.json();
+            const saiu = shj?.status_history?.date_shipped || ['shipped', 'delivered'].includes(shj?.status);
+            devolver = sh.ok && !saiu;
+          } catch (e) { console.error('Erro ao checar envio do cancelamento:', e); }
+        }
+        const { error: errCanc } = await supabase.rpc('registrar_cancelamento_ml', { p_pedido_id: existente.id, p_devolver_estoque: devolver });
+        if (errCanc) console.error('Erro ao registrar cancelamento do pedido', order.id, errCanc.message);
+      }
       return new Response('ok', { status: 200 });
     }
+
+    // Lote 4: pedido que já chega CANCELADO (nunca foi faturado de verdade) entra
+    // como cancelado e sem baixa de estoque.
+    const jaCancelado = order.status === 'cancelled';
 
     // descobre se o envio é Full (fulfillment) pra baixar do estoque certo
     let localBaixa = 'fisico';
@@ -257,13 +338,15 @@ Deno.serve(async (req) => {
         cliente_nome_avulso: order.buyer?.nickname || '',
         local_baixa_estoque: localBaixa,
         data_pedido: order.date_created,
-        status: 'confirmado',
+        status: jaCancelado ? 'cancelado' : 'confirmado',
+        ...(jaCancelado ? { cancelado_ml_em: new Date().toISOString(), cancelamento_estoque: 'nao_devolvido' } : {}),
         valor_produtos: valorProdutos,
         valor_frete: 0,
         desconto: 0,
         taxas_canal: 0,
         valor_total: valorProdutos,
-        observacao: 'Importado automaticamente do Mercado Livre',
+        observacao: jaCancelado ? 'Importado automaticamente do Mercado Livre | Já veio cancelado — sem baixa de estoque'
+                                : 'Importado automaticamente do Mercado Livre',
       })
       .select('id')
       .single();
@@ -296,13 +379,15 @@ Deno.serve(async (req) => {
         ml_item_id: item.ml_item_id,
         // item sem produto não baixa estoque — fica marcado pra não devolver
         // estoque que nunca saiu, se o pedido for cancelado/excluído depois
-        estoque_baixado: !!produtoId,
+        estoque_baixado: !!produtoId && !jaCancelado,
         quantidade: item.quantidade,
         preco_unitario: item.preco_unitario,
         subtotal: item.quantidade * item.preco_unitario,
       });
 
-      if (produtoId) {
+      if (produtoId && jaCancelado) {
+        // pedido já cancelado: registra o item, mas não baixa estoque
+      } else if (produtoId) {
         await baixarEstoque(produtoId, localBaixa, item.quantidade, novoPedido.id);
       } else {
         console.error('Produto não encontrado pro SKU ML:', item.sku_ml, '— item registrado sem baixa de estoque.');
