@@ -262,6 +262,17 @@
   .cr-prev{ font-size:11px; color:var(--muted); display:block; }
   #cr-lista-wrap td{ vertical-align:top; }
 
+  /* ---------- Consumo próprio (Lote 5) ---------- */
+  .cp-info{ font-size:13px; color:var(--muted); min-height:18px; margin-top:8px; }
+  .cp-info strong{ color:var(--text); }
+  .cp-info .cp-neg{ color:var(--danger); font-weight:600; }
+  .cp-msg{ font-size:13px; min-height:18px; margin-top:4px; }
+  .cp-msg.ok{ color:var(--ok); }
+  .cp-msg.erro{ color:var(--danger); }
+  #cp-tabela td{ vertical-align:top; }
+  #cp-tabela tr.cp-desfeito td{ color:var(--muted); text-decoration:line-through; }
+  #cp-tabela tr.cp-desfeito td:last-child{ text-decoration:none; }
+
   /* ---------- telas pequenas (celular) ----------
      #main com min-width:0 deixa tabelas largas rolarem dentro do próprio card
      em vez de esticar a página. Abaixo de 760px o menu vira uma barra no topo. */
@@ -551,6 +562,28 @@
       <p><strong>Total dos produtos: <span id="v-total-produtos">R$ 0,00</span></strong></p>
 
       <button data-t="BTN_REGISTRAR_PEDIDO" id="btn-finalizar-pedido">Registrar pedido</button>
+    </div>
+
+    <!-- ===== CONSUMO PRÓPRIO (Lote 5): baixa de estoque que NÃO é venda ===== -->
+    <div class="card" id="card-consumo-proprio">
+      <h3 data-t="CARD_CONSUMO_PROPRIO">Consumo próprio</h3>
+      <p class="muted" style="margin-top:-6px;" data-t="CONSUMO_AJUDA">Produto usado pela própria empresa. Baixa só do estoque da empresa (produto acabado → Físico; matéria-prima → Matéria-prima), nunca do Full. Não é venda: não entra no faturamento nem no contas a receber.</p>
+      <form class="inline" id="form-consumo-proprio">
+        <div class="field" style="min-width:260px;"><label for="cp-produto" data-t="CONSUMO_LABEL_PRODUTO">Produto *</label><select id="cp-produto" required></select></div>
+        <div class="field"><label for="cp-qtd" data-t="CONSUMO_LABEL_QTD">Quantidade *</label><input type="number" step="0.001" min="0.001" id="cp-qtd" required style="width:120px;"></div>
+        <div class="field"><label for="cp-data" data-t="CONSUMO_LABEL_DATA">Data</label><input type="date" id="cp-data"></div>
+        <div class="field" style="flex:1; min-width:200px;"><label for="cp-obs" data-t="CONSUMO_LABEL_OBS">Observação</label><input type="text" id="cp-obs" maxlength="200" data-t-ph="CONSUMO_PH_OBS" placeholder="ex: usado pra embalar envios"></div>
+        <button type="submit" id="cp-btn" data-t="BTN_CONSUMO">Registrar consumo</button>
+      </form>
+      <div class="cp-info" id="cp-info"></div>
+      <div class="cp-msg" id="cp-msg"></div>
+      <h4 style="margin:16px 0 8px;" data-t="CONSUMO_SUBTITULO_LISTA">Últimos consumos</h4>
+      <div class="tabela-rolavel">
+        <table id="cp-tabela"><thead><tr>
+          <th>Data</th><th>Produto</th><th class="num">Qtd</th><th>Estoque</th><th class="num">Custo</th><th>Quem</th><th>Observação</th><th></th>
+        </tr></thead><tbody id="cp-tbody"></tbody></table>
+      </div>
+      <div class="empty" id="cp-vazio" style="display:none;">Nenhum consumo próprio registrado ainda.</div>
     </div>
 
     <div class="card">
@@ -1178,6 +1211,16 @@ const TEXTOS = {
   BTN_BACKFILL_LIQUIDO: 'Preencher líquido das vendas antigas',
   TEXTO_LIQUIDO_PERIODO: 'Líquido Mercado Livre (o que entra):',
   CARD_REGISTRAR_PEDIDO: 'Registrar pedido de venda',
+  // ---- Consumo próprio ----
+  CARD_CONSUMO_PROPRIO: 'Consumo próprio',
+  CONSUMO_AJUDA: 'Produto usado pela própria empresa. Baixa só do estoque da empresa (produto acabado → Físico; matéria-prima → Matéria-prima), nunca do Full. Não é venda: não entra no faturamento nem no contas a receber.',
+  CONSUMO_LABEL_PRODUTO: 'Produto *',
+  CONSUMO_LABEL_QTD: 'Quantidade *',
+  CONSUMO_LABEL_DATA: 'Data',
+  CONSUMO_LABEL_OBS: 'Observação',
+  CONSUMO_PH_OBS: 'ex: usado pra embalar envios',
+  BTN_CONSUMO: 'Registrar consumo',
+  CONSUMO_SUBTITULO_LISTA: 'Últimos consumos',
   CARD_FILTRAR_PEDIDOS: 'Filtrar pedidos',
   CARD_PEDIDOS: 'Pedidos',
   FILTRO_LABEL_PRODUTO: 'Produto',
@@ -1534,7 +1577,7 @@ function criarAutocomplete(select, cfg = {}){
 }
 
 // Campos de produto e filtros que viram busca digitada
-['v-item-produto', 'm-produto', 't-produto', 'f-acabado', 'f-materia', 'oc-i-produto', 'o-produto', 'f-produto']
+['v-item-produto', 'm-produto', 't-produto', 'f-acabado', 'f-materia', 'oc-i-produto', 'o-produto', 'f-produto', 'cp-produto']
   .forEach(id => criarAutocomplete(document.getElementById(id)));
 criarAutocomplete(document.getElementById('f-canal'), { curto: true });
 criarAutocomplete(document.getElementById('oc-filtro-status'), { curto: true });
@@ -2061,6 +2104,12 @@ function preencherSelectsDeProdutos(produtos){
   document.getElementById('m-produto').innerHTML = vazio + opts(produtos);
   document.getElementById('t-produto').innerHTML = vazio + opts(produtos);
   document.getElementById('v-item-produto').innerHTML = vazio + opts(acabados);
+  // consumo próprio: qualquer produto ativo (acabado ou matéria-prima)
+  const cpSel = document.getElementById('cp-produto');
+  const cpAntes = cpSel.value;
+  cpSel.innerHTML = vazio + optsAgrupado(produtos.filter(p => p.ativo));
+  if (cpAntes) cpSel.value = cpAntes;
+  cpProdutos = Object.fromEntries(produtos.map(p => [p.id, p]));
   // filtro de pedidos por produto (mantém o que estava escolhido)
   const fProduto = document.getElementById('f-produto');
   const fProdutoAntes = fProduto.value;
@@ -4197,10 +4246,102 @@ async function salvarDataCR(){
 }
 
 // ============================================================
+// CONSUMO PRÓPRIO (Lote 5 — 2026-10-06)
+// Baixa de estoque que NÃO é venda. Tudo pelo banco (funções
+// registrar_consumo_proprio / desfazer_consumo_proprio /
+// listar_consumo_proprio): o banco decide o estoque (acabado → Físico,
+// matéria-prima → Matéria-prima), deixa o saldo ficar negativo e guarda o
+// custo do momento. Nunca cria pedido.
+// ============================================================
+let cpProdutos = {};
+const CP_LOCAL_LABEL = { fisico: 'Físico', materia_prima: 'Matéria-prima' };
+function cpLocalDoProduto(p){ return p && p.tipo === 'materia_prima' ? 'materia_prima' : 'fisico'; }
+
+async function cpMostrarInfo(){
+  const info = document.getElementById('cp-info');
+  const id = document.getElementById('cp-produto').value;
+  const p = cpProdutos[id];
+  if (!p) { info.textContent = ''; return; }
+  const local = cpLocalDoProduto(p);
+  info.innerHTML = `Sai do estoque <strong>${esc(CP_LOCAL_LABEL[local])}</strong> · saldo atual: …`;
+  const { data } = await supabaseClient.from('estoque_saldos').select('quantidade').eq('produto_id', id).eq('local', local).maybeSingle();
+  if (document.getElementById('cp-produto').value !== id) return;   // trocou de produto no meio
+  const saldo = Number(data ? data.quantidade : 0);
+  const qtd = Number(document.getElementById('cp-qtd').value || 0);
+  const depois = saldo - qtd;
+  info.innerHTML = `Sai do estoque <strong>${esc(CP_LOCAL_LABEL[local])}</strong> · saldo atual: <strong>${fmt(saldo)}</strong>` +
+    (qtd > 0 ? ` · depois: <span class="${depois < 0 ? 'cp-neg' : ''}">${fmt(depois)}</span>${depois < 0 ? ' (vai ficar negativo)' : ''}` : '');
+}
+
+async function carregarConsumoProprio(){
+  const tbody = document.getElementById('cp-tbody');
+  const { data, error } = await supabaseClient.rpc('listar_consumo_proprio', { p_limite: 30 });
+  if (error) { console.error(error); tbody.innerHTML = ''; document.getElementById('cp-vazio').style.display = 'block';
+    document.getElementById('cp-vazio').textContent = 'Não foi possível carregar: ' + error.message; return; }
+  const linhas = data || [];
+  document.getElementById('cp-vazio').textContent = 'Nenhum consumo próprio registrado ainda.';
+  document.getElementById('cp-vazio').style.display = linhas.length ? 'none' : 'block';
+  tbody.innerHTML = linhas.map(l => `
+    <tr class="${l.desfeito ? 'cp-desfeito' : ''}">
+      <td>${fmtData(l.data_referencia)}</td>
+      <td>${esc(l.produto)}<span class="sub">${esc(l.sku || '')}</span></td>
+      <td class="num">${fmt(l.quantidade)}</td>
+      <td>${esc(CP_LOCAL_LABEL[l.local] || l.local)}</td>
+      <td class="num">${l.custo_total !== null && l.custo_total !== undefined ? fmtMoeda(l.custo_total) : '<span class="muted" title="Produto sem custo cadastrado">—</span>'}</td>
+      <td>${esc(l.usuario_email || '-')}</td>
+      <td>${esc(l.observacao || '')}</td>
+      <td style="white-space:nowrap;">${l.desfeito ? '<span class="badge">desfeito</span>'
+        : `<button type="button" class="secondary" style="padding:4px 10px; font-size:12px;" onclick="desfazerConsumoProprio('${l.id}')">Desfazer</button>`}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('cp-produto').addEventListener('change', cpMostrarInfo);
+document.getElementById('cp-qtd').addEventListener('input', cpMostrarInfo);
+document.getElementById('cp-data').value = hojeSP();
+
+document.getElementById('form-consumo-proprio').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('cp-msg');
+  const id = document.getElementById('cp-produto').value;
+  const qtd = Number(document.getElementById('cp-qtd').value);
+  msg.className = 'cp-msg erro';
+  if (!id) { msg.textContent = 'Escolha o produto.'; return; }
+  if (!(qtd > 0)) { msg.textContent = 'Informe uma quantidade maior que zero.'; return; }
+  const btn = document.getElementById('cp-btn'); btn.disabled = true;
+  msg.className = 'cp-msg'; msg.textContent = 'Registrando…';
+  const { data, error } = await supabaseClient.rpc('registrar_consumo_proprio', {
+    p_produto_id: id, p_quantidade: qtd,
+    p_data: document.getElementById('cp-data').value || null,
+    p_observacao: document.getElementById('cp-obs').value.trim() || null,
+  });
+  btn.disabled = false;
+  if (error) { msg.className = 'cp-msg erro'; msg.textContent = 'Erro: ' + error.message; return; }
+  msg.className = 'cp-msg ok';
+  msg.textContent = `✓ ${fmt(qtd)} × ${data.produto} baixado(s) do ${CP_LOCAL_LABEL[data.local] || data.local}. Saldo agora: ${fmt(data.saldo)}.`;
+  document.getElementById('cp-qtd').value = '';
+  document.getElementById('cp-obs').value = '';
+  cpMostrarInfo();
+  carregarConsumoProprio();
+  loadEstoque();
+});
+
+async function desfazerConsumoProprio(id){
+  if (!confirm('Desfazer esse consumo? A quantidade volta pro estoque.')) return;
+  const msg = document.getElementById('cp-msg');
+  const { error } = await supabaseClient.rpc('desfazer_consumo_proprio', { p_movimentacao_id: id });
+  if (error) { msg.className = 'cp-msg erro'; msg.textContent = 'Erro ao desfazer: ' + error.message; return; }
+  msg.className = 'cp-msg ok'; msg.textContent = '✓ Consumo desfeito — quantidade devolvida ao estoque.';
+  cpMostrarInfo();
+  carregarConsumoProprio();
+  loadEstoque();
+}
+
+// ============================================================
 // AUTENTICAÇÃO
 // ============================================================
 function carregarApp(){
   loadProdutos();
+  carregarConsumoProprio();
   loadFichaTecnica();
   loadEstoque();
   loadOrdens();
