@@ -187,6 +187,100 @@
   .ac-item.ativo, .ac-item:hover{ background:#fff3e3; }
   .ac-item mark{ background:none; color:var(--accent); font-weight:700; }
   .ac-vazio{ padding:8px 12px; font-size:13px; color:var(--muted); }
+  /* ---------- Contas a receber (Lote 4) ---------- */
+  .cr-filtros{ display:flex; flex-wrap:wrap; gap:14px 16px; align-items:flex-end; }
+  .cr-filtros .field input[type="text"], .cr-filtros .field input[type="date"]{ min-width:0; }
+  .cr-presets{ display:flex; flex-wrap:wrap; gap:6px; }
+  .cr-chip{ background:#fff; color:var(--text); border:1px solid var(--border); padding:6px 12px; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; }
+  .cr-chip:hover{ border-color:#c9ced8; opacity:1; }
+  .cr-chip.ativo{ background:var(--sidebar); border-color:var(--sidebar); color:#fff; }
+  .cr-periodo-custom{ display:none; gap:8px; }
+  .cr-periodo-custom.visivel{ display:flex; }
+  .cr-tiles{ grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); }
+  .cr-tiles .metric-value{ font-size:24px; font-variant-numeric:tabular-nums; }
+  .cr-tiles .metric-sub{ font-size:12px; color:var(--muted); margin-top:6px; }
+  .cr-tiles .metric-card.alerta{ border-color:#f0c78a; background:#fffaf1; }
+
+  /* multiselect com busca digitada */
+  .ms-wrap{ position:relative; min-width:220px; max-width:360px; }
+  .ms-caixa{ display:flex; flex-wrap:wrap; gap:4px; align-items:center; border:1px solid var(--border); border-radius:6px; padding:4px 6px; background:#fff; min-height:37px; cursor:text; }
+  .ms-caixa:focus-within{ border-color:#b9c0cc; box-shadow:0 0 0 3px rgba(232,152,60,.15); }
+  .ms-tag{ display:inline-flex; align-items:center; gap:6px; background:#f1f2f5; border-radius:999px; padding:2px 4px 2px 8px; font-size:12px; color:var(--text); white-space:nowrap; }
+  .ms-tag .ms-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .ms-tag button{ background:none; color:var(--muted); padding:0 4px; font-size:14px; line-height:1; font-weight:400; }
+  .ms-tag button:hover{ color:var(--danger); }
+  .ms-input, .field .ms-caixa input.ms-input{ border:none; outline:none; flex:1; min-width:70px; width:auto; font-size:14px; padding:4px 2px; font-family:inherit; background:transparent; box-shadow:none; border-radius:0; }
+  .ms-lista{ position:absolute; top:calc(100% + 2px); left:0; right:0; min-width:220px; max-height:280px; overflow-y:auto; background:var(--panel); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(20,24,32,.14); z-index:210; display:none; padding:4px 0; }
+  .ms-lista.aberta{ display:block; }
+  .ms-item{ padding:7px 12px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px; }
+  .ms-item.ativo, .ms-item:hover{ background:#fff3e3; }
+  .ms-item .ms-check{ width:14px; color:var(--accent); font-weight:700; flex-shrink:0; }
+  .ms-item .ms-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .ms-item mark{ background:none; color:var(--accent); font-weight:700; }
+  .ms-vazio{ padding:8px 12px; font-size:13px; color:var(--muted); }
+
+  /* gráfico */
+  .cr-graf-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .cr-graf-head h3{ margin:0; }
+  .cr-graf-acoes{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:13px; }
+  .cr-graf-acoes label{ display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text); }
+  .cr-link{ background:none; color:var(--muted); padding:0; font-weight:500; font-size:13px; text-decoration:underline; text-underline-offset:3px; }
+  .cr-link:hover{ color:var(--text); }
+  .cr-legenda{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--muted); margin:6px 0 2px; }
+  .cr-legenda span{ display:inline-flex; align-items:center; gap:6px; }
+  .cr-legenda i{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+  .cr-graf{ position:relative; width:100%; }
+  .cr-graf svg{ display:block; width:100%; overflow:visible; }
+  .cr-graf .eixo{ font-size:11px; fill:var(--muted); font-variant-numeric:tabular-nums; }
+  .cr-graf .total{ font-size:12px; fill:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+  .cr-graf .col-hit{ fill:transparent; cursor:pointer; }
+  .cr-graf .col.ativa rect.seg{ filter:brightness(1.08); }
+  .cr-graf .col.ativa rect.seg.foco{ filter:brightness(1.18) saturate(1.1); }
+  .cr-tip{ position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(20,24,32,.16); padding:10px 12px; font-size:12px; min-width:200px; z-index:20; display:none; }
+  .cr-tip .tit{ font-weight:600; margin-bottom:6px; color:var(--text); }
+  .cr-tip .lin{ display:flex; align-items:center; gap:8px; padding:2px 0; color:var(--muted); }
+  .cr-tip .lin i{ width:12px; height:2px; border-radius:1px; flex-shrink:0; }
+  .cr-tip .lin b{ margin-left:auto; color:var(--text); font-variant-numeric:tabular-nums; }
+  .cr-tip .lin.foco{ color:var(--text); }
+  .cr-tip .tot{ border-top:1px solid var(--border); margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; font-weight:600; }
+  .cr-tip .nota{ margin-top:6px; color:#8a5a12; }
+  .cr-graf-vazio{ color:var(--muted); font-size:13px; padding:40px 0; text-align:center; }
+  .cr-tabela-graf{ margin-top:12px; }
+
+  /* lista */
+  .cr-canal{ display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .cr-canal i{ width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .badge[class*=" cr-"]{ white-space:nowrap; }
+  .badge.cr-a_receber{ background:#e6f0ff; color:#1d4ed8; }
+  .badge.cr-recebido{ background:#e4f7ea; color:var(--ok); }
+  .badge.cr-aguardando{ background:#f1f2f4; color:var(--muted); }
+  .badge.cr-estornado{ background:#fde8e8; color:var(--danger); }
+  .cr-sem-custo{ color:#b5610a; font-weight:600; white-space:nowrap; cursor:help; }
+  .cr-neg{ color:var(--danger); }
+  .cr-desc{ max-width:340px; }
+  .cr-acoes button{ padding:4px 10px; font-size:12px; }
+  .cr-prev{ font-size:11px; color:var(--muted); display:block; }
+  #cr-lista-wrap td{ vertical-align:top; }
+
+  /* ---------- telas pequenas (celular) ----------
+     #main com min-width:0 deixa tabelas largas rolarem dentro do próprio card
+     em vez de esticar a página. Abaixo de 760px o menu vira uma barra no topo. */
+  #main{ min-width:0; }
+  @media (max-width: 760px){
+    body{ flex-direction:column; }
+    #sidebar{ width:100%; flex-direction:row; align-items:center; overflow-x:auto; padding:0; position:sticky; top:0; z-index:60; }
+    #sidebar h1{ padding:12px 14px; border-bottom:none; white-space:nowrap; font-size:14px; }
+    .nav-item{ white-space:nowrap; padding:14px 12px; border-left:none; border-bottom:3px solid transparent; }
+    .nav-item.active{ border-left:none; border-bottom:3px solid var(--accent); }
+    #sidebar-footer{ display:flex; align-items:center; gap:8px; padding:0 12px; margin:0; border:none; white-space:nowrap; }
+    #main{ padding:16px; }
+    .cr-filtros .field, .cr-filtros > .field{ width:100%; }
+    .ms-wrap{ min-width:0; max-width:none; width:100%; }
+    .cr-desc{ max-width:none; min-width:180px; }
+    .cr-tiles{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+    .cr-tiles .metric-value{ font-size:18px; }
+    .page-head .oc-acoes{ width:100%; }
+  }
   .busca-tabela{ padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:100%; max-width:380px; margin-bottom:12px; box-sizing:border-box; font-family:inherit; }
 </style>
 </head>
@@ -209,6 +303,7 @@
   <h1 id="nome-sistema-header">E-Factory <span>ERP</span></h1>
   <div class="nav-item active" data-view="dashboard"></div>
   <div class="nav-item" data-view="vendas"></div>
+  <div class="nav-item" data-view="contas-receber"></div>
   <div class="nav-item" data-view="integracoes"></div>
   <div class="nav-item" data-view="produtos"></div>
   <div class="nav-item" data-view="loja"></div>
@@ -332,6 +427,86 @@
         <button type="button" class="secondary" id="btn-parar-backfill" style="display:none;">Parar</button>
       </form>
       <pre id="resultado-backfill-liquido" style="white-space:pre-wrap; margin-top:12px;"></pre>
+    </div>
+  </div>
+
+  <!-- ================= CONTAS A RECEBER (Lote 4) ================= -->
+  <div class="view" id="view-contas-receber">
+    <div class="page-head">
+      <h2 data-t="TITULO_CONTAS_RECEBER">Contas a receber</h2>
+      <div class="oc-acoes" style="align-items:center;">
+        <span class="muted" id="cr-sync-info"></span>
+        <button type="button" class="secondary" id="cr-btn-sync" data-t="BTN_CR_SYNC">Atualizar do Mercado Livre</button>
+        <button type="button" id="cr-btn-novo" data-t="BTN_CR_NOVO">+ Lançamento manual</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cr-filtros">
+        <div class="field">
+          <label data-t="CR_LABEL_PERIODO">Mês de liberação do dinheiro</label>
+          <div class="cr-presets" id="cr-presets">
+            <button type="button" class="cr-chip" data-preset="mes">Este mês</button>
+            <button type="button" class="cr-chip" data-preset="prox3">Próximos 3 meses</button>
+            <button type="button" class="cr-chip" data-preset="ult3">Últimos 3 meses</button>
+            <button type="button" class="cr-chip" data-preset="ult12">Últimos 12 meses</button>
+            <button type="button" class="cr-chip" data-preset="tudo">Tudo</button>
+            <button type="button" class="cr-chip" data-preset="custom">Datas…</button>
+          </div>
+        </div>
+        <div class="field"><label data-t="CR_LABEL_MESES">Ou escolha os meses</label><div id="cr-ms-meses"></div></div>
+        <div class="field cr-periodo-custom" id="cr-periodo-custom">
+          <div class="field"><label>De</label><input type="date" id="cr-de"></div>
+          <div class="field"><label>Até</label><input type="date" id="cr-ate"></div>
+        </div>
+        <div class="field"><label data-t="CR_LABEL_CANAL">Canal</label><div id="cr-ms-canais"></div></div>
+        <div class="field"><label data-t="CR_LABEL_STATUS">Status</label><div id="cr-ms-status"></div></div>
+        <div class="field"><label data-t="CR_LABEL_BUSCA" for="cr-busca">Pedido, produto, cliente ou descrição</label>
+          <input type="text" id="cr-busca" data-t-ph="CR_PH_BUSCA" placeholder="ex: 2000018…, rolo, aporte"></div>
+      </div>
+    </div>
+
+    <div class="metric-grid cr-tiles" id="cr-tiles">
+      <div class="metric-card"><div class="metric-label">A receber</div><div class="metric-value" id="cr-t-areceber">-</div><div class="metric-sub" id="cr-t-areceber-sub">&nbsp;</div></div>
+      <div class="metric-card"><div class="metric-label">Recebido</div><div class="metric-value" id="cr-t-recebido">-</div><div class="metric-sub" id="cr-t-recebido-sub">&nbsp;</div></div>
+      <div class="metric-card"><div class="metric-label">Lucro no período</div><div class="metric-value" id="cr-t-lucro">-</div><div class="metric-sub" id="cr-t-lucro-sub">&nbsp;</div></div>
+      <div class="metric-card" id="cr-t-semcusto-card"><div class="metric-label">Vendas sem custo</div><div class="metric-value" id="cr-t-semcusto">-</div><div class="metric-sub" id="cr-t-semcusto-sub">&nbsp;</div></div>
+    </div>
+
+    <div class="card">
+      <div class="cr-graf-head">
+        <h3 id="cr-graf-titulo">A receber por mês de liberação</h3>
+        <div class="cr-graf-acoes">
+          <label title="Mostra só o lucro (líquido − custo). Vendas sem custo ficam de fora."><input type="checkbox" id="cr-chk-lucro"> <span data-t="CR_CHK_LUCRO">Lucro líquido</span></label>
+          <button type="button" class="cr-link" id="cr-btn-tabela">Ver como tabela</button>
+        </div>
+      </div>
+      <div class="cr-legenda" id="cr-legenda"></div>
+      <div class="cr-graf" id="cr-graf"><div class="cr-graf-vazio">Carregando…</div></div>
+      <div class="muted" id="cr-graf-aviso" style="margin-top:8px;"></div>
+      <div class="cr-tabela-graf tabela-rolavel" id="cr-tabela-graf" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h3 data-t="CARD_CR_LISTA">Lançamentos</h3>
+      <div class="tabela-rolavel" id="cr-lista-wrap">
+        <table><thead><tr>
+          <th>Liberação</th><th>Canal</th><th>Pedido / descrição</th><th>Venda</th>
+          <th class="num" title="O que entra de fato (passe o mouse no valor pra ver o detalhamento)">Líquido</th>
+          <th class="num">Custo</th><th class="num">Lucro</th><th>Status</th><th></th>
+        </tr></thead>
+          <tbody id="cr-tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="cr-vazio" style="display:none;">Nenhum lançamento nesse filtro.</div>
+      <div class="paginacao">
+        <span class="muted" id="cr-pag-info">&nbsp;</span>
+        <div class="paginacao-botoes">
+          <button type="button" class="secondary" id="cr-pag-ant">‹ Anterior</button>
+          <span class="paginacao-pagina" id="cr-pag-num">Página 1</span>
+          <button type="button" class="secondary" id="cr-pag-prox">Próxima ›</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -813,6 +988,55 @@
 
 </div>
 
+  <!-- Contas a receber: lançamento manual (criar / editar) -->
+  <div id="cr-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="cr-m-titulo">Novo lançamento</h3>
+      <form id="cr-form" onsubmit="return false;">
+        <div class="field"><label>Tipo *</label>
+          <label class="opcao-radio"><input type="radio" name="cr-m-cat" value="venda" checked><span>Venda (ex: venda física fora do PDV)<small>Entra no faturamento a receber e no lucro (se tiver custo).</small></span></label>
+          <label class="opcao-radio"><input type="radio" name="cr-m-cat" value="aporte"><span>Aporte<small>Dinheiro de sócio. Aparece no a receber, fora do lucro.</small></span></label>
+          <label class="opcao-radio"><input type="radio" name="cr-m-cat" value="outros"><span>Outros<small>Qualquer outra entrada. Fora do lucro.</small></span></label>
+        </div>
+        <div class="field"><label for="cr-m-canal">Canal *</label>
+          <select id="cr-m-canal">
+            <option value="loja_fisica">Físico</option>
+            <option value="loja_online">Loja online</option>
+            <option value="outros">Outros</option>
+            <option value="ml_conta1">ML 1</option>
+            <option value="ml_conta2">ML 2</option>
+            <option value="ml_conta3">ML 3</option>
+          </select>
+        </div>
+        <div class="field"><label for="cr-m-desc">Descrição *</label><input type="text" id="cr-m-desc" maxlength="200" placeholder="ex: Venda balcão — 2 caixas de etiqueta"></div>
+        <div class="field"><label for="cr-m-valor">Valor que vai entrar (R$) *</label><input type="number" step="0.01" min="0.01" id="cr-m-valor"></div>
+        <div class="field"><label for="cr-m-data">Data da venda / do lançamento *</label><input type="date" id="cr-m-data"></div>
+        <div class="field"><label for="cr-m-lib">Data em que o dinheiro entra *</label><input type="date" id="cr-m-lib"></div>
+        <div class="field" id="cr-m-custo-campo"><label for="cr-m-custo">Custo dos produtos (R$) — opcional</label><input type="number" step="0.01" min="0" id="cr-m-custo" placeholder="vazio = sem custo (fica fora do lucro)"></div>
+        <div class="field"><label for="cr-m-obs">Observação</label><input type="text" id="cr-m-obs" maxlength="300"></div>
+        <div id="cr-m-erro" style="color:var(--danger); font-size:13px; min-height:16px;"></div>
+        <div class="modal-botoes">
+          <button type="button" class="secondary" id="cr-m-cancelar">Cancelar</button>
+          <button type="submit" id="cr-m-salvar">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Contas a receber: mudar a data de recebimento de venda do PDV -->
+  <div id="cr-modal-data" class="modal-overlay">
+    <div class="modal-box">
+      <h3>Data em que o dinheiro entra</h3>
+      <p class="muted" id="cr-md-desc" style="margin-top:0;"></p>
+      <div class="field"><label for="cr-md-data">Nova data *</label><input type="date" id="cr-md-data"></div>
+      <div id="cr-md-erro" style="color:var(--danger); font-size:13px; min-height:16px;"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="cr-md-cancelar">Cancelar</button>
+        <button type="button" id="cr-md-salvar">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-producao" class="modal-overlay">
     <div class="modal-box">
       <h3 id="mp-titulo">Concluir ordem de produção</h3>
@@ -845,6 +1069,7 @@ const NOME_SISTEMA = 'E-Factory ERP';
 const MENU_LABELS = {
   dashboard: 'Dashboard',
   vendas: 'Vendas',
+  'contas-receber': 'Contas a receber',
   integracoes: 'Integrações',
   produtos: 'Produtos',
   loja: 'Loja Online',
@@ -861,7 +1086,27 @@ const CANAL_LABEL = {
   ml_conta2: 'Mercado Livre - Conta 2',
   ml_conta3: 'Mercado Livre - Conta 3',
   loja_fisica: 'Loja Física',
-  loja_online: 'Loja Online'
+  loja_online: 'Loja Online',
+  outros: 'Outros'
+};
+
+// Contas a receber: nome curto e COR de cada canal (a cor acompanha o canal
+// em todo lugar — gráfico, legenda e lista). Cores validadas pra daltonismo.
+const CANAL_CURTO = {
+  loja_fisica: 'Físico',
+  ml_conta1: 'ML 1',
+  ml_conta2: 'ML 2',
+  ml_conta3: 'ML 3',
+  loja_online: 'Loja online',
+  outros: 'Outros'
+};
+const CANAL_COR = {
+  ml_conta1: '#2a78d6',   // azul
+  ml_conta2: '#eb6834',   // laranja
+  ml_conta3: '#1baf7a',   // verde-água
+  loja_fisica: '#eda100', // amarelo
+  loja_online: '#e87ba4', // rosa
+  outros: '#7c5cd6'       // violeta (bem diferente do verde do ML 3)
 };
 
 // Nomes de exibição dos estoques Full de cada conta — edite aqui se mudar de responsável.
@@ -1012,6 +1257,18 @@ const TEXTOS = {
   BTN_REABRIR_OC: 'Reabrir como rascunho',
   BTN_EXCLUIR_OC: 'Excluir',
   CARD_CUSTO_SKUS: 'Custo dos produtos pela ficha técnica',
+  // ---- Contas a receber ----
+  TITULO_CONTAS_RECEBER: 'Contas a receber',
+  BTN_CR_SYNC: 'Atualizar do Mercado Livre',
+  BTN_CR_NOVO: '+ Lançamento manual',
+  CR_LABEL_PERIODO: 'Mês de liberação do dinheiro',
+  CR_LABEL_MESES: 'Ou escolha os meses',
+  CR_LABEL_CANAL: 'Canal',
+  CR_LABEL_STATUS: 'Status',
+  CR_LABEL_BUSCA: 'Pedido, produto, cliente ou descrição',
+  CR_PH_BUSCA: 'ex: 2000018…, rolo, aporte',
+  CR_CHK_LUCRO: 'Lucro líquido',
+  CARD_CR_LISTA: 'Lançamentos',
 };
 
 // ============================================================
@@ -1064,6 +1321,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     item.classList.add('active');
     document.getElementById('view-' + item.dataset.view).classList.add('active');
+    if (item.dataset.view === 'contas-receber') abrirContasReceber();
     if (item.dataset.view === 'gestao-contas' && Date.now() - perguntasUltimaSync > 5 * 60 * 1000) {
       sincronizarPerguntasEListar();
     }
@@ -3046,7 +3304,7 @@ function celulaLiquido(p){
       `Total: ${fmtMoeda(p.valor_total)}`,
       `− Tarifa ML: ${fmtMoeda(p.liquido_tarifa_ml || 0)}`,
       `− Frete pago pelo vendedor: ${fmtMoeda(p.liquido_frete_vendedor || 0)}`,
-      `− Taxas Mercado Pago: ${fmtMoeda(p.liquido_taxas_mp || 0)}`,
+      `− Taxas Mercado Pago (e reembolsos): ${fmtMoeda(p.liquido_taxas_mp || 0)}`,
       `= Líquido: ${fmtMoeda(p.valor_liquido)}`,
     ].join('\n');
     const aviso = p.liquido_status === 'estornado' ? ' <span class="muted">(estornado)</span>'
@@ -3293,6 +3551,649 @@ async function excluirPedido(id){
   loadPedidos();
   loadEstoque();
   loadDashboard();
+}
+
+// ============================================================
+// CONTAS A RECEBER (Lote 4 — 2026-10-06)
+// Dados: tabela lancamentos_financeiros (1 linha por pagamento do ML,
+// por pedido do PDV/loja, ou lançamento manual). Somas sempre no banco
+// (funções contas_receber_*), nunca no navegador.
+// O gráfico já recebe "natureza" (receber/pagar) — contas a pagar entra
+// depois como outra série, sem mudar a estrutura.
+// ============================================================
+const URL_SYNC_RECEBER = 'https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-receber';
+const CR_CANAIS = ['loja_fisica', 'ml_conta1', 'ml_conta2', 'ml_conta3', 'loja_online', 'outros'];   // ordem fixa (cor segue o canal)
+const CR_STATUS = [
+  { value: 'a_receber',  label: 'A receber' },
+  { value: 'recebido',   label: 'Recebido' },
+  { value: 'aguardando', label: 'Aguardando pagamento' },
+  { value: 'estornado',  label: 'Estornado / cancelado' },
+];
+const CR_MESES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const CR_MESES_CURTO = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+const crEstado = {
+  preset: 'prox3', meses: [], de: '', ate: '',
+  canais: [], status: ['a_receber', 'recebido'], texto: '',
+  pagina: 1, tamanho: 50, total: 0,
+  lucro: false, tabela: false,
+  seq: 0, ultimaSync: 0, carregouUmaVez: false, mensal: [],
+};
+let crMsMeses, crMsCanais, crMsStatus;
+
+// "Hoje" sempre no horário de Brasília (não do computador de quem abre)
+function crHojeSP(){
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return p;   // AAAA-MM-DD
+}
+function crMesISO(ano, mes0){   // mes0 = 0..11, aceita estouro
+  const d = new Date(Date.UTC(ano, mes0, 1));
+  return d.toISOString().slice(0, 10);
+}
+function crMesLabel(iso, longo){
+  const [a, m] = iso.split('-').map(Number);
+  return longo ? `${CR_MESES_NOME[m - 1]} de ${a}` : `${CR_MESES_CURTO[m - 1]}/${String(a).slice(2)}`;
+}
+function crMesesDoPreset(preset){
+  const [a, m] = crHojeSP().split('-').map(Number);
+  const base = m - 1;
+  const faixa = (de, ate) => { const r = []; for (let i = de; i <= ate; i++) r.push(crMesISO(a, base + i)); return r; };
+  if (preset === 'mes') return faixa(0, 0);
+  if (preset === 'prox3') return faixa(0, 2);
+  if (preset === 'ult3') return faixa(-2, 0);
+  if (preset === 'ult12') return faixa(-11, 0);
+  return [];
+}
+// data/hora do banco → dd/mm/aaaa em Brasília
+function crData(iso){
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
+function crDataISO_SP(iso){   // → AAAA-MM-DD em Brasília (pros campos de data)
+  if (!iso) return '';
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+}
+function crMoedaCurta(v){
+  const n = Number(v) || 0, a = Math.abs(n), sinal = n < 0 ? '−' : '';
+  if (a >= 1e6) return sinal + 'R$ ' + (a / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi';
+  if (a >= 1e3) return sinal + 'R$ ' + (a / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: a >= 1e4 ? 0 : 1 }) + ' mil';
+  return sinal + 'R$ ' + a.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+}
+function crCanalHtml(c){
+  return `<span class="cr-canal"><i style="background:${CANAL_COR[c] || '#999'}"></i>${esc(CANAL_CURTO[c] || c)}</span>`;
+}
+
+// ------------------------------------------------------------
+// Multiselect com busca digitada (chips). O texto digitado filtra
+// as opções (ignora acento/maiúscula); Enter ou clique adiciona;
+// Backspace no campo vazio remove o último.
+// ------------------------------------------------------------
+function criarMultiSelect(host, cfg){
+  let opcoes = cfg.opcoes || [];
+  let valores = [...(cfg.valores || [])];
+  host.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'ms-wrap';
+  const caixa = document.createElement('div'); caixa.className = 'ms-caixa';
+  const input = document.createElement('input'); input.className = 'ms-input'; input.type = 'text';
+  input.autocomplete = 'off'; input.spellcheck = false;
+  const lista = document.createElement('div'); lista.className = 'ms-lista';
+  wrap.appendChild(caixa); wrap.appendChild(lista); host.appendChild(wrap);
+  let ativo = 0, visiveis = [];
+
+  const dot = (o) => o.cor ? `<i class="ms-dot" style="background:${o.cor}"></i>` : '';
+  function desenharTags(){
+    const tinhaFoco = document.activeElement === input;   // redesenhar não pode tirar o foco de quem está digitando
+    caixa.innerHTML = '';
+    valores.forEach(v => {
+      const o = opcoes.find(x => x.value === v);
+      if (!o) return;
+      const t = document.createElement('span'); t.className = 'ms-tag';
+      t.innerHTML = dot(o);
+      t.appendChild(document.createTextNode(o.label));
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = '×'; b.title = 'Remover';
+      b.addEventListener('mousedown', (e) => { e.preventDefault(); remover(v); });
+      t.appendChild(b); caixa.appendChild(t);
+    });
+    input.placeholder = valores.length ? '' : (cfg.placeholder || 'Todos');
+    caixa.appendChild(input);
+    if (tinhaFoco) input.focus();
+  }
+  function desenharLista(){
+    const q = normalizarBusca(input.value);
+    const palavras = q.split(/\s+/).filter(Boolean);
+    visiveis = opcoes.filter(o => palavras.every(p => normalizarBusca(o.label).includes(p)));
+    lista.innerHTML = '';
+    if (!visiveis.length) { lista.innerHTML = '<div class="ms-vazio">Nada encontrado</div>'; return; }
+    if (ativo >= visiveis.length) ativo = 0;
+    visiveis.forEach((o, i) => {
+      const d = document.createElement('div');
+      d.className = 'ms-item' + (i === ativo ? ' ativo' : '');
+      d.innerHTML = `<span class="ms-check">${valores.includes(o.value) ? '✓' : ''}</span>${dot(o)}`;
+      d.appendChild(document.createTextNode(o.label));
+      d.addEventListener('mousedown', (e) => { e.preventDefault(); alternar(o.value); });
+      lista.appendChild(d);
+    });
+  }
+  function avisar(){ desenharTags(); desenharLista(); if (cfg.onChange) cfg.onChange([...valores]); }
+  function alternar(v){ valores = valores.includes(v) ? valores.filter(x => x !== v) : [...valores, v]; input.value = ''; avisar(); input.focus(); }
+  function remover(v){ valores = valores.filter(x => x !== v); avisar(); }
+  caixa.addEventListener('mousedown', (e) => { if (e.target === caixa) { e.preventDefault(); input.focus(); } });
+  input.addEventListener('focus', () => { ativo = 0; desenharLista(); lista.classList.add('aberta'); });
+  input.addEventListener('blur', () => { lista.classList.remove('aberta'); input.value = ''; });
+  input.addEventListener('input', () => { ativo = 0; desenharLista(); lista.classList.add('aberta'); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); ativo = Math.min(ativo + 1, visiveis.length - 1); desenharLista(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); ativo = Math.max(ativo - 1, 0); desenharLista(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (visiveis[ativo]) alternar(visiveis[ativo].value); }
+    else if (e.key === 'Backspace' && !input.value && valores.length) { remover(valores[valores.length - 1]); }
+    else if (e.key === 'Escape') { input.blur(); }
+  });
+  desenharTags();
+  return {
+    get: () => [...valores],
+    set: (vs, silencioso) => { valores = [...vs]; desenharTags(); if (!silencioso && cfg.onChange) cfg.onChange([...valores]); },
+    setOpcoes: (ops) => { opcoes = ops; valores = valores.filter(v => ops.some(o => o.value === v)); desenharTags(); },
+  };
+}
+
+// ------------------------------------------------------------
+// Filtros
+// ------------------------------------------------------------
+function crOpcoesMeses(){
+  const [a, m] = crHojeSP().split('-').map(Number);
+  const ops = [];
+  for (let i = 6; i >= -18; i--) {            // 6 meses à frente até 18 pra trás
+    const iso = crMesISO(a, m - 1 + i);
+    ops.push({ value: iso, label: crMesLabel(iso, true) });
+  }
+  return ops;
+}
+function crMarcarPreset(){
+  document.querySelectorAll('#cr-presets .cr-chip').forEach(b => b.classList.toggle('ativo', b.dataset.preset === crEstado.preset));
+  document.getElementById('cr-periodo-custom').classList.toggle('visivel', crEstado.preset === 'custom');
+}
+function crParametros(){
+  let meses = null, de = null, ate = null;
+  if (crEstado.preset === 'custom') { de = crEstado.de || null; ate = crEstado.ate || null; }
+  else if (crEstado.preset === 'meses') meses = crEstado.meses.length ? crEstado.meses : null;
+  else if (crEstado.preset !== 'tudo') meses = crMesesDoPreset(crEstado.preset);
+  return {
+    p_inicio: de, p_fim: ate, p_meses: meses,
+    p_canais: crEstado.canais.length ? crEstado.canais : null,
+    p_status: crEstado.status.length ? crEstado.status : null,
+    p_texto: crEstado.texto || null,
+  };
+}
+
+function iniciarContasReceber(){
+  if (crMsCanais) return;
+  crMsMeses = criarMultiSelect(document.getElementById('cr-ms-meses'), {
+    opcoes: crOpcoesMeses(), placeholder: 'ex: dezembro, agosto…',
+    onChange: (v) => {
+      crEstado.meses = v;
+      crEstado.preset = v.length ? 'meses' : 'prox3';
+      crMarcarPreset(); crEstado.pagina = 1; carregarContasReceber();
+    },
+  });
+  crMsCanais = criarMultiSelect(document.getElementById('cr-ms-canais'), {
+    opcoes: CR_CANAIS.map(c => ({ value: c, label: CANAL_CURTO[c], cor: CANAL_COR[c] })), placeholder: 'Todos os canais',
+    onChange: (v) => { crEstado.canais = v; crEstado.pagina = 1; carregarContasReceber(); },
+  });
+  crMsStatus = criarMultiSelect(document.getElementById('cr-ms-status'), {
+    opcoes: CR_STATUS, valores: crEstado.status, placeholder: 'Todos os status',
+    onChange: (v) => { crEstado.status = v; crEstado.pagina = 1; carregarContasReceber(); },
+  });
+
+  document.querySelectorAll('#cr-presets .cr-chip').forEach(b => b.addEventListener('click', () => {
+    crEstado.preset = b.dataset.preset;
+    if (crEstado.preset !== 'meses') crMsMeses.set([], true);
+    crMarcarPreset();
+    if (crEstado.preset === 'custom') { document.getElementById('cr-de').focus(); if (!crEstado.de && !crEstado.ate) return; }
+    crEstado.pagina = 1; carregarContasReceber();
+  }));
+  ['cr-de', 'cr-ate'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+    crEstado.de = document.getElementById('cr-de').value; crEstado.ate = document.getElementById('cr-ate').value;
+    crEstado.pagina = 1; carregarContasReceber();
+  }));
+  let tBusca;
+  document.getElementById('cr-busca').addEventListener('input', (e) => {
+    clearTimeout(tBusca);
+    tBusca = setTimeout(() => { crEstado.texto = e.target.value.trim(); crEstado.pagina = 1; carregarContasReceber(); }, 350);
+  });
+  document.getElementById('cr-chk-lucro').addEventListener('change', (e) => { crEstado.lucro = e.target.checked; crDesenharGrafico(); });
+  document.getElementById('cr-btn-tabela').addEventListener('click', () => {
+    crEstado.tabela = !crEstado.tabela;
+    document.getElementById('cr-btn-tabela').textContent = crEstado.tabela ? 'Esconder tabela' : 'Ver como tabela';
+    document.getElementById('cr-tabela-graf').style.display = crEstado.tabela ? 'block' : 'none';
+  });
+  document.getElementById('cr-pag-ant').addEventListener('click', () => { if (crEstado.pagina > 1) { crEstado.pagina--; carregarListaCR(); } });
+  document.getElementById('cr-pag-prox').addEventListener('click', () => {
+    if (crEstado.pagina * crEstado.tamanho < crEstado.total) { crEstado.pagina++; carregarListaCR(); }
+  });
+  document.getElementById('cr-btn-sync').addEventListener('click', () => sincronizarReceber(true));
+  document.getElementById('cr-btn-novo').addEventListener('click', () => abrirModalCR(null));
+  iniciarModaisCR();
+  if (window.ResizeObserver) new ResizeObserver(() => crDesenharGrafico()).observe(document.getElementById('cr-graf'));
+  crMarcarPreset();
+}
+
+// ------------------------------------------------------------
+// Carregamento (tudo pelo banco)
+// ------------------------------------------------------------
+async function carregarContasReceber(){
+  const seq = ++crEstado.seq;
+  const p = crParametros();
+  document.getElementById('cr-tiles').classList.add('carregando');
+  document.getElementById('cr-graf').classList.add('carregando');
+  const [res, men] = await Promise.all([
+    supabaseClient.rpc('contas_receber_resumo', { p_inicio: p.p_inicio, p_fim: p.p_fim, p_canais: p.p_canais, p_status: p.p_status, p_texto: p.p_texto, p_campo_data: 'liberacao', p_meses: p.p_meses }),
+    supabaseClient.rpc('contas_receber_mensal', { p_inicio: p.p_inicio, p_fim: p.p_fim, p_meses: p.p_meses, p_canais: p.p_canais, p_status: p.p_status, p_texto: p.p_texto, p_natureza: 'receber' }),
+    carregarListaCR(seq),
+  ]);
+  if (seq !== crEstado.seq) return;
+  document.getElementById('cr-tiles').classList.remove('carregando');
+  document.getElementById('cr-graf').classList.remove('carregando');
+  if (res.error || men.error) {
+    const msg = (res.error || men.error).message;
+    console.error(res.error || men.error);
+    document.getElementById('cr-graf').innerHTML = `<div class="cr-graf-vazio">Não foi possível carregar: ${esc(msg)}</div>`;
+    return;
+  }
+  crDesenharTiles(res.data || {});
+  crEstado.mensal = men.data || [];
+  crDesenharGrafico();
+}
+
+function crDesenharTiles(r){
+  const n = (v) => Number(v || 0);
+  document.getElementById('cr-t-areceber').textContent = fmtMoeda(n(r.a_receber));
+  document.getElementById('cr-t-areceber-sub').textContent = n(r.aguardando) > 0 ? `+ ${fmtMoeda(r.aguardando)} aguardando pagamento` : 'líquido, já sem tarifa e frete';
+  document.getElementById('cr-t-recebido').textContent = fmtMoeda(n(r.recebido));
+  document.getElementById('cr-t-recebido-sub').textContent = n(r.qtd_estornado) > 0
+    ? `${n(r.qtd_estornado).toLocaleString('pt-BR')} estornado(s): ${fmtMoeda(r.estornado_bruto)} (bruto)` : 'dinheiro já liberado';
+  const lucroEl = document.getElementById('cr-t-lucro');
+  lucroEl.textContent = fmtMoeda(n(r.lucro));
+  lucroEl.classList.toggle('cr-neg', n(r.lucro) < 0);
+  document.getElementById('cr-t-lucro-sub').textContent = `a receber: ${fmtMoeda(r.lucro_a_receber)} · só vendas com custo`;
+  const sc = n(r.qtd_sem_custo);
+  document.getElementById('cr-t-semcusto').textContent = sc.toLocaleString('pt-BR');
+  document.getElementById('cr-t-semcusto-sub').textContent = sc ? `${fmtMoeda(r.liquido_sem_custo)} fora do lucro — cadastre o custo` : 'todas as vendas têm custo';
+  document.getElementById('cr-t-semcusto-card').classList.toggle('alerta', sc > 0);
+}
+
+async function carregarListaCR(seqPai){
+  const seq = seqPai || ++crEstado.seq;
+  const p = crParametros();
+  const wrap = document.getElementById('cr-lista-wrap');
+  wrap.classList.add('carregando');
+  const { data, error } = await supabaseClient.rpc('contas_receber_listar', {
+    ...p, p_campo_data: 'liberacao', p_limite: crEstado.tamanho, p_offset: (crEstado.pagina - 1) * crEstado.tamanho,
+  });
+  if (seq !== crEstado.seq) return;
+  wrap.classList.remove('carregando');
+  const tbody = document.getElementById('cr-tbody');
+  const vazio = document.getElementById('cr-vazio');
+  if (error) {
+    console.error(error);
+    tbody.innerHTML = ''; vazio.style.display = 'block'; vazio.textContent = 'Não foi possível carregar: ' + error.message;
+    return;
+  }
+  const linhas = data.linhas || [];
+  crEstado.total = Number(data.total || 0);
+  vazio.textContent = 'Nenhum lançamento nesse filtro.';
+  vazio.style.display = linhas.length ? 'none' : 'block';
+  tbody.innerHTML = linhas.map(crLinhaHtml).join('');
+  const paginas = Math.max(1, Math.ceil(crEstado.total / crEstado.tamanho));
+  const ini = crEstado.total ? (crEstado.pagina - 1) * crEstado.tamanho + 1 : 0;
+  document.getElementById('cr-pag-info').textContent = `${ini.toLocaleString('pt-BR')}–${Math.min(crEstado.pagina * crEstado.tamanho, crEstado.total).toLocaleString('pt-BR')} de ${crEstado.total.toLocaleString('pt-BR')}`;
+  document.getElementById('cr-pag-num').textContent = `Página ${crEstado.pagina} de ${paginas}`;
+  document.getElementById('cr-pag-ant').disabled = crEstado.pagina <= 1;
+  document.getElementById('cr-pag-prox').disabled = crEstado.pagina >= paginas;
+  crLinhasCache = Object.fromEntries(linhas.map(l => [l.id, l]));
+}
+let crLinhasCache = {};
+
+function crLinhaHtml(l){
+  const n = (v) => Number(v || 0);
+  const det = [`Bruto: ${fmtMoeda(l.valor_bruto)}`];
+  if (n(l.valor_reembolsado)) det.push(`− Devolvido ao comprador: ${fmtMoeda(l.valor_reembolsado)}`);
+  if (n(l.tarifa)) det.push(`− Tarifa ML: ${fmtMoeda(l.tarifa)}`);
+  if (n(l.frete)) det.push(`− Frete pago pelo vendedor: ${fmtMoeda(l.frete)}`);
+  if (n(l.taxas)) det.push(`− Taxas: ${fmtMoeda(l.taxas)}`);
+  if (n(l.outros_ajustes)) det.push(`− Outros ajustes: ${fmtMoeda(l.outros_ajustes)}`);
+  det.push(`= Líquido: ${fmtMoeda(l.valor_liquido)}`);
+  if (l.parcelas > 1) det.push(`(comprador parcelou em ${l.parcelas}x — o ML libera de uma vez)`);
+  if (l.observacao) det.push(l.observacao);
+
+  let custo, lucro;
+  if (l.custo_status === 'ok') { custo = fmtMoeda(l.custo); lucro = `<span class="${n(l.lucro) < 0 ? 'cr-neg' : ''}">${fmtMoeda(l.lucro)}</span>`; }
+  else if (l.custo_status === 'sem_custo') { custo = `<span class="cr-sem-custo" title="${esc('Sem custo: ' + (l.nomes_sem_custo || '') + '\nNão entra no lucro (continua no valor a receber).')}">⚠ sem custo</span>`; lucro = '<span class="muted">—</span>'; }
+  else if (l.custo_status === 'estornado') { custo = '<span class="muted">—</span>'; lucro = '<span class="muted">—</span>'; }
+  else { custo = '<span class="muted" title="Aporte/outros não entram no lucro">n/a</span>'; lucro = '<span class="muted">n/a</span>'; }
+
+  const sub = [];
+  if (l.ml_order_id) sub.push('Pedido ML ' + esc(l.ml_order_id));
+  if (l.cliente) sub.push(esc(l.cliente));
+  if (l.origem === 'manual') sub.push(l.categoria === 'aporte' ? 'Aporte (manual)' : l.categoria === 'outros' ? 'Outros (manual)' : 'Venda (manual)');
+  if (l.origem === 'pedido') sub.push('Pedido do PDV/loja');
+
+  const prev = l.status === 'a_receber' && l.origem === 'ml'
+    ? '<span class="cr-prev" title="Data que o Mercado Livre informa hoje. Costuma adiantar depois da entrega — o ERP atualiza sozinho.">previsão ML</span>'
+    : (l.liberacao_editada ? '<span class="cr-prev">data ajustada</span>' : '');
+
+  let acoes = '';
+  if (l.origem === 'manual') acoes = `<button type="button" class="secondary" onclick="abrirModalCR('${l.id}')">Editar</button> <button type="button" class="danger" onclick="excluirLancamentoCR('${l.id}')">Excluir</button>`;
+  else if (l.origem === 'pedido') acoes = `<button type="button" class="secondary" onclick="abrirModalDataCR('${l.id}')" title="Mudar a data em que o dinheiro entra">Data</button>`;
+
+  return `<tr>
+    <td>${l.data_liberacao ? crData(l.data_liberacao) : '<span class="muted">sem data</span>'}${prev}</td>
+    <td>${crCanalHtml(l.canal)}</td>
+    <td class="cr-desc">${esc(l.descricao || '-')}<span class="sub">${sub.join(' · ')}</span></td>
+    <td>${crData(l.data_competencia)}</td>
+    <td class="num"><span title="${esc(det.join('\n'))}" style="cursor:help; border-bottom:1px dotted #b9c0cc;">${fmtMoeda(l.valor_liquido)}</span></td>
+    <td class="num">${custo}</td>
+    <td class="num">${lucro}</td>
+    <td><span class="badge cr-${esc(l.status)}">${esc((CR_STATUS.find(s => s.value === l.status) || {}).label || l.status)}</span></td>
+    <td class="cr-acoes" style="white-space:nowrap;">${acoes}</td>
+  </tr>`;
+}
+
+// ------------------------------------------------------------
+// Gráfico: barras empilhadas por mês de liberação, uma cor por canal.
+// Feito em SVG puro (sem biblioteca): barra ≤ 24px, topo arredondado,
+// 2px de espaço entre segmentos, total em cima, tooltip por mês.
+// ------------------------------------------------------------
+function crDesenharGrafico(){
+  const host = document.getElementById('cr-graf');
+  const leg = document.getElementById('cr-legenda');
+  const aviso = document.getElementById('cr-graf-aviso');
+  const tabela = document.getElementById('cr-tabela-graf');
+  const modoLucro = crEstado.lucro;
+  document.getElementById('cr-graf-titulo').textContent = modoLucro ? 'Lucro a receber por mês de liberação' : 'A receber por mês de liberação';
+  const campo = modoLucro ? 'lucro' : 'liquido';
+  const linhas = crEstado.mensal || [];
+
+  // meses do eixo: os do filtro (mesmo vazios) ou os que vieram do banco
+  const p = crParametros();
+  let meses = p.p_meses ? [...p.p_meses] : [...new Set(linhas.map(r => r.mes))];
+  meses = [...new Set(meses)].sort();
+  const canais = CR_CANAIS.filter(c => linhas.some(r => r.canal === c && Number(r[campo]) !== 0));
+  const val = {};
+  linhas.forEach(r => { val[r.mes + '|' + r.canal] = Number(r[campo] || 0); });
+  const semCusto = linhas.reduce((s, r) => s + Number(r.qtd_sem_custo || 0), 0);
+  const semCustoValor = linhas.reduce((s, r) => s + Number(r.liquido_sem_custo || 0), 0);
+
+  leg.innerHTML = canais.map(c => `<span><i style="background:${CANAL_COR[c]}"></i>${esc(CANAL_CURTO[c])}</span>`).join('');
+  aviso.textContent = modoLucro && semCusto
+    ? `⚠ ${semCusto.toLocaleString('pt-BR')} venda(s) sem custo (${fmtMoeda(semCustoValor)}) ficaram fora do lucro. Cadastre o custo no produto ou na ficha técnica.`
+    : '';
+
+  // tabela (mesmos números do gráfico)
+  const totMes = (m) => canais.reduce((s, c) => s + (val[m + '|' + c] || 0), 0);
+  tabela.innerHTML = `<table><thead><tr><th>Mês</th>${canais.map(c => `<th class="num">${esc(CANAL_CURTO[c])}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>` +
+    meses.map(m => `<tr><td>${esc(crMesLabel(m, true))}</td>${canais.map(c => `<td class="num">${fmtMoeda(val[m + '|' + c] || 0)}</td>`).join('')}<td class="num"><strong>${fmtMoeda(totMes(m))}</strong></td></tr>`).join('') +
+    `</tbody></table>`;
+
+  if (!meses.length || !canais.length) {
+    host.innerHTML = `<div class="cr-graf-vazio">Nada ${modoLucro ? 'de lucro ' : ''}a mostrar nesse filtro.</div>`;
+    return;
+  }
+
+  // escala
+  const W = Math.max(host.clientWidth || 600, 280), H = 280;
+  const m = { t: 24, r: 8, b: 30, l: 64 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  let maxPos = 0, minNeg = 0;
+  meses.forEach(mm => {
+    let pos = 0, neg = 0;
+    canais.forEach(c => { const v = val[mm + '|' + c] || 0; if (v >= 0) pos += v; else neg += v; });
+    maxPos = Math.max(maxPos, pos); minNeg = Math.min(minNeg, neg);
+  });
+  const passoBonito = (bruto) => { const e = Math.pow(10, Math.floor(Math.log10(bruto || 1))); const f = bruto / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; };
+  const passo = passoBonito((maxPos - minNeg) / 4 || 1);
+  const topo = Math.max(passo, Math.ceil(maxPos / passo) * passo);
+  const fundo = Math.floor(minNeg / passo) * passo;
+  const y = (v) => m.t + ih - ((v - fundo) / (topo - fundo)) * ih;
+  const banda = iw / meses.length;
+  const bw = Math.min(24, banda * 0.6);
+  const GAP = 2, R = 4;
+
+  // retângulo com só o topo (ou só a base, se negativo) arredondado
+  const barra = (x, y0, y1, arredonda, cor, cls, dados) => {
+    const alto = Math.max(0, y1 - y0);
+    if (alto <= 0.5) return '';
+    const r = Math.min(R, alto / 2, bw / 2);
+    let d;
+    if (arredonda === 'topo') d = `M${x},${y1}V${y0 + r}Q${x},${y0} ${x + r},${y0}H${x + bw - r}Q${x + bw},${y0} ${x + bw},${y0 + r}V${y1}Z`;
+    else if (arredonda === 'base') d = `M${x},${y0}V${y1 - r}Q${x},${y1} ${x + r},${y1}H${x + bw - r}Q${x + bw},${y1} ${x + bw},${y1 - r}V${y0}Z`;
+    else d = `M${x},${y0}H${x + bw}V${y1}H${x}Z`;
+    return `<path class="${cls}" d="${d}" fill="${cor}" ${dados}></path>`;
+  };
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(document.getElementById('cr-graf-titulo').textContent)}">`;
+  for (let v = fundo; v <= topo + 1e-6; v += passo) {
+    const yy = y(v);
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${yy}" y2="${yy}" stroke="${v === 0 ? '#c9ced8' : '#eceef2'}" stroke-width="1"></line>`;
+    svg += `<text class="eixo" x="${m.l - 8}" y="${yy + 4}" text-anchor="end">${esc(crMoedaCurta(v))}</text>`;
+  }
+  meses.forEach((mm, i) => {
+    const cx = m.l + banda * i + banda / 2, x = cx - bw / 2;
+    let accPos = 0, accNeg = 0;
+    const pos = canais.filter(c => (val[mm + '|' + c] || 0) > 0);
+    const neg = canais.filter(c => (val[mm + '|' + c] || 0) < 0);
+    let g = `<g class="col" data-mes="${mm}">`;
+    pos.forEach((c, k) => {
+      const v = val[mm + '|' + c];
+      const yTop = y(accPos + v), yBot = y(accPos) - (k > 0 ? GAP : 0);
+      g += barra(x, yTop, yBot, k === pos.length - 1 ? 'topo' : 'nenhum', CANAL_COR[c], 'seg', `data-canal="${c}"`);
+      accPos += v;
+    });
+    neg.forEach((c, k) => {
+      const v = val[mm + '|' + c];
+      const yTop = y(accNeg) + (k > 0 ? GAP : 0), yBot = y(accNeg + v);
+      g += barra(x, yTop, yBot, k === neg.length - 1 ? 'base' : 'nenhum', CANAL_COR[c], 'seg', `data-canal="${c}"`);
+      accNeg += v;
+    });
+    const total = accPos + accNeg;
+    if (total !== 0 || accPos) g += `<text class="total" x="${cx}" y="${y(accPos) - 6}" text-anchor="middle">${esc(crMoedaCurta(total))}</text>`;
+    g += `<text class="eixo" x="${cx}" y="${H - 10}" text-anchor="middle">${esc(crMesLabel(mm))}</text>`;
+    g += `<rect class="col-hit" x="${m.l + banda * i}" y="${m.t}" width="${banda}" height="${ih}" data-mes="${mm}" tabindex="0"></rect>`;
+    g += `</g>`;
+    svg += g;
+  });
+  svg += `</svg><div class="cr-tip" id="cr-tip"></div>`;
+  host.innerHTML = svg;
+
+  // tooltip: valor primeiro, canal depois; lista todos os canais do mês
+  const tip = document.getElementById('cr-tip');
+  const qtd = {}; linhas.forEach(r => { qtd[r.mes + '|' + r.canal] = r; });
+  const mostrar = (mm, alvoCanal, ev) => {
+    host.querySelectorAll('.col').forEach(gg => gg.classList.toggle('ativa', gg.dataset.mes === mm));
+    host.querySelectorAll('.col.ativa .seg').forEach(s => s.classList.toggle('foco', s.dataset.canal === alvoCanal));
+    const itens = canais.filter(c => val[mm + '|' + c]);
+    let semC = 0;
+    tip.innerHTML = '';
+    const t = document.createElement('div'); t.className = 'tit'; t.textContent = crMesLabel(mm, true); tip.appendChild(t);
+    itens.forEach(c => {
+      const ln = document.createElement('div'); ln.className = 'lin' + (c === alvoCanal ? ' foco' : '');
+      const i = document.createElement('i'); i.style.background = CANAL_COR[c]; ln.appendChild(i);
+      ln.appendChild(document.createTextNode(CANAL_CURTO[c] + ` (${Number((qtd[mm + '|' + c] || {}).qtd || 0)})`));
+      const b = document.createElement('b'); b.textContent = fmtMoeda(val[mm + '|' + c]); ln.appendChild(b);
+      tip.appendChild(ln);
+      semC += Number((qtd[mm + '|' + c] || {}).qtd_sem_custo || 0);
+    });
+    const tot = document.createElement('div'); tot.className = 'tot';
+    tot.innerHTML = `<span>Total</span><span>${esc(fmtMoeda(totMes(mm)))}</span>`; tip.appendChild(tot);
+    if (modoLucro && semC) { const nn = document.createElement('div'); nn.className = 'nota'; nn.textContent = `⚠ ${semC} venda(s) sem custo fora do lucro`; tip.appendChild(nn); }
+    tip.style.display = 'block';
+    const caixa = host.getBoundingClientRect();
+    let px, py;
+    if (ev && ev.clientX) { px = ev.clientX - caixa.left + 14; py = ev.clientY - caixa.top + 14; }
+    else { const i = meses.indexOf(mm); px = m.l + banda * i + banda / 2 + 16; py = m.t; }
+    if (px + tip.offsetWidth > caixa.width) px = Math.max(0, px - tip.offsetWidth - 28);
+    tip.style.left = px + 'px'; tip.style.top = Math.min(py, H - tip.offsetHeight) + 'px';
+  };
+  const esconder = () => { tip.style.display = 'none'; host.querySelectorAll('.col').forEach(gg => gg.classList.remove('ativa')); };
+  host.querySelectorAll('.col-hit').forEach(h => {
+    h.addEventListener('pointermove', (ev) => {
+      // descobre qual segmento está sob o ponteiro (pela altura)
+      let alvo = null;
+      h.parentNode.querySelectorAll('.seg').forEach(s => { const bb = s.getBoundingClientRect(); if (ev.clientY >= bb.top - 2 && ev.clientY <= bb.bottom + 2) alvo = s.dataset.canal; });
+      mostrar(h.dataset.mes, alvo, ev);
+    });
+    h.addEventListener('pointerleave', esconder);
+    h.addEventListener('focus', () => mostrar(h.dataset.mes, null, null));
+    h.addEventListener('blur', esconder);
+  });
+}
+
+// ------------------------------------------------------------
+// Sincronização com o ML (o agendamento roda a cada 15 min; aqui é
+// ao abrir a aba — no máximo a cada 5 min — e pelo botão)
+// ------------------------------------------------------------
+async function sincronizarReceber(manual){
+  const info = document.getElementById('cr-sync-info');
+  const btn = document.getElementById('cr-btn-sync');
+  if (!manual && Date.now() - crEstado.ultimaSync < 5 * 60 * 1000) return;
+  crEstado.ultimaSync = Date.now();
+  btn.disabled = true;
+  info.textContent = 'Atualizando do Mercado Livre…';
+  let processados = 0, cancelados = 0, erros = 0;
+  try {
+    // ao abrir a aba: 1 rodada leve (o agendamento de 15 em 15 min faz o grosso);
+    // no botão: até 5 rodadas — sem martelar a API do ML
+    const rodadas = manual ? 5 : 1, limite = manual ? 60 : 30;
+    for (let rodada = 0; rodada < rodadas; rodada++) {
+      const r = await (await fetch(URL_SYNC_RECEBER + '?limite=' + limite)).json();
+      if (r.erro) { info.textContent = 'Erro ao atualizar: ' + r.erro; return; }
+      processados += r.processados || 0; erros += r.erros || 0;
+      cancelados += (r.cancelados_sem_devolucao || 0) + (r.cancelados_com_devolucao || 0);
+      const falta = r.restantes ? Number(r.restantes.novos || 0) + Number(r.restantes.para_atualizar || 0) : 0;
+      info.textContent = `Atualizando… ${processados} venda(s) lida(s)` + (falta ? `, faltam ${falta}` : '');
+      if (r.limite_ml) { info.textContent += ' — o ML pediu uma pausa, continua sozinho em 15 min.'; break; }
+      if (!r.processados || !falta) break;
+    }
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    info.textContent = `Atualizado às ${hora}` + (processados ? ` · ${processados} venda(s)` : '') +
+      (cancelados ? ` · ${cancelados} cancelamento(s) do ML registrado(s)` : '') + (erros ? ` · ${erros} com erro` : '');
+    if (processados) { carregarContasReceber(); if (cancelados) { loadPedidos(); loadDashboard(); } }
+  } catch (err) {
+    info.textContent = 'Não consegui atualizar agora: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function abrirContasReceber(){
+  iniciarContasReceber();
+  if (!crEstado.carregouUmaVez) { crEstado.carregouUmaVez = true; carregarContasReceber(); }
+  else crDesenharGrafico();
+  sincronizarReceber(false);
+}
+
+// ------------------------------------------------------------
+// Lançamento manual / data do PDV
+// ------------------------------------------------------------
+let crEditandoId = null, crDataId = null;
+function iniciarModaisCR(){
+  const cats = document.querySelectorAll('input[name="cr-m-cat"]');
+  const ajustarCat = () => {
+    const cat = document.querySelector('input[name="cr-m-cat"]:checked').value;
+    document.getElementById('cr-m-custo-campo').style.display = cat === 'venda' ? '' : 'none';
+    if (!crEditandoId) document.getElementById('cr-m-canal').value = cat === 'venda' ? 'loja_fisica' : 'outros';
+  };
+  cats.forEach(r => r.addEventListener('change', ajustarCat));
+  document.getElementById('cr-m-data').addEventListener('change', (e) => {
+    const lib = document.getElementById('cr-m-lib');
+    if (!lib.value || lib.dataset.auto === '1') { lib.value = e.target.value; lib.dataset.auto = '1'; }
+  });
+  document.getElementById('cr-m-lib').addEventListener('input', (e) => { e.target.dataset.auto = '0'; });
+  document.getElementById('cr-m-cancelar').addEventListener('click', () => { document.getElementById('cr-modal').style.display = 'none'; });
+  document.getElementById('cr-form').addEventListener('submit', salvarLancamentoCR);
+  document.getElementById('cr-md-cancelar').addEventListener('click', () => { document.getElementById('cr-modal-data').style.display = 'none'; });
+  document.getElementById('cr-md-salvar').addEventListener('click', salvarDataCR);
+}
+
+function abrirModalCR(id){
+  crEditandoId = id;
+  const l = id ? crLinhasCache[id] : null;
+  document.getElementById('cr-m-titulo').textContent = l ? 'Editar lançamento' : 'Novo lançamento';
+  document.getElementById('cr-m-erro').textContent = '';
+  const cat = l ? l.categoria : 'venda';
+  document.querySelectorAll('input[name="cr-m-cat"]').forEach(r => { r.checked = r.value === cat; });
+  document.getElementById('cr-m-canal').value = l ? l.canal : 'loja_fisica';
+  document.getElementById('cr-m-desc').value = l ? (l.descricao || '') : '';
+  document.getElementById('cr-m-valor').value = l ? l.valor_liquido : '';
+  const hoje = crHojeSP();
+  document.getElementById('cr-m-data').value = l ? crDataISO_SP(l.data_competencia) : hoje;
+  const lib = document.getElementById('cr-m-lib');
+  lib.value = l ? crDataISO_SP(l.data_liberacao) : hoje; lib.dataset.auto = l ? '0' : '1';
+  document.getElementById('cr-m-custo').value = l && l.custo_status === 'ok' && l.custo !== null ? l.custo : '';
+  document.getElementById('cr-m-obs').value = l ? (l.observacao || '') : '';
+  document.getElementById('cr-m-custo-campo').style.display = cat === 'venda' ? '' : 'none';
+  document.getElementById('cr-modal').style.display = 'flex';
+  document.getElementById('cr-m-desc').focus();
+}
+
+async function salvarLancamentoCR(e){
+  e.preventDefault();
+  const erroEl = document.getElementById('cr-m-erro');
+  const cat = document.querySelector('input[name="cr-m-cat"]:checked').value;
+  const desc = document.getElementById('cr-m-desc').value.trim();
+  const valor = Number(document.getElementById('cr-m-valor').value);
+  const data = document.getElementById('cr-m-data').value;
+  const lib = document.getElementById('cr-m-lib').value;
+  const custoTxt = document.getElementById('cr-m-custo').value;
+  if (!desc) { erroEl.textContent = 'Informe a descrição.'; return; }
+  if (!(valor > 0)) { erroEl.textContent = 'Informe um valor maior que zero.'; return; }
+  if (!data || !lib) { erroEl.textContent = 'Informe as duas datas.'; return; }
+  if (custoTxt !== '' && Number(custoTxt) < 0) { erroEl.textContent = 'O custo não pode ser negativo.'; return; }
+  const registro = {
+    natureza: 'receber', origem: 'manual', categoria: cat,
+    canal: document.getElementById('cr-m-canal').value,
+    descricao: desc, valor_bruto: valor, valor_liquido: valor,
+    data_competencia: data + 'T12:00:00-03:00', data_liberacao: lib + 'T12:00:00-03:00',
+    status: 'a_receber',
+    custo_manual: cat === 'venda' && custoTxt !== '' ? Number(custoTxt) : null,
+    observacao: document.getElementById('cr-m-obs').value.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  const btn = document.getElementById('cr-m-salvar'); btn.disabled = true;
+  const { error } = crEditandoId
+    ? await supabaseClient.from('lancamentos_financeiros').update(registro).eq('id', crEditandoId).eq('origem', 'manual')
+    : await supabaseClient.from('lancamentos_financeiros').insert(registro);
+  btn.disabled = false;
+  if (error) { erroEl.textContent = 'Erro ao salvar: ' + error.message; return; }
+  document.getElementById('cr-modal').style.display = 'none';
+  carregarContasReceber();
+}
+
+async function excluirLancamentoCR(id){
+  const l = crLinhasCache[id];
+  if (!l || l.origem !== 'manual') return;
+  if (!confirm(`Excluir o lançamento "${l.descricao}" de ${fmtMoeda(l.valor_liquido)}?`)) return;
+  const { error } = await supabaseClient.from('lancamentos_financeiros').delete().eq('id', id).eq('origem', 'manual');
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  carregarContasReceber();
+}
+
+function abrirModalDataCR(id){
+  crDataId = id;
+  const l = crLinhasCache[id];
+  document.getElementById('cr-md-desc').textContent = l ? `${l.descricao || ''} — ${fmtMoeda(l.valor_liquido)}` : '';
+  document.getElementById('cr-md-data').value = l ? crDataISO_SP(l.data_liberacao) : crHojeSP();
+  document.getElementById('cr-md-erro').textContent = '';
+  document.getElementById('cr-modal-data').style.display = 'flex';
+}
+async function salvarDataCR(){
+  const d = document.getElementById('cr-md-data').value;
+  if (!d) { document.getElementById('cr-md-erro').textContent = 'Escolha a data.'; return; }
+  const { error } = await supabaseClient.from('lancamentos_financeiros')
+    .update({ data_liberacao: d + 'T12:00:00-03:00', liberacao_editada: true, updated_at: new Date().toISOString() })
+    .eq('id', crDataId).eq('origem', 'pedido');
+  if (error) { document.getElementById('cr-md-erro').textContent = 'Erro: ' + error.message; return; }
+  document.getElementById('cr-modal-data').style.display = 'none';
+  carregarContasReceber();
 }
 
 // ============================================================
