@@ -85,14 +85,17 @@ const r2 = (n: number) => (Math.round(n * 100) / 100) || 0;   // || 0 evita "-0"
 //   tarifa = cobranças "ml_*" pagas pelo vendedor
 //   frete  = frete cobrado do vendedor − parte que o comprador pagou (shipping_amount)
 //   taxas  = demais taxas do vendedor − créditos recebidos do comprador (ex: financing_transfer)
-//   líquido= net_received_amount (− reembolso parcial, + taxas devolvidas)
-//   ajuste = bruto − tarifa − frete − taxas − líquido (normalmente 0,00)
+//   líquido= net_received_amount − valor devolvido ao comprador
+//            + cobranças devolvidas ao vendedor − créditos que voltaram pro comprador
+//            (o Mercado Pago NÃO atualiza o net_received_amount depois de reembolso;
+//             as cobranças trazem amounts.refunded — validado em 06/10/2026)
+//   ajuste = bruto − reembolsado − tarifa − frete − taxas − líquido (0,00 quando o MP fecha a conta)
 // Validado em 06/10/2026: 59,75−6,81−9,75−0,06=43,13; 36,95−4,21−(17,14−9,99)−0,04=25,55;
 // 21,45−1,88−(16,94−9,99)−(3,90+0,59−3,90)=12,03.
 // ------------------------------------------------------------
 function analisarPagamento(mp: any) {
   const st = String(mp.status || '');
-  let tarifa = 0, freteCobrado = 0, taxas = 0, creditos = 0, taxasDevolvidas = 0;
+  let tarifa = 0, freteCobrado = 0, taxas = 0, creditos = 0, cobrancasDevolvidas = 0, creditosDevolvidos = 0;
   const charges: any[] = [];
   for (const c of mp.charges_details || []) {
     const orig = Number(c.amounts?.original || 0);
@@ -101,12 +104,13 @@ function analisarPagamento(mp: any) {
     const de = c.accounts?.from, para = c.accounts?.to;
     charges.push([c.name, c.type, de, para, orig, dev]);
     if (de === 'collector') {
-      taxasDevolvidas += dev;
+      cobrancasDevolvidas += dev;
       if (c.type === 'shipping') freteCobrado += v;
       else if (String(c.name || '').startsWith('ml_')) tarifa += v;
       else taxas += v;
     } else if (para === 'collector') {
       creditos += v;
+      creditosDevolvidos += dev;
     }
   }
   const bruto = Number(mp.transaction_amount || 0);
@@ -123,12 +127,12 @@ function analisarPagamento(mp: any) {
   else tipo = 'ignorar';                                  // rejected, cancelled (nunca entrou dinheiro)
 
   let liquido = 0;
-  if (tipo === 'valido') liquido = net - reembolsado + (reembolsado > 0 ? taxasDevolvidas : 0);
+  if (tipo === 'valido') liquido = net - reembolsado + cobrancasDevolvidas - creditosDevolvidos;
   const parcial = tipo === 'valido' && reembolsado > 0;
 
   const valores = tipo === 'valido'
     ? { tarifa: r2(tarifa), frete: r2(frete), taxas: r2(taxasLiq), liquido: r2(liquido),
-        ajuste: r2(bruto - tarifa - frete - taxasLiq - liquido) }
+        ajuste: r2(bruto - reembolsado - tarifa - frete - taxasLiq - liquido) }
     : { tarifa: 0, frete: 0, taxas: 0, liquido: 0, ajuste: 0 };
 
   return {
@@ -158,7 +162,7 @@ function agregarLote3(lidos: any[]) {
   const soma = (k: string) => r2(validos.reduce((s, a) => s + Number(a[k] || 0), 0));
   if (validos.length) return {
     valor_liquido: soma('liquido'), liquido_tarifa_ml: soma('tarifa'), liquido_frete_vendedor: soma('frete'),
-    liquido_taxas_mp: r2(soma('taxas') + soma('ajuste')),            // inclui o ajuste: bruto − tarifa − frete − taxas = líquido
+    liquido_taxas_mp: r2(soma('taxas') + soma('ajuste') + soma('reembolsado')),  // inclui ajuste e reembolso: bruto − tarifa − frete − taxas = líquido
     liquido_status: validos.some((a) => a.parcial) ? 'reembolso_parcial' : 'ok',
   };
   if (lidos.some((a) => a.tipo === 'aguardando')) return { valor_liquido: null, liquido_status: 'pendente' };
