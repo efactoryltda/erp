@@ -262,6 +262,32 @@
   .cr-prev{ font-size:11px; color:var(--muted); display:block; }
   #cr-lista-wrap td{ vertical-align:top; }
 
+  /* ---------- Condição de pagamento (Lote 7) ---------- */
+  .pg-bloco{ border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin:14px 0; background:#fbfbfc; }
+  .pg-bloco h4{ margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+  .pg-previa{ margin-top:10px; }
+  .pg-previa table{ max-width:560px; }
+  .pg-previa td input{ padding:5px 8px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; }
+  .pg-previa td input[type="number"]{ width:110px; text-align:right; }
+  .pg-msg{ font-size:13px; margin-top:6px; min-height:16px; }
+  .pg-msg.erro{ color:var(--danger); }
+  .pg-tag{ font-size:11px; padding:2px 8px; border-radius:999px; background:#e4f7ea; color:var(--ok); white-space:nowrap; }
+  .pg-tag.futuro{ background:#e6f0ff; color:#1d4ed8; }
+  .pg-pers-linha{ display:flex; gap:8px; align-items:center; margin-bottom:6px; font-size:13px; }
+  .pg-pers-linha input{ width:80px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; }
+  .cr-link-btn{ background:none; color:var(--muted); padding:0; font-weight:500; font-size:13px; text-decoration:underline; text-underline-offset:3px; }
+  .cr-link-btn:hover{ color:var(--text); }
+  .cr-vencidas{ display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+                background:#fdecec; border:1px solid #f3b9b9; color:#8f1d1d; border-radius:10px; padding:10px 14px; margin-bottom:16px; font-size:14px; }
+  .cr-vencidas.visivel{ display:flex; }
+  .cr-vencidas button{ background:#b42318; }
+  .badge.cr-vencido{ background:#fde8e8; color:var(--danger); font-weight:600; }
+  .cr-venc-dias{ font-size:11px; color:var(--danger); display:block; }
+  .cr-lote{ display:none; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 12px; margin-bottom:10px;
+            background:#fff3e3; border:1px solid #f0c78a; border-radius:8px; font-size:13px; }
+  .cr-lote.visivel{ display:flex; }
+  #cr-lista-wrap td.cr-sel, #cr-lista-wrap th.cr-sel{ width:28px; padding-right:0; }
+
   /* ---------- Consumo próprio (Lote 5) ---------- */
   .cp-info{ font-size:13px; color:var(--muted); min-height:18px; margin-top:8px; }
   .cp-info strong{ color:var(--text); }
@@ -477,6 +503,11 @@
       </div>
     </div>
 
+    <div class="cr-vencidas" id="cr-vencidas">
+      <span id="cr-vencidas-txt"></span>
+      <button type="button" id="cr-vencidas-ver">Ver vencidas</button>
+    </div>
+
     <div class="metric-grid cr-tiles" id="cr-tiles">
       <div class="metric-card"><div class="metric-label">A receber</div><div class="metric-value" id="cr-t-areceber">-</div><div class="metric-sub" id="cr-t-areceber-sub">&nbsp;</div></div>
       <div class="metric-card"><div class="metric-label">Recebido</div><div class="metric-value" id="cr-t-recebido">-</div><div class="metric-sub" id="cr-t-recebido-sub">&nbsp;</div></div>
@@ -500,9 +531,14 @@
 
     <div class="card">
       <h3 data-t="CARD_CR_LISTA">Lançamentos</h3>
+      <div class="cr-lote" id="cr-lote">
+        <span id="cr-lote-txt"></span>
+        <button type="button" id="cr-lote-baixar">Dar baixa nas selecionadas</button>
+        <button type="button" class="cr-link-btn" id="cr-lote-limpar">limpar seleção</button>
+      </div>
       <div class="tabela-rolavel" id="cr-lista-wrap">
         <table><thead><tr>
-          <th>Liberação</th><th>Canal</th><th>Pedido / descrição</th><th>Venda</th>
+          <th class="cr-sel"></th><th>Liberação / vencimento</th><th>Canal</th><th>Pedido / descrição</th><th>Venda</th>
           <th class="num" title="O que entra de fato (passe o mouse no valor pra ver o detalhamento)">Líquido</th>
           <th class="num">Custo</th><th class="num">Lucro</th><th>Status</th><th></th>
         </tr></thead>
@@ -560,6 +596,27 @@
         <tbody id="tabela-itens-pedido"></tbody>
       </table>
       <p><strong>Total dos produtos: <span id="v-total-produtos">R$ 0,00</span></strong></p>
+
+      <!-- Condição de pagamento (Lote 7) — só venda da Loja Física -->
+      <div class="pg-bloco" id="v-pagamento">
+        <h4 data-t="PG_TITULO">Pagamento</h4>
+        <div class="inline" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+          <div class="field"><label for="v-condicao" data-t="PG_LABEL_CONDICAO">Condição</label><select id="v-condicao"></select></div>
+          <div class="field"><label for="v-forma" data-t="PG_LABEL_FORMA">Forma (opcional)</label>
+            <select id="v-forma">
+              <option value="">—</option><option>Pix</option><option>Dinheiro</option><option>Cartão de crédito</option>
+              <option>Cartão de débito</option><option>Boleto</option><option>Transferência</option><option>Outro</option>
+            </select></div>
+          <button type="button" class="cr-link-btn" id="pg-gerenciar" data-t="PG_GERENCIAR">Gerenciar condições</button>
+        </div>
+        <div id="pg-personalizada" style="display:none; margin-top:10px;">
+          <div class="muted" style="font-size:12px; margin-bottom:6px;">Cada parcela: % do total e quantos dias depois da venda (0 = no dia da venda).</div>
+          <div id="pg-pers-linhas"></div>
+          <button type="button" class="cr-link-btn" id="pg-pers-add">+ parcela</button>
+        </div>
+        <div class="pg-previa" id="pg-previa"></div>
+        <div class="pg-msg" id="pg-msg"></div>
+      </div>
 
       <button data-t="BTN_REGISTRAR_PEDIDO" id="btn-finalizar-pedido">Registrar pedido</button>
     </div>
@@ -1057,6 +1114,43 @@
     </div>
   </div>
 
+  <!-- Condições de pagamento (Lote 7) -->
+  <div id="pg-modal" class="modal-overlay">
+    <div class="modal-box" style="width:560px;">
+      <h3>Condições de pagamento</h3>
+      <div class="tabela-rolavel"><table><thead><tr><th>Nome</th><th>Parcelas</th><th></th></tr></thead><tbody id="pg-lista"></tbody></table></div>
+      <h4 style="margin:18px 0 8px;">Nova condição</h4>
+      <div class="field"><label for="pg-novo-nome">Nome *</label><input type="text" id="pg-novo-nome" maxlength="60" placeholder="ex: 50% entrada + 50% em 15 dias"></div>
+      <div class="muted" style="font-size:12px; margin-bottom:6px;">Parcelas: % do total e dias depois da venda (0 = no dia da venda). A soma tem que dar 100%.</div>
+      <div id="pg-novo-linhas"></div>
+      <button type="button" class="cr-link-btn" id="pg-novo-add">+ parcela</button>
+      <div class="pg-msg erro" id="pg-novo-erro"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="pg-modal-fechar">Fechar</button>
+        <button type="button" id="pg-novo-salvar">Salvar condição</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contas a receber: baixa de parcela(s) (Lote 7) -->
+  <div id="cr-modal-baixa" class="modal-overlay">
+    <div class="modal-box">
+      <h3>Registrar recebimento</h3>
+      <p class="muted" id="cr-mb-desc" style="margin-top:0;"></p>
+      <div class="field"><label for="cr-mb-data">Recebido em *</label><input type="date" id="cr-mb-data"></div>
+      <div class="field"><label for="cr-mb-forma">Forma</label>
+        <select id="cr-mb-forma">
+          <option value="">(manter a da venda)</option><option>Pix</option><option>Dinheiro</option><option>Cartão de crédito</option>
+          <option>Cartão de débito</option><option>Boleto</option><option>Transferência</option><option>Outro</option>
+        </select></div>
+      <div class="pg-msg erro" id="cr-mb-erro"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="cr-mb-cancelar">Cancelar</button>
+        <button type="button" id="cr-mb-salvar">Confirmar recebimento</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Contas a receber: mudar a data de recebimento de venda do PDV -->
   <div id="cr-modal-data" class="modal-overlay">
     <div class="modal-box">
@@ -1214,6 +1308,11 @@ const TEXTOS = {
   BTN_BACKFILL_LIQUIDO: 'Preencher líquido das vendas antigas',
   TEXTO_LIQUIDO_PERIODO: 'Líquido Mercado Livre (o que entra):',
   CARD_REGISTRAR_PEDIDO: 'Registrar pedido de venda',
+  // ---- Condição de pagamento ----
+  PG_TITULO: 'Pagamento',
+  PG_LABEL_CONDICAO: 'Condição',
+  PG_LABEL_FORMA: 'Forma (opcional)',
+  PG_GERENCIAR: 'Gerenciar condições',
   // ---- Consumo próprio ----
   CARD_CONSUMO_PROPRIO: 'Consumo próprio',
   CONSUMO_AJUDA: 'Produto usado pela própria empresa. Baixa só do estoque da empresa (produto acabado → Físico; matéria-prima → Matéria-prima), nunca do Full. Não é venda: não entra no faturamento nem no contas a receber.',
@@ -3286,6 +3385,7 @@ function renderItensPedido(){
     tbody.appendChild(tr);
   });
   document.getElementById('v-total-produtos').textContent = fmtMoeda(total);
+  if (typeof pgRecalcular === 'function') pgRecalcular(true);   // Lote 7: prévia das parcelas
 }
 
 function removerItemPedido(idx){
@@ -3306,7 +3406,7 @@ document.getElementById('btn-finalizar-pedido').addEventListener('click', async 
   const taxas = parseFloat(document.getElementById('v-taxas').value) || 0;
   const obs = document.getElementById('v-obs').value;
 
-  const { error } = await supabaseClient.rpc('criar_pedido_venda', {
+  const argsPedido = {
     p_canal: canal,
     p_cliente_nome: cliente,
     p_local_baixa_estoque: localBaixa,
@@ -3316,14 +3416,36 @@ document.getElementById('btn-finalizar-pedido').addEventListener('click', async 
     p_taxas_canal: taxas,
     p_observacao: obs,
     p_itens: itensPedidoAtual.map(i => ({ produto_id: i.produto_id, quantidade: i.quantidade, preco_unitario: i.preco_unitario }))
-  });
+  };
+  let error;
+  if (canal === 'loja_fisica') {
+    // Lote 7: venda física grava junto as parcelas da condição de pagamento
+    if (!pgValidar()) { alert('Confira as parcelas do pagamento antes de registrar.'); return; }
+    const condSel = document.getElementById('v-condicao');
+    const condNome = condSel.value === 'personalizada' ? 'Personalizada: ' + pgDescrever(pgModeloAtual())
+      : (condSel.options[condSel.selectedIndex] ? condSel.options[condSel.selectedIndex].textContent : null);
+    ({ error } = await supabaseClient.rpc('criar_pedido_venda_parcelado', {
+      ...argsPedido,
+      p_parcelas: pgParcelas.map(p => ({ valor: p.valor, vencimento: p.vencimento })),
+      p_forma_pagamento: document.getElementById('v-forma').value || null,
+      p_condicao: condNome,
+    }));
+  } else {
+    ({ error } = await supabaseClient.rpc('criar_pedido_venda', argsPedido));
+  }
 
   if (error) { alert('Erro ao registrar pedido: ' + error.message); return; }
 
   itensPedidoAtual = [];
-  renderItensPedido();
   document.getElementById('form-pedido-header').reset();
   document.getElementById('campo-local-baixa').style.display = 'none';
+  // Lote 7: volta pra "À vista" e mantém a última forma usada
+  const avista = pgCondicoes.find(c => c.ativo && c.nome === 'À vista');
+  if (avista) document.getElementById('v-condicao').value = avista.id;
+  document.getElementById('pg-personalizada').style.display = 'none';
+  document.getElementById('v-forma').value = pgLerForma();
+  pgMostrarBloco();
+  renderItensPedido();
   loadPedidos();
   loadEstoque();
   loadDashboard();
@@ -3675,6 +3797,7 @@ const CR_STATUS = [
   { value: 'recebido',   label: 'Recebido' },
   { value: 'aguardando', label: 'Aguardando pagamento' },
   { value: 'estornado',  label: 'Estornado / cancelado' },
+  { value: 'vencido',    label: 'Vencidas (venda física)' },   // Lote 7: parcela a prazo não recebida
 ];
 const CR_MESES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const CR_MESES_CURTO = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -3907,6 +4030,7 @@ async function carregarContasReceber(){
     return;
   }
   crDesenharTiles(res.data || {});
+  crAtualizarVencidas();
   crEstado.mensal = men.data || [];
   crDesenharGrafico();
 }
@@ -3982,7 +4106,12 @@ function crLinhaHtml(l){
   if (l.ml_order_id) sub.push('Pedido ML ' + esc(l.ml_order_id));
   if (l.cliente) sub.push(esc(l.cliente));
   if (l.origem === 'manual') sub.push(l.categoria === 'aporte' ? 'Aporte (manual)' : l.categoria === 'outros' ? 'Outros (manual)' : 'Venda (manual)');
-  if (l.origem === 'pedido') sub.push('Pedido do PDV/loja');
+  if (l.origem === 'pedido') {
+    sub.push(l.parcela_total > 1 ? `Parcela ${l.parcela_num}/${l.parcela_total}` : 'Venda física');
+    if (l.condicao_pagamento) sub.push(esc(l.condicao_pagamento));
+    if (l.forma_pagamento) sub.push(esc(l.forma_pagamento));
+    if (l.recebido_em && l.status === 'recebido') sub.push('recebido em ' + crData(l.recebido_em));
+  }
 
   const prev = l.status === 'a_receber' && l.origem === 'ml'
     ? '<span class="cr-prev" title="Data que o Mercado Livre informa hoje. Costuma adiantar depois da entrega — o ERP atualiza sozinho.">previsão ML</span>'
@@ -3990,9 +4119,18 @@ function crLinhaHtml(l){
 
   let acoes = '';
   if (l.origem === 'manual') acoes = `<button type="button" class="secondary" onclick="abrirModalCR('${l.id}')">Editar</button> <button type="button" class="danger" onclick="excluirLancamentoCR('${l.id}')">Excluir</button>`;
-  else if (l.origem === 'pedido') acoes = `<button type="button" class="secondary" onclick="abrirModalDataCR('${l.id}')" title="Mudar a data em que o dinheiro entra">Data</button>`;
+  else if (l.origem === 'pedido' && l.status === 'a_receber')
+    acoes = `<button type="button" onclick="abrirBaixaCR(['${l.id}'])" title="Registrar que esse dinheiro entrou">Recebi</button> <button type="button" class="secondary" onclick="abrirModalDataCR('${l.id}')" title="Mudar o vencimento">Data</button>`;
+  else if (l.origem === 'pedido' && l.status === 'recebido')
+    acoes = `<button type="button" class="cr-link-btn" onclick="desfazerBaixaCR('${l.id}')" title="Marcar como não recebido">desfazer</button>`;
+  const selecionavel = l.origem === 'pedido' && l.status === 'a_receber';
+  const diasVenc = l.vencido ? Math.max(1, Math.round((Date.parse(crHojeSP()) - Date.parse(crDataISO_SP(l.data_liberacao))) / 86400000)) : 0;
+  const statusHtml = l.vencido
+    ? `<span class="badge cr-vencido">Vencida</span><span class="cr-venc-dias">há ${diasVenc} dia${diasVenc > 1 ? 's' : ''}</span>`
+    : `<span class="badge cr-${esc(l.status)}">${esc((CR_STATUS.find(s => s.value === l.status) || {}).label || l.status)}</span>`;
 
   return `<tr>
+    <td class="cr-sel">${selecionavel ? `<input type="checkbox" class="cr-chk" value="${l.id}" ${crSelecionadas.has(l.id) ? 'checked' : ''} onchange="crMarcar(this)" aria-label="Selecionar parcela">` : ''}</td>
     <td>${l.data_liberacao ? crData(l.data_liberacao) : '<span class="muted">sem data</span>'}${prev}</td>
     <td>${crCanalHtml(l.canal)}</td>
     <td class="cr-desc">${esc(l.descricao || '-')}<span class="sub">${sub.join(' · ')}</span></td>
@@ -4000,7 +4138,7 @@ function crLinhaHtml(l){
     <td class="num"><span title="${esc(det.join('\n'))}" style="cursor:help; border-bottom:1px dotted #b9c0cc;">${fmtMoeda(l.valor_liquido)}</span></td>
     <td class="num">${custo}</td>
     <td class="num">${lucro}</td>
-    <td><span class="badge cr-${esc(l.status)}">${esc((CR_STATUS.find(s => s.value === l.status) || {}).label || l.status)}</span></td>
+    <td>${statusHtml}</td>
     <td class="cr-acoes" style="white-space:nowrap;">${acoes}</td>
   </tr>`;
 }
@@ -4304,6 +4442,240 @@ async function salvarDataCR(){
 }
 
 // ============================================================
+// CONDIÇÃO DE PAGAMENTO (Lote 7 — 2026-10-06)
+// Venda da Loja Física: escolhe a condição (padrão "À vista"), vê a prévia
+// das parcelas (dá pra mexer em data/valor) e o banco grava tudo junto
+// (criar_pedido_venda_parcelado). Parcela no dia da venda já nasce
+// recebida; as futuras ficam "a receber" até o botão "Recebi".
+// ============================================================
+let pgCondicoes = [];
+let pgParcelas = [];            // [{valor, vencimento}] — o que vai pro banco
+let pgEditada = false;          // alguém mexeu na prévia à mão
+const PG_FORMA_KEY = 'efactory_forma_pagamento';
+function pgLerForma(){ try { return localStorage.getItem(PG_FORMA_KEY) || ''; } catch (e) { return ''; } }
+function pgSalvarForma(v){ try { localStorage.setItem(PG_FORMA_KEY, v || ''); } catch (e) { /* sem armazenamento: tudo bem */ } }
+function pgSomaDias(iso, dias){ const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + Number(dias || 0)); return d.toISOString().slice(0, 10); }
+function pgDataVenda(){ return document.getElementById('v-data').value || hojeSP(); }
+function pgTotalPedido(){
+  const prod = itensPedidoAtual.reduce((s, i) => s + i.quantidade * i.preco_unitario, 0);
+  const frete = parseFloat(document.getElementById('v-frete').value) || 0;
+  const desc = parseFloat(document.getElementById('v-desconto').value) || 0;
+  return Math.round((prod + frete - desc) * 100) / 100;
+}
+function pgDescrever(parc){
+  return parc.map(x => `${Number(x.pct).toLocaleString('pt-BR')}% ${Number(x.dias) === 0 ? 'na hora' : 'em ' + x.dias + 'd'}`).join(' · ');
+}
+async function carregarCondicoesPagamento(){
+  const { data, error } = await supabaseClient.from('condicoes_pagamento').select('*').order('ordem').order('nome');
+  if (error) { console.error(error); return; }
+  pgCondicoes = data || [];
+  const sel = document.getElementById('v-condicao');
+  const antes = sel.value;
+  sel.innerHTML = pgCondicoes.filter(c => c.ativo).map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('')
+    + '<option value="personalizada">Personalizada…</option>';
+  const avista = pgCondicoes.find(c => c.ativo && c.nome === 'À vista');
+  sel.value = antes && [...sel.options].some(o => o.value === antes) ? antes : (avista ? avista.id : sel.options[0].value);
+  pgRecalcular(true);
+  pgDesenharLista();
+}
+function pgModeloAtual(){
+  const v = document.getElementById('v-condicao').value;
+  if (v === 'personalizada') {
+    return [...document.querySelectorAll('#pg-pers-linhas .pg-pers-linha')].map(l => ({
+      pct: parseFloat(l.querySelector('.pg-pct').value) || 0, dias: parseInt(l.querySelector('.pg-dias').value, 10) || 0 }));
+  }
+  const c = pgCondicoes.find(x => x.id === v);
+  return c ? c.parcelas : [{ pct: 100, dias: 0 }];
+}
+// gera as parcelas a partir da condição (centavos que sobram vão pra última)
+function pgRecalcular(forcar){
+  if (pgEditada && !forcar) return pgDesenharPrevia();
+  pgEditada = false;
+  const total = pgTotalPedido(), base = pgDataVenda(), modelo = pgModeloAtual();
+  let acum = 0;
+  pgParcelas = modelo.map((m, i) => {
+    const valor = i === modelo.length - 1 ? Math.round((total - acum) * 100) / 100 : Math.round(total * m.pct) / 100;
+    acum += valor;
+    return { valor, vencimento: pgSomaDias(base, m.dias) };
+  });
+  pgDesenharPrevia();
+}
+function pgDesenharPrevia(){
+  const box = document.getElementById('pg-previa');
+  const total = pgTotalPedido(), venda = pgDataVenda();
+  if (!(total > 0)) { box.innerHTML = '<span class="muted" style="font-size:13px;">Adicione os itens pra ver as parcelas.</span>'; pgValidar(); return; }
+  box.innerHTML = `<table><thead><tr><th>Parcela</th><th>Vencimento</th><th class="num">Valor</th><th></th></tr></thead><tbody>` +
+    pgParcelas.map((p, i) => `<tr data-i="${i}">
+      <td>${i + 1}/${pgParcelas.length}</td>
+      <td><input type="date" value="${p.vencimento}" data-i="${i}" class="pg-ed-data"></td>
+      <td class="num"><input type="number" step="0.01" min="0.01" value="${p.valor.toFixed(2)}" data-i="${i}" class="pg-ed-valor"></td>
+      <td class="pg-tag-cel">${p.vencimento <= venda ? '<span class="pg-tag">recebida na venda</span>' : '<span class="pg-tag futuro">a receber</span>'}</td>
+    </tr>`).join('') + `</tbody></table>`;
+  // edição à mão: atualiza no lugar (redesenhar a tabela com o campo em foco quebra no navegador)
+  const tag = (i) => {
+    const td = box.querySelector(`tr[data-i="${i}"] .pg-tag-cel`);
+    if (td) td.innerHTML = pgParcelas[i].vencimento && pgParcelas[i].vencimento <= pgDataVenda()
+      ? '<span class="pg-tag">recebida na venda</span>' : '<span class="pg-tag futuro">a receber</span>';
+  };
+  box.querySelectorAll('.pg-ed-data').forEach(inp => inp.addEventListener('change', (e) => {
+    const i = +e.target.dataset.i; pgParcelas[i].vencimento = e.target.value; pgEditada = true; tag(i); pgValidar(); }));
+  box.querySelectorAll('.pg-ed-valor').forEach(inp => inp.addEventListener('change', (e) => {
+    const i = +e.target.dataset.i; pgParcelas[i].valor = Math.round((parseFloat(e.target.value) || 0) * 100) / 100; pgEditada = true; pgValidar(); }));
+  pgValidar();
+}
+function pgValidar(){
+  const msg = document.getElementById('pg-msg');
+  if (document.getElementById('v-canal').value !== 'loja_fisica') { msg.textContent = ''; return true; }
+  const total = pgTotalPedido();
+  if (!(total > 0)) { msg.textContent = ''; return true; }
+  if (document.getElementById('v-condicao').value === 'personalizada') {
+    const somaPct = pgModeloAtual().reduce((s, m) => s + m.pct, 0);
+    if (Math.abs(somaPct - 100) > 0.005 && !pgEditada) { msg.className = 'pg-msg erro'; msg.textContent = `As porcentagens somam ${somaPct.toLocaleString('pt-BR')}% — precisam somar 100%.`; return false; }
+  }
+  const soma = Math.round(pgParcelas.reduce((s, p) => s + p.valor, 0) * 100) / 100;
+  if (pgParcelas.some(p => !(p.valor > 0) || !p.vencimento)) { msg.className = 'pg-msg erro'; msg.textContent = 'Toda parcela precisa de valor maior que zero e data.'; return false; }
+  if (Math.abs(soma - total) > 0.005) {
+    msg.className = 'pg-msg erro';
+    msg.innerHTML = `As parcelas somam ${fmtMoeda(soma)}, mas o pedido é ${fmtMoeda(total)}. <button type="button" class="cr-link-btn" onclick="pgRecalcular(true)">recalcular pela condição</button>`;
+    return false;
+  }
+  msg.className = 'pg-msg'; msg.textContent = pgEditada ? 'Prévia ajustada à mão.' : '';
+  return true;
+}
+function pgLinhaPersonalizada(container, pct, dias){
+  const d = document.createElement('div'); d.className = 'pg-pers-linha';
+  d.innerHTML = `<input type="number" class="pg-pct" step="0.01" min="0" value="${pct}"> % em <input type="number" class="pg-dias" step="1" min="0" value="${dias}"> dias <button type="button" class="cr-link-btn">remover</button>`;
+  d.querySelector('button').addEventListener('click', () => { d.remove(); container.dispatchEvent(new Event('input')); });
+  container.appendChild(d);
+}
+function pgMostrarBloco(){
+  const fisica = document.getElementById('v-canal').value === 'loja_fisica';
+  document.getElementById('v-pagamento').style.display = fisica ? '' : 'none';
+}
+// eventos do PDV
+document.getElementById('v-condicao').addEventListener('change', () => {
+  const pers = document.getElementById('v-condicao').value === 'personalizada';
+  document.getElementById('pg-personalizada').style.display = pers ? '' : 'none';
+  const linhas = document.getElementById('pg-pers-linhas');
+  if (pers && !linhas.children.length) { pgLinhaPersonalizada(linhas, 50, 0); pgLinhaPersonalizada(linhas, 50, 30); }
+  pgRecalcular(true);
+});
+document.getElementById('pg-pers-linhas').addEventListener('input', () => pgRecalcular(true));
+document.getElementById('pg-pers-add').addEventListener('click', () => { pgLinhaPersonalizada(document.getElementById('pg-pers-linhas'), 0, 30); });
+['v-frete', 'v-desconto', 'v-data'].forEach(id => document.getElementById(id).addEventListener('input', () => pgRecalcular(true)));
+document.getElementById('v-data').addEventListener('change', () => pgRecalcular(true));
+document.getElementById('v-canal').addEventListener('change', () => { pgMostrarBloco(); pgValidar(); });
+document.getElementById('v-forma').addEventListener('change', (e) => pgSalvarForma(e.target.value));
+document.getElementById('v-forma').value = pgLerForma();
+pgMostrarBloco();
+
+// ---------- gerenciar condições ----------
+function pgDesenharLista(){
+  const tb = document.getElementById('pg-lista');
+  tb.innerHTML = pgCondicoes.map(c => `<tr class="${c.ativo ? '' : 'muted'}">
+    <td>${esc(c.nome)}</td><td>${esc(pgDescrever(c.parcelas))}</td>
+    <td style="white-space:nowrap;"><button type="button" class="cr-link-btn" onclick="pgAlternarAtiva('${c.id}', ${!c.ativo})">${c.ativo ? 'desativar' : 'reativar'}</button></td>
+  </tr>`).join('');
+}
+async function pgAlternarAtiva(id, ativo){
+  const { error } = await supabaseClient.from('condicoes_pagamento').update({ ativo }).eq('id', id);
+  if (error) { document.getElementById('pg-novo-erro').textContent = 'Erro: ' + error.message; return; }
+  carregarCondicoesPagamento();
+}
+document.getElementById('pg-gerenciar').addEventListener('click', () => {
+  const linhas = document.getElementById('pg-novo-linhas');
+  if (!linhas.children.length) { pgLinhaPersonalizada(linhas, 50, 0); pgLinhaPersonalizada(linhas, 50, 15); }
+  document.getElementById('pg-novo-erro').textContent = '';
+  pgDesenharLista();
+  document.getElementById('pg-modal').style.display = 'flex';
+});
+document.getElementById('pg-novo-add').addEventListener('click', () => pgLinhaPersonalizada(document.getElementById('pg-novo-linhas'), 0, 30));
+document.getElementById('pg-modal-fechar').addEventListener('click', () => { document.getElementById('pg-modal').style.display = 'none'; });
+document.getElementById('pg-novo-salvar').addEventListener('click', async () => {
+  const erro = document.getElementById('pg-novo-erro');
+  const nome = document.getElementById('pg-novo-nome').value.trim();
+  const parcelas = [...document.querySelectorAll('#pg-novo-linhas .pg-pers-linha')].map(l => ({
+    pct: parseFloat(l.querySelector('.pg-pct').value) || 0, dias: parseInt(l.querySelector('.pg-dias').value, 10) || 0 }));
+  const soma = parcelas.reduce((s, x) => s + x.pct, 0);
+  if (!nome) { erro.textContent = 'Dê um nome à condição.'; return; }
+  if (!parcelas.length || parcelas.some(x => x.pct <= 0 || x.dias < 0)) { erro.textContent = 'Cada parcela precisa de % maior que zero e dias ≥ 0.'; return; }
+  if (Math.abs(soma - 100) > 0.005) { erro.textContent = `As porcentagens somam ${soma.toLocaleString('pt-BR')}% — precisam somar 100%.`; return; }
+  const ordem = Math.max(0, ...pgCondicoes.map(c => c.ordem || 0)) + 1;
+  const { error } = await supabaseClient.from('condicoes_pagamento').insert({ nome, parcelas, ordem });
+  if (error) { erro.textContent = /duplicate|unique/i.test(error.message) ? 'Já existe uma condição com esse nome.' : 'Erro: ' + error.message; return; }
+  erro.textContent = '';
+  document.getElementById('pg-novo-nome').value = '';
+  document.getElementById('pg-novo-linhas').innerHTML = '';
+  pgLinhaPersonalizada(document.getElementById('pg-novo-linhas'), 50, 0); pgLinhaPersonalizada(document.getElementById('pg-novo-linhas'), 50, 15);
+  carregarCondicoesPagamento();
+});
+
+// ---------- contas a receber: vencidas e baixa ----------
+const crSelecionadas = new Set();
+async function crAtualizarVencidas(){
+  // sempre olha TODAS as vencidas, independente do filtro de período
+  const { data, error } = await supabaseClient.rpc('contas_receber_resumo', { p_inicio: null, p_fim: null, p_canais: null, p_status: ['vencido'], p_texto: null, p_campo_data: 'liberacao', p_meses: null });
+  const box = document.getElementById('cr-vencidas');
+  if (error || !data || !Number(data.qtd_vencido)) { box.classList.remove('visivel'); return; }
+  const q = Number(data.qtd_vencido);
+  document.getElementById('cr-vencidas-txt').innerHTML = `⚠ <strong>${q} parcela${q > 1 ? 's' : ''} vencida${q > 1 ? 's' : ''}</strong> de venda física · ${fmtMoeda(data.valor_vencido)} a cobrar`;
+  box.classList.add('visivel');
+}
+function crMarcar(chk){
+  if (chk.checked) crSelecionadas.add(chk.value); else crSelecionadas.delete(chk.value);
+  crAtualizarLote();
+}
+function crAtualizarLote(){
+  const lote = document.getElementById('cr-lote');
+  const ids = [...crSelecionadas];
+  const soma = ids.reduce((s, id) => s + Number((crLinhasCache[id] || {}).valor_liquido || 0), 0);
+  document.getElementById('cr-lote-txt').textContent = `${ids.length} parcela${ids.length > 1 ? 's' : ''} selecionada${ids.length > 1 ? 's' : ''} · ${fmtMoeda(soma)}`;
+  lote.classList.toggle('visivel', ids.length > 0);
+}
+let crBaixaIds = [];
+function abrirBaixaCR(ids){
+  crBaixaIds = ids;
+  const linhas = ids.map(id => crLinhasCache[id]).filter(Boolean);
+  const soma = linhas.reduce((s, l) => s + Number(l.valor_liquido || 0), 0);
+  document.getElementById('cr-mb-desc').textContent = linhas.length === 1
+    ? `${linhas[0].descricao || ''}${linhas[0].cliente ? ' — ' + linhas[0].cliente : ''} · ${fmtMoeda(soma)}`
+    : `${linhas.length} parcelas · ${fmtMoeda(soma)}`;
+  document.getElementById('cr-mb-data').value = crHojeSP();
+  document.getElementById('cr-mb-forma').value = '';
+  document.getElementById('cr-mb-erro').textContent = '';
+  document.getElementById('cr-modal-baixa').style.display = 'flex';
+}
+document.getElementById('cr-mb-cancelar').addEventListener('click', () => { document.getElementById('cr-modal-baixa').style.display = 'none'; });
+document.getElementById('cr-mb-salvar').addEventListener('click', async () => {
+  const d = document.getElementById('cr-mb-data').value;
+  if (!d) { document.getElementById('cr-mb-erro').textContent = 'Informe a data do recebimento.'; return; }
+  const btn = document.getElementById('cr-mb-salvar'); btn.disabled = true;
+  const { data, error } = await supabaseClient.rpc('baixar_parcelas', { p_ids: crBaixaIds, p_data: d, p_forma: document.getElementById('cr-mb-forma').value || null });
+  btn.disabled = false;
+  if (error) { document.getElementById('cr-mb-erro').textContent = 'Erro: ' + error.message; return; }
+  document.getElementById('cr-modal-baixa').style.display = 'none';
+  crBaixaIds.forEach(id => crSelecionadas.delete(id));
+  crAtualizarLote();
+  carregarContasReceber();
+});
+document.getElementById('cr-lote-baixar').addEventListener('click', () => abrirBaixaCR([...crSelecionadas]));
+document.getElementById('cr-lote-limpar').addEventListener('click', () => {
+  crSelecionadas.clear(); crAtualizarLote();
+  document.querySelectorAll('.cr-chk').forEach(c => { c.checked = false; });
+});
+document.getElementById('cr-vencidas-ver').addEventListener('click', () => {
+  if (!crMsStatus) return;
+  crEstado.preset = 'tudo'; crMsMeses.set([], true); crMarcarPreset();
+  crMsStatus.set(['vencido']);           // dispara o carregamento
+});
+async function desfazerBaixaCR(id){
+  if (!confirm('Marcar essa parcela como NÃO recebida?')) return;
+  const { error } = await supabaseClient.rpc('desfazer_baixa_parcela', { p_id: id });
+  if (error) { alert('Erro: ' + error.message); return; }
+  carregarContasReceber();
+}
+
+// ============================================================
 // CONSUMO PRÓPRIO (Lote 5 — 2026-10-06)
 // Baixa de estoque que NÃO é venda. Tudo pelo banco (funções
 // registrar_consumo_proprio / desfazer_consumo_proprio /
@@ -4399,6 +4771,7 @@ async function desfazerConsumoProprio(id){
 // ============================================================
 function carregarApp(){
   loadProdutos();
+  carregarCondicoesPagamento();
   carregarConsumoProprio();
   loadFichaTecnica();
   loadEstoque();
