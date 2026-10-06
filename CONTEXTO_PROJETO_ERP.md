@@ -4,8 +4,8 @@
 > Documento de contexto. Cole isso no "Project knowledge" de um Claude Project
 > pra qualquer chat novo já nascer sabendo do estado atual do projeto.
 > Atualize este arquivo de vez em quando (peça pro Claude regenerar) conforme
-> o sistema evoluir. **Última atualização: 2026-10-05** (Lotes 1, 2 e 3 de
-> correções — ver seção "Correções de 2026-10-05").
+> o sistema evoluir. **Última atualização: 2026-10-06** (Lote 4 — Contas a
+> receber e cancelamentos do ML — ver seção "Contas a receber (Lote 4)").
 
 ## Visão geral
 
@@ -817,6 +817,76 @@ das 3 contas). Tudo publicado em produção no mesmo dia.
      período, card "Valor líquido (Mercado Livre)" em Integrações com o
      botão de backfill. Faturamento intacto (conferido pelo SQL).
 
+## Contas a receber (Lote 4 — 2026-10-05/06)
+
+Aba **Contas a receber** (menu, logo abaixo de Vendas). Visão SEPARADA do
+faturamento: o faturamento continua sendo `pedidos_venda.valor_total`.
+
+- **Tabela `lancamentos_financeiros`** (`sql/2026-10-06_lote4_contas_receber.sql`):
+  uma linha por **pagamento do ML** (origem `ml`, chave `ml_payment_id`), por
+  **pedido do PDV/loja** (origem `pedido`, criada pelo trigger
+  `trg_lancamento_pedido`) ou **lançamento manual** (origem `manual`:
+  venda / aporte / outros, custo opcional). Campos separados pra evoluir pra
+  DRE/contas a pagar: `natureza` (receber|pagar), bruto, tarifa, frete (já
+  sem o que o comprador pagou), taxas, outros_ajustes, reembolsado, líquido,
+  imposto (vazio por enquanto), custo_manual, `dados_ml` (jsonb de auditoria).
+  RLS: só `authenticated` lê; pelo site só cria/edita/apaga lançamento manual
+  e muda a data de pedido do PDV; linhas do ML só a Edge Function grava.
+- **Data de liberação = a que o Mercado Pago informa** (`money_release_date`),
+  sem calcular prazo. Enquanto pendente, o ML mostra ~28 dias, mas libera
+  ANTES (logo depois da entrega) — por isso a sincronização reatualiza.
+  Na tela aparece como "previsão ML". Parcelado: o ML libera de uma vez
+  (`money_release_schema` sempre vazio — validado em 05/10).
+- **Custo** (`vw_custo_unitario`): ficha técnica completa → custo da ficha
+  (kit = soma dos componentes, todos os níveis, via `vw_custo_ficha`); ficha
+  com componente sem custo → SEM CUSTO; sem ficha → `custo_atual` se > 0.
+  Custo calculado AO VIVO (decisão do dono, enquanto os custos são preenchidos).
+  Venda sem custo: aviso na tela e fica fora do lucro, mas soma no valor a
+  receber. Lucro = líquido − custo (sem imposto). Pedido com 2+ pagamentos:
+  custo dividido pelo bruto de cada pagamento. Aporte/outros: fora do lucro.
+- **Status**: `a_receber`, `recebido`, `aguardando` (pagamento pendente),
+  `estornado`. Pedido cancelado no ML conta como estornado mesmo antes de o MP
+  estornar (Lote 4d, `sql/2026-10-06_lote4d_cancelado_estornado.sql`).
+  PDV/manual: vira "recebido" quando passa a data.
+- **Funções** (somam tudo no banco): `contas_receber_base` (base única de
+  filtros), `contas_receber_listar` (paginada), `contas_receber_resumo`
+  (cards), `contas_receber_mensal` (gráfico por mês de liberação × canal ×
+  natureza). Filtros: período (`p_inicio`/`p_fim`), meses soltos (`p_meses`,
+  Lote 4c), canais, status, texto.
+- **Edge Function `ml-sync-receber`**: fila do banco (`receber_fila_sync`:
+  vendas novas + não liberadas + liberadas há ≤30 dias, relidas a cada 6h),
+  lê pedido + pagamentos no MP, grava as linhas, atualiza as colunas de
+  líquido do Lote 3 com a MESMA conta e **registra cancelamento do ML**
+  (`registrar_cancelamento_ml`): tira do faturamento; o estoque só volta se
+  saiu do físico, o envio nunca saiu e o cancelamento é recente (≤3 dias);
+  Full nunca (a sync do Full corrige). Agendada a cada 15 min (`sync-receber`,
+  `sql/2026-10-06_lote4b_cron_receber.sql`, 40 vendas por rodada). Ao abrir a
+  aba: 1 rodada leve; botão "Atualizar do Mercado Livre": até 5 rodadas.
+- **Fórmula do líquido (corrigida no Lote 4, vale também pro Lote 3)**:
+  frete do vendedor = cobrança de frete − `shipping_amount` (parte paga pelo
+  comprador); taxas = taxas − créditos do comprador (ex: `financing_transfer`);
+  líquido = `net_received_amount` − reembolsado + cobranças devolvidas. O MP
+  NÃO atualiza o `net_received_amount` depois de reembolso.
+- **`ml-webhook`**: pedido que já chega cancelado entra como cancelado e sem
+  baixa de estoque; aviso de cancelamento de pedido existente →
+  `registrar_cancelamento_ml`.
+- **Backfill** rodado em 2026-10-06: 2.323 pedidos ML → 2.353 lançamentos;
+  **119 vendas canceladas saíram do faturamento** (estoque não mexido).
+- **Tela**: filtros (presets de período, meses soltos com busca digitada,
+  canais e status em seleção múltipla com digitação, busca por texto), 4 cards
+  (a receber, recebido, lucro, vendas sem custo), gráfico de barras
+  empilhadas em SVG próprio (cor fixa por canal: Físico amarelo, ML 1 azul,
+  ML 2 laranja, ML 3 verde-água, Loja online rosa, Outros violeta), tooltip,
+  "Ver como tabela", checkbox "Lucro líquido", lista paginada com tooltip do
+  detalhamento, lançamento manual e mudança de data de pedido do PDV.
+  O layout de celular (abaixo de 760px o menu vira uma barra no topo) vale
+  pro ERP todo.
+- **Conferido em 06/10**: 23 de 26 pagamentos lidos ao vivo no MP batem
+  centavo a centavo (dos 3 restantes: 1 cancelada já tratada pelo 4d e 2 com
+  data mudada pelo ML ainda não relida); soma do gráfico = total do resumo;
+  bruto dos lançamentos ML = faturamento ML (exceto 2 chargebacks, R$ 43,24);
+  consultas em 160–350 ms com 2.369 lançamentos.
+
 ## Credenciais e onde ficam
 
 - **Supabase URL + chave anon/publishable**: embutidas no `index.html`
@@ -884,7 +954,7 @@ das 3 contas). Tudo publicado em produção no mesmo dia.
 
 ## Ainda não construído / Fase 2
 
-- ❌ Contas a pagar / a receber
+- ✅ Contas a receber (2026-10-06) — ❌ contas a pagar (estrutura pronta: `natureza = 'pagar'`)
 - ❌ Fluxo de caixa
 - ❌ Integração fiscal com o Tiny (emissão de NF-e a partir do pedido)
 - ❌ Login/permissões por usuário (hoje é acesso livre pra quem tem o link)
@@ -893,22 +963,29 @@ das 3 contas). Tudo publicado em produção no mesmo dia.
 - 🟡 Revisão de itens de pedido sem produto — desde 2026-10-05 existe o
   botão "Revincular itens sem produto" + campo de SKUs alternativos; ainda
   não há uma tela dedicada listando só os itens pendentes.
-- 🟡 Valor líquido no Dashboard — hoje só aparece na aba Vendas.
+- 🟡 Valor líquido no Dashboard — hoje aparece na aba Vendas e em Contas a receber.
 - 🟡 Chat interativo com o Gestor de Contas (IA) — cogitado, decidido
   explicitamente que NÃO entra nesta versão (só o relatório automático
   por enquanto); pode ser um passo futuro
 
 ## Pendências específicas em aberto no momento
 
+- **Nova (2026-10-06): 2 chargebacks** (contestação no cartão — conta 2,
+  pedido 2000018543800388, R$ 19,90; conta 3, pedido 2000018302890224,
+  R$ 23,34): o pagamento foi estornado mas o pedido no ML segue "pago" →
+  ficam no faturamento e saem do contas a receber. Decidir se chargeback
+  deve sair do faturamento.
+- **Nova (2026-10-06): custos** — ~70% das vendas ainda sem custo (19 dos 44
+  produtos acabados ativos sem custo; 128 itens de pedido sem produto). O
+  lucro só fica completo depois de cadastrar custo/ficha técnica.
+- **Nova (2026-10-06):** apagar no painel do Supabase as Edge Functions
+  temporárias `ml-diagnostico-receber` (já desativada, não devolve dados) e
+  `ml-diagnostico`.
+
 - ✅ (2026-10-05) Valor líquido das vendas novas conferido pelo dono contra
   o "Você recebe" do painel do ML — batendo.
-- **(2026-10-05) Backfill do valor líquido das vendas antigas — APROVADO
-  pelo dono** e rodado por ele pelo botão em Integrações (data inicial
-  28/07/2026, antes da venda ML mais antiga, de 29/07/2026). 2.320 vendas
-  ML estavam sem líquido. Conferir no fim: vendas que ficarem com erro ou
-  pendente podem ser tentadas de novo pelo mesmo botão; vendas "estornado"
-  (líquido 0) são pedidos cancelados/devolvidos no ML que no ERP ainda
-  estão como confirmados — revisar.
+- ✅ (2026-10-06) Backfill do líquido e do contas a receber rodado nas
+  2.323 vendas ML; os cancelados no ML saíram do faturamento (ver Lote 4).
 - **Nova (2026-10-05): mapear os 285 itens com SKU antigo** — no produto
   certo, preencher "SKUs antigos/alternativos" e clicar em "Revincular
   itens sem produto" (aba Vendas). Sugestões do Claude, a confirmar pelo
