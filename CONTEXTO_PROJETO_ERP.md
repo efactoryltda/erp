@@ -908,6 +908,31 @@ entra em faturamento, contas a receber nem lucro.
   e `listar_consumo_proprio` (últimos 30, com "desfeito"). Só `authenticated`.
 - Kit consumido baixa o kit (não os componentes), igual venda.
 
+## Produção em etapas (Lote 6 — 2026-10-06)
+
+Ex: **Chapa → Chapa Cortada → Caixa** (rendimento 1:1 hoje; tamanhos que passam
+por isso: 24x15x10, 19x12x12 — a automontável não —, 29x14x16). Os
+**cadastros (chapas, cortadas, fichas) ficam com a equipe**; o sistema só foi
+preparado (`sql/2026-10-06_lote6_producao_em_etapas.sql`).
+- **Ficha técnica**: "Produto feito" aceita qualquer produto ativo, inclusive
+  matéria-prima feita aqui (Chapa Cortada ← Chapa; Caixa ← Chapa Cortada).
+  Trigger `trg_ficha_bloquear_ciclo` impede ficha em ciclo (A usa B que usa A).
+- **Produção**: lista qualquer produto ativo com ficha. Destino automático pelo
+  tipo — matéria-prima → estoque **Matéria-prima** (único destino, travado);
+  produto acabado → Físico ou Full. Modo "Direto da matéria-prima" desce a ficha
+  até a chapa (cortar e colar de uma vez, sem estoque intermediário).
+- **Proteção de custo** em `concluir_ordem_producao`: se algum componente
+  consumido tiver custo 0, a produção acontece mas o custo médio do produto
+  feito NÃO muda (custo zero não contamina). A tela avisa antes de concluir.
+  A função foi alterada só em 5 trechos (via replace verificado no próprio SQL);
+  **ela está gravada no banco com quebra de linha Windows (\r\n)** — lembrar
+  disso em alterações futuras por replace.
+- **Atenção (custos)**: todas as chapas estão com custo 0. A Caixa D6 já está
+  ligada à Chapa Cortada 24x15x10 → hoje D6 e Kit 4 Rolos 200 aparecem "sem
+  custo". **Antes de ligar Caixa D3/D7 às cortadas, cadastrar o custo das
+  chapas** (OC ou cadastro), senão Kit 6 Rolo 127 / Kit 6 Rolo 200 / Kit 8 Rolo
+  200 também perdem o custo no lucro do contas a receber.
+
 ## Credenciais e onde ficam
 
 - **Supabase URL + chave anon/publishable**: embutidas no `index.html`
@@ -996,6 +1021,7 @@ entra em faturamento, contas a receber nem lucro.
   R$ 23,34): o pagamento foi estornado mas o pedido no ML segue "pago" →
   ficam no faturamento e saem do contas a receber. Decidir se chargeback
   deve sair do faturamento.
+- **Nova (2026-10-06): produção em etapas** — cadastrar Chapa para caixa 29x14x16, Chapa Cortada 19x12x12 e 29x14x16, custo das chapas e as fichas (equipe). Só ligar Caixa D3/D7 às cortadas depois que as chapas tiverem custo (ver Lote 6).
 - **Nova (2026-10-06): custos** — ~70% das vendas ainda sem custo (19 dos 44
   produtos acabados ativos sem custo; 128 itens de pedido sem produto). O
   lucro só fica completo depois de cadastrar custo/ficha técnica.
