@@ -213,8 +213,6 @@ vezes volta a ligar sozinho após redeploy, checar sempre.
     líquido das vendas antigas" na aba Integrações, com confirmação e botão
     "Parar". **Só rodar com aprovação do dono** — em 2026-10-05 decidido
     esperar a primeira venda nova pra comparar com o "Você recebe" do ML.
-- `ml-diagnostico` (temporária, 2026-10-05, só leitura) — usada pra validar
-  campos de SKU e de dinheiro dos pedidos reais. Pode ser apagada.
 - `ml-sync-full-stock` — consulta o estoque Full real de cada anúncio
   cadastrado em `produto_anuncios_ml` e corrige o saldo do ERP pra bater com
   o Mercado Livre. Suporta os dois formatos de anúncio (ver nota técnica
@@ -978,9 +976,6 @@ faturamento: o faturamento continua sendo `pedidos_venda.valor_total`.
 - **Nova (2026-10-06): custos** — ~70% das vendas ainda sem custo (19 dos 44
   produtos acabados ativos sem custo; 128 itens de pedido sem produto). O
   lucro só fica completo depois de cadastrar custo/ficha técnica.
-- **Nova (2026-10-06):** apagar no painel do Supabase as Edge Functions
-  temporárias `ml-diagnostico-receber` (já desativada, não devolve dados) e
-  `ml-diagnostico`.
 
 - ✅ (2026-10-05) Valor líquido das vendas novas conferido pelo dono contra
   o "Você recebe" do painel do ML — batendo.
@@ -994,7 +989,6 @@ faturamento: o faturamento continua sendo `pedidos_venda.valor_total`.
   KIT4ROLOETIQUETATÉRMICA127 → KIT4ROLO127; KIT6ROLOETIQUETATERMICA127 →
   KIT6ROLO127; ADESIVOACNE, KIT50CAIXAS191212, KIT25CAIXAS19X14X16 → dono
   precisa indicar.
-- Opcional (2026-10-05): apagar a Edge Function temporária `ml-diagnostico`.
 - Sincronização de estoque Full confirmada funcionando automaticamente via
   pg_cron (testada em 2026-09-05, `status_code: 200`).
 - Sincronização de métricas de Mercado Ads confirmada funcionando
