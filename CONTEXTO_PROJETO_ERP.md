@@ -885,6 +885,29 @@ faturamento: o faturamento continua sendo `pedidos_venda.valor_total`.
   bruto dos lançamentos ML = faturamento ML (exceto 2 chargebacks, R$ 43,24);
   consultas em 160–350 ms com 2.369 lançamentos.
 
+## Consumo próprio (Lote 5 — 2026-10-06)
+
+Card **"Consumo próprio"** na aba Vendas (logo abaixo de "Registrar pedido").
+Produto usado pela própria empresa — **não é venda**: não cria pedido, não
+entra em faturamento, contas a receber nem lucro.
+- Campos: produto (qualquer produto ATIVO, acabado ou matéria-prima — campo de
+  texto com autocomplete), quantidade, data (padrão hoje, Brasília),
+  observação. Mostra de qual estoque sai, o saldo atual e o saldo depois
+  (avisa se vai ficar negativo — **saldo negativo é permitido**, decisão do dono).
+- Estoque: produto acabado → **Físico**; matéria-prima → **Matéria-prima**
+  (onde ela fica guardada). Nunca Full.
+- Banco (`sql/2026-10-06_lote5a_consumo_proprio_tipo.sql` +
+  `sql/2026-10-06_lote5b_consumo_proprio.sql`): tipo de movimentação novo
+  `consumo_proprio`; colunas novas em `movimentacoes_estoque`:
+  `custo_unitario` (custo do momento, via `vw_custo_unitario` — pra DRE),
+  `usuario_email` (quem registrou), `data_referencia` (data informada).
+  Funções `registrar_consumo_proprio` (baixa + movimentação numa operação só,
+  sem risco de clique duplo errar o saldo), `desfazer_consumo_proprio`
+  (devolve ao mesmo estoque com movimentação `referencia_tipo =
+  'estorno_consumo_proprio'`; não deixa desfazer duas vezes; nada é apagado)
+  e `listar_consumo_proprio` (últimos 30, com "desfeito"). Só `authenticated`.
+- Kit consumido baixa o kit (não os componentes), igual venda.
+
 ## Credenciais e onde ficam
 
 - **Supabase URL + chave anon/publishable**: embutidas no `index.html`
