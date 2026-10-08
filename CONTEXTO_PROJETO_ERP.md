@@ -144,6 +144,11 @@ copiar/colar e cliques guiados passo a passo.
 
 - `concluir_ordem_producao` — baixa matéria-prima, gera produto acabado,
   calcula custo.
+  **Desde 2026-10-08 (Lote 8)** também grava na OP o custo/saldo do produto
+  antes e depois (`custo_produto_antes/depois`, `saldo_produto_antes`,
+  `custo_alterado_pela_op`) — usado pelo estorno.
+- `previa_estorno_ordem_producao(op)` / `estornar_ordem_producao(op, obs)` —
+  estorno de OP concluída (Lote 8). Ver seção "Estorno de OP".
 - `criar_pedido_venda` / `cancelar_pedido_venda` / `excluir_pedido_venda` —
   ciclo de vida do pedido, com baixa/devolução de estoque automática.
   **Desde 2026-10-05** cancelar/excluir só devolvem estoque dos itens com
@@ -974,6 +979,55 @@ a partir da data da venda, sem ajuste de dia útil.
   vencida, baixa, baixa dupla, desfazer, mudança de valor, cancelamento) dentro
   de transação desfeita.
 
+## Estorno de OP (Lote 8 — 2026-10-08)
+
+Desfaz uma OP concluída sem apagar nada
+(`sql/2026-10-08_lote8a_estorno_op_tipos.sql` + `sql/2026-10-08_lote8b_estorno_op.sql`).
+Motivo: excluir OP concluída deixava as movimentações órfãs (estoque errado —
+caso das 227 caixas 30x12,3x8 em 08/10).
+- **Regras do dono**: estorno sempre **total**; OP vira status `estornada`
+  (guarda `estornada_em`, `estornada_por`, `estornada_por_email`,
+  `observacao_estorno` — observação opcional); OP já excluída não tem estorno;
+  movimentos do estorno = `tipo_movimento 'estorno_op'`, `referencia_tipo
+  'ordem_producao'`, `referencia_id` = OP.
+- **Como reverte**: lê as movimentações `producao_consumo`/`producao_entrada`
+  daquela OP e faz o contrário no **mesmo produto e local** (não recalcula
+  pela ficha — funciona com modo direto/da matéria-prima, destino Físico/Full/
+  Matéria-prima e ficha alterada depois).
+- **Bloqueio**: se algo que precisa SAIR (normalmente o produto feito) não tem
+  saldo suficiente naquele local, bloqueia e diz quanto falta e onde mais o
+  produto está (ex: transferido pro Full → transferir de volta antes).
+  Componentes que voltam nunca bloqueiam.
+- **Custo** (decisão: opção 2 — desfazer o efeito no custo médio, só do
+  produto feito; componentes não mudam):
+  - OP sem registro de custo (as 13 concluídas antes do Lote 8) → custo mantido + aviso "confira".
+  - Conclusão não mexeu no custo (componente sem custo) → mantido.
+  - Nada mexeu no custo depois da OP (custo atual = custo logo depois da OP e
+    nenhuma compra/produção posterior **não estornada**) → volta EXATO ao
+    `custo_produto_antes`.
+  - Outra entrada mexeu depois → conta inversa da média ponderada
+    `(custo_atual × saldo_total − qtd_OP × custo_unit_OP) / (saldo_total − qtd_OP)`
+    (aproximado); se o saldo restante ≤ 0, o resultado ≤ 0, ou a OP tinha
+    **substituído** o custo (saldo/custo anterior ≤ 0 em `calc_custo_medio`)
+    → mantém + aviso.
+- **Travas** (trigger `trg_ordens_producao_proteger`): OP `concluida`/
+  `estornada` **não pode ser excluída**; status de OP concluída/estornada não
+  muda "na mão" (só `estornar_ordem_producao`, via flag de sessão
+  `erp.op_estorno`). Efeito colateral aceito: produto com OP estornada não pode
+  mais ser excluído (`excluir_produto` bloqueia por existir OP).
+- **Tela Produção**: botão **Estornar** só em OP concluída → janela com prévia
+  (volta / sai, saldo antes→depois, efeito no custo, bloqueios) + observação
+  opcional; badge roxo "estornada" com data/usuário/observação; botão Excluir
+  some em OP concluída/estornada. Textos no bloco `TEXTOS` (`BTN_ESTORNAR_OP`,
+  `ESTORNO_OP_*`).
+- Funções `security definer`, liberadas só pra `authenticated`.
+- **Gotcha de teste**: num único RUN o `now()` é o mesmo pra tudo — o teste do
+  Lote 8b "empurra" o horário de cada OP de teste pra simular OPs em sequência
+  (a regra de "entrada posterior" usa `created_at >` horário da OP).
+- Limitação conhecida: se uma OC recebida **depois** da OP for estornada
+  **depois** do estorno da OP, o `custo_anterior` da OC pode trazer de volta o
+  custo com a OP embutida (caso raro; conferir custo).
+
 ## Credenciais e onde ficam
 
 - **Supabase URL + chave anon/publishable**: embutidas no `index.html`
@@ -1057,6 +1111,12 @@ a partir da data da venda, sem ajuste de dia útil.
 
 ## Pendências específicas em aberto no momento
 
+- **Nova (2026-10-08): movimentações órfãs de OPs excluídas antes do Lote 8**
+  — além das 227 caixas 30x12,3x8 (já corrigidas à mão em 08/10), há 3 OPs
+  excluídas com movimentos ainda contando: 22/09 (+100 Rolo 200), 01/10 duas
+  OPs (cada uma −1 Resma 10k, −50 Tubete, +50 Rolo 200). Rolo e Resma tiveram
+  contagem/ajuste depois; **Tubete não** — saldo pode estar 100 abaixo do real.
+  Conferir contagem de Tubete.
 - **Nova (2026-10-06): 2 chargebacks** (contestação no cartão — conta 2,
   pedido 2000018543800388, R$ 19,90; conta 3, pedido 2000018302890224,
   R$ 23,34): o pagamento foi estornado mas o pedido no ML segue "pago" →

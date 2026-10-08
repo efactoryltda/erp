@@ -71,6 +71,7 @@
   .badge.em_producao{ background:#fff2e0; color:#b5610a; }
   .badge.concluida{ background:#e4f7ea; color:var(--ok); }
   .badge.cancelada{ background:#fde8e8; color:var(--danger); }
+  .badge.estornada{ background:#ede9fe; color:#6d28d9; }
   .muted{ color:var(--muted); font-size:13px; }
   .config-warning{
     background:#fff2e0; border:1px solid #f0c78a; color:#8a5a12;
@@ -1183,6 +1184,21 @@
     </div>
   </div>
 
+  <div id="modal-estorno-op" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="me-titulo" data-t="MODAL_ESTORNO_OP_TITULO">Estornar ordem de produção</h3>
+      <p class="muted" data-t="ESTORNO_OP_EXPLICACAO">O estorno desfaz esta produção.</p>
+      <div id="me-itens" style="font-size:14px;"></div>
+      <div id="me-custo" style="font-size:13px; margin:10px 0;"></div>
+      <div id="me-bloqueio" style="display:none; color:var(--danger); font-size:13px; margin-bottom:10px;"></div>
+      <div class="field"><label for="me-obs" data-t="ESTORNO_OP_LABEL_OBS">Observação (opcional)</label><input type="text" id="me-obs" maxlength="300" data-t-ph="ESTORNO_OP_PH_OBS"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="me-cancelar">Cancelar</button>
+        <button type="button" class="danger" id="me-confirmar" data-t="BTN_CONFIRMAR_ESTORNO_OP">Confirmar estorno</button>
+      </div>
+    </div>
+  </div>
+
 
 <script>
 // ============================================================
@@ -1374,6 +1390,15 @@ const TEXTOS = {
   MODAL_LOJA_LABEL_FAIXA_QTD: 'A partir de (quantidade)',
   MODAL_LOJA_LABEL_FAIXA_PRECO: 'Preço unitário nessa faixa',
   MODAL_LOJA_LABEL_FOTO: 'Adicionar foto',
+  // ---- Produção: estorno de ordem de produção ----
+  BTN_ESTORNAR_OP: 'Estornar',
+  MODAL_ESTORNO_OP_TITULO: 'Estornar ordem de produção',
+  ESTORNO_OP_EXPLICACAO: 'O estorno desfaz esta produção: os componentes voltam ao estoque e o produto feito sai, exatamente como a OP lançou. A OP não é apagada — fica como "estornada" no histórico.',
+  ESTORNO_OP_TITULO_VOLTA: 'Volta para o estoque',
+  ESTORNO_OP_TITULO_SAI: 'Sai do estoque',
+  ESTORNO_OP_LABEL_OBS: 'Observação (opcional)',
+  ESTORNO_OP_PH_OBS: 'ex: OP lançada em duplicidade',
+  BTN_CONFIRMAR_ESTORNO_OP: 'Confirmar estorno',
   // ---- Compras (ordem de compra) ----
   TITULO_COMPRAS: 'Compras',
   BTN_NOVA_OC: '+ Nova ordem de compra',
@@ -2467,7 +2492,7 @@ document.getElementById('form-ordem').addEventListener('submit', async (e) => {
 async function loadOrdens(){
   const { data, error } = await supabaseClient
     .from('ordens_producao')
-    .select('id, produto_acabado_id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, produtos(nome, tipo)')
+    .select('id, produto_acabado_id, quantidade_planejada, quantidade_produzida, status, custo_producao_total, estornada_em, estornada_por_email, observacao_estorno, produtos(nome, tipo)')
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
 
@@ -2480,14 +2505,20 @@ async function loadOrdens(){
     ordensCache[o.id] = o;
     const tr = document.createElement('tr');
     const podeSerConcluida = o.status === 'em_producao' || o.status === 'rascunho';
+    // Lote 8: concluída → pode estornar; concluída/estornada já mexeu no estoque → não exclui
+    const podeEstornar = o.status === 'concluida';
+    const podeExcluir = o.status !== 'concluida' && o.status !== 'estornada';
+    const infoEstorno = o.status === 'estornada'
+      ? `<div class="muted" style="font-size:11px;" title="${esc(o.observacao_estorno || '')}">em ${o.estornada_em ? new Date(o.estornada_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '-'}${o.estornada_por_email ? ' por ' + esc(o.estornada_por_email) : ''}${o.observacao_estorno ? ' — ' + esc(o.observacao_estorno) : ''}</div>`
+      : '';
     tr.innerHTML = `
-      <td>${o.produtos ? o.produtos.nome : '—'}</td>
+      <td>${o.produtos ? esc(o.produtos.nome) : '—'}</td>
       <td>${fmt(o.quantidade_planejada)}</td>
       <td>${fmt(o.quantidade_produzida)}</td>
-      <td><span class="badge ${o.status}">${o.status.replace('_',' ')}</span></td>
+      <td><span class="badge ${esc(o.status)}">${esc(o.status.replace('_',' '))}</span>${infoEstorno}</td>
       <td>${fmtMoeda(o.custo_producao_total)}</td>
-      <td>${podeSerConcluida ? `<button onclick="concluirOrdem('${o.id}')">Concluir</button>` : ''}</td>
-      <td><button class="danger" onclick="excluirOrdemProducao('${o.id}', '${o.status}')">Excluir</button></td>
+      <td>${podeSerConcluida ? `<button onclick="concluirOrdem('${o.id}')">Concluir</button>` : ''}${podeEstornar ? `<button class="secondary" onclick="abrirEstornoOrdem('${o.id}')">${esc(TEXTOS.BTN_ESTORNAR_OP)}</button>` : ''}</td>
+      <td>${podeExcluir ? `<button class="danger" onclick="excluirOrdemProducao('${o.id}', '${o.status}')">Excluir</button>` : ''}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -2495,14 +2526,98 @@ async function loadOrdens(){
 }
 
 async function excluirOrdemProducao(id, status){
-  const aviso = status === 'concluida'
-    ? 'Essa ordem já foi concluída — excluir ela NÃO desfaz a baixa de matéria-prima nem a entrada do produto acabado que já aconteceu. Só remove o registro da ordem. Quer continuar?'
-    : 'Excluir esta ordem de produção?';
-  if (!confirm(aviso)) return;
+  // OP concluída/estornada já mexeu no estoque: não exclui (o banco também bloqueia) — use "Estornar"
+  if (status === 'concluida' || status === 'estornada') {
+    alert('Esta OP já mexeu no estoque e não pode ser excluída. Use "Estornar" — o histórico fica guardado.');
+    return;
+  }
+  if (!confirm('Excluir esta ordem de produção?')) return;
   const { error } = await supabaseClient.from('ordens_producao').delete().eq('id', id);
   if (error) { alert('Erro ao excluir: ' + error.message); return; }
   loadOrdens();
 }
+
+// ============================================================
+// ESTORNO DE OP (Lote 8) — a prévia vem do banco (não grava nada);
+// o estorno inverte exatamente as movimentações da OP e marca "estornada".
+// ============================================================
+let ordemEmEstorno = null;
+
+function fecharModalEstorno(){
+  document.getElementById('modal-estorno-op').style.display = 'none';
+  ordemEmEstorno = null;
+}
+document.getElementById('me-cancelar').addEventListener('click', fecharModalEstorno);
+
+function mostrarErroEstorno(msg){
+  const el = document.getElementById('me-bloqueio');
+  el.innerHTML = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+async function abrirEstornoOrdem(id){
+  const o = ordensCache[id];
+  if (!o) return;
+  ordemEmEstorno = o;
+  const btn = document.getElementById('me-confirmar');
+  btn.disabled = true;
+  document.getElementById('me-titulo').textContent =
+    TEXTOS.MODAL_ESTORNO_OP_TITULO + ': ' + (o.produtos ? o.produtos.nome : '') + ' (' + fmt(o.quantidade_produzida) + ')';
+  document.getElementById('me-obs').value = '';
+  document.getElementById('me-itens').innerHTML = '<span class="muted">Carregando prévia…</span>';
+  document.getElementById('me-custo').innerHTML = '';
+  mostrarErroEstorno('');
+  document.getElementById('modal-estorno-op').style.display = 'flex';
+
+  const { data, error } = await supabaseClient.rpc('previa_estorno_ordem_producao', { p_ordem_id: id });
+  if (ordemEmEstorno !== o) return;           // fechou/trocou enquanto carregava
+  if (error) {
+    document.getElementById('me-itens').innerHTML = '';
+    mostrarErroEstorno(esc(error.message));
+    return;
+  }
+
+  const linha = i => `<li>${fmt(Math.abs(i.quantidade))} × ${esc(i.produto)} <span class="muted">— ${esc(i.local_nome)} (saldo ${fmt(i.saldo_atual)} → ${fmt(i.saldo_depois)})</span></li>`;
+  const volta = (data.itens || []).filter(i => Number(i.quantidade) > 0);
+  const sai = (data.itens || []).filter(i => Number(i.quantidade) < 0);
+  document.getElementById('me-itens').innerHTML =
+    (volta.length ? `<strong>${esc(TEXTOS.ESTORNO_OP_TITULO_VOLTA)}</strong><ul style="margin:4px 0 10px 18px; padding:0;">${volta.map(linha).join('')}</ul>` : '') +
+    (sai.length ? `<strong>${esc(TEXTOS.ESTORNO_OP_TITULO_SAI)}</strong><ul style="margin:4px 0 10px 18px; padding:0;">${sai.map(linha).join('')}</ul>` : '');
+
+  const c = data.custo || {};
+  const elCusto = document.getElementById('me-custo');
+  if (c.acao === 'restaurado' || c.acao === 'recalculado') {
+    elCusto.style.color = '';
+    elCusto.innerHTML = `Custo de "${esc(data.produto)}": ${fmtCusto(c.custo_atual)} → <strong>${fmtCusto(c.custo_novo)}</strong><br><span class="muted">${esc(c.motivo)}</span>`;
+  } else {
+    elCusto.style.color = '#b5610a';
+    elCusto.innerHTML = '⚠ ' + esc(c.motivo || '');
+  }
+
+  if (!data.pode_estornar) {
+    mostrarErroEstorno('<strong>Estorno bloqueado — saldo insuficiente:</strong><ul style="margin:4px 0 0 18px; padding:0;">'
+      + (data.bloqueios || []).map(b => `<li>${esc(b)}</li>`).join('') + '</ul>');
+    return;
+  }
+  btn.disabled = false;
+}
+
+document.getElementById('me-confirmar').addEventListener('click', async () => {
+  if (!ordemEmEstorno) return;
+  const btn = document.getElementById('me-confirmar');
+  btn.disabled = true;
+  const obs = document.getElementById('me-obs').value.trim();
+  const { error } = await supabaseClient.rpc('estornar_ordem_producao', {
+    p_ordem_id: ordemEmEstorno.id,
+    p_observacao: obs || null
+  });
+  if (error) { mostrarErroEstorno(esc(error.message)); return; }   // botão fica travado: reabra pra ver a prévia atualizada
+  fecharModalEstorno();
+  loadOrdens();
+  loadEstoque();
+  loadProdutos();
+  loadFichaTecnica();
+});
 
 let ordensCache = {};
 let ordemEmConclusao = null;
