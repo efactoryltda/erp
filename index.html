@@ -328,8 +328,8 @@
   <div id="login-box">
     <h2>Entrar</h2>
     <form id="form-login">
-      <div class="field"><label>E-mail</label><input type="email" id="login-email" required></div>
-      <div class="field"><label>Senha</label><input type="password" id="login-senha" required></div>
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" autocomplete="username" required></div>
+      <div class="field"><label>Senha</label><input type="password" id="login-senha" autocomplete="current-password" required></div>
       <button type="submit">Entrar</button>
       <div id="login-erro"></div>
     </form>
@@ -4901,10 +4901,29 @@ function carregarApp(){
   loadHistoricoAnalises();
 }
 
-document.getElementById('form-login').addEventListener('submit', async (e) => {
+// SEGURANÇA: a senha não pode ficar guardada na página.
+// - O campo de senha é limpo assim que o "Entrar" é clicado.
+// - Enquanto o usuário está logado, o formulário de login é REMOVIDO da página
+//   (senão o preenchimento automático do navegador deixa a senha salva ali,
+//   visível para quem usar "Inspecionar"). Ele volta ao sair.
+const LOGIN_FORM_HTML = document.getElementById('form-login').outerHTML;
+function removerFormLogin(){
+  const f = document.getElementById('form-login');
+  if (f) { f.reset(); f.remove(); }
+}
+function restaurarFormLogin(){
+  if (!document.getElementById('form-login')) {
+    document.getElementById('login-box').insertAdjacentHTML('beforeend', LOGIN_FORM_HTML);
+  }
+}
+
+document.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'form-login') return;
   e.preventDefault();
   const email = document.getElementById('login-email').value;
-  const senha = document.getElementById('login-senha').value;
+  const senhaEl = document.getElementById('login-senha');
+  const senha = senhaEl.value;
+  senhaEl.value = '';
   const erroEl = document.getElementById('login-erro');
   erroEl.textContent = '';
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
@@ -4922,16 +4941,18 @@ if (configured && supabaseClient) {
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
       document.getElementById('login-overlay').style.display = 'none';
+      removerFormLogin();
       document.getElementById('email-logado').textContent = session.user.email;
       carregarApp();
     } else if (event === 'SIGNED_OUT') {
+      restaurarFormLogin();
       document.getElementById('login-overlay').style.display = 'flex';
-      document.getElementById('login-senha').value = '';
     }
   });
 } else {
   // sem configuração válida do Supabase, não faz sentido mostrar tela de login
   document.getElementById('login-overlay').style.display = 'none';
+  removerFormLogin();
 }
 </script>
 
