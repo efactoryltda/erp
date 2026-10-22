@@ -720,6 +720,10 @@
         <div class="field"><label data-t="PRODUTOS_LABEL_COMPR">Comprimento (cm)</label><input type="number" step="0.1" id="p-compr" placeholder="opcional — pro frete"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_LARG">Largura (cm)</label><input type="number" step="0.1" id="p-larg" placeholder="opcional — pro frete"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ALT">Altura (cm)</label><input type="number" step="0.1" id="p-alt" placeholder="opcional — pro frete"></div>
+        <div class="field"><label>NCM (fiscal)</label><input type="text" id="p-ncm" inputmode="numeric" placeholder="0000.00.00" maxlength="10"></div>
+        <div class="field"><label>CSOSN</label><input type="text" id="p-csosn" inputmode="numeric" placeholder="ex: 102" maxlength="3"></div>
+        <div class="field"><label>CFOP dentro de SP</label><input type="text" id="p-cfop-sp" inputmode="numeric" placeholder="ex: 5101" maxlength="4"></div>
+        <div class="field"><label>CFOP fora de SP</label><input type="text" id="p-cfop-fora" inputmode="numeric" placeholder="ex: 6101" maxlength="4"></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO1">ID anúncio - Conta 1</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO2">ID anúncio - Conta 2</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO3">ID anúncio - Conta 3</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
@@ -2110,6 +2114,10 @@ async function editarProduto(id){
   document.getElementById('p-compr').value = produto.comprimento_cm || '';
   document.getElementById('p-larg').value = produto.largura_cm || '';
   document.getElementById('p-alt').value = produto.altura_cm || '';
+  document.getElementById('p-ncm').value = produto.ncm || '';
+  document.getElementById('p-csosn').value = produto.csosn || '';
+  document.getElementById('p-cfop-sp').value = produto.cfop_dentro_sp || '';
+  document.getElementById('p-cfop-fora').value = produto.cfop_fora_sp || '';
 
   const { data: anuncios } = await supabaseClient.from('produto_anuncios_ml').select('canal, item_id').eq('produto_id', id);
   const anuncioPorCanal = {};
@@ -2154,6 +2162,21 @@ async function excluirProduto(id){
 
 document.getElementById('form-produto').addEventListener('submit', async (e) => {
   e.preventDefault();
+  // campos fiscais: opcionais, mas se preenchidos precisam estar no formato certo
+  const ncmDigitos = document.getElementById('p-ncm').value.replace(/\D/g, '');
+  const csosnVal = document.getElementById('p-csosn').value.trim();
+  const cfopSpVal = document.getElementById('p-cfop-sp').value.trim();
+  const cfopForaVal = document.getElementById('p-cfop-fora').value.trim();
+  if (ncmDigitos && ncmDigitos.length !== 8) { alert('NCM precisa ter 8 dígitos (ex: 4819.10.00).'); return; }
+  if (csosnVal && !/^\d{3}$/.test(csosnVal)) { alert('CSOSN precisa ter 3 dígitos (ex: 102).'); return; }
+  if (cfopSpVal && !/^5\d{3}$/.test(cfopSpVal)) { alert('CFOP dentro de SP precisa ter 4 dígitos e começar com 5 (ex: 5101).'); return; }
+  if (cfopForaVal && !/^6\d{3}$/.test(cfopForaVal)) { alert('CFOP fora de SP precisa ter 4 dígitos e começar com 6 (ex: 6101).'); return; }
+  const fiscal = {
+    ncm: ncmDigitos ? ncmDigitos.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3') : null,
+    csosn: csosnVal || null,
+    cfopSp: cfopSpVal || null,
+    cfopFora: cfopForaVal || null,
+  };
   const payload = {
     sku_interno: document.getElementById('p-sku').value,
     nome: document.getElementById('p-nome').value,
@@ -2169,6 +2192,10 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
     comprimento_cm: document.getElementById('p-compr').value ? parseFloat(document.getElementById('p-compr').value) : null,
     largura_cm: document.getElementById('p-larg').value ? parseFloat(document.getElementById('p-larg').value) : null,
     altura_cm: document.getElementById('p-alt').value ? parseFloat(document.getElementById('p-alt').value) : null,
+    ncm: fiscal.ncm,
+    csosn: fiscal.csosn,
+    cfop_dentro_sp: fiscal.cfopSp,
+    cfop_fora_sp: fiscal.cfopFora,
   };
 
   try {
