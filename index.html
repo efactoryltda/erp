@@ -251,6 +251,24 @@
   /* lista */
   .cr-canal{ display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
   .cr-canal i{ width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+  /* Lote 9 — tag de canal (marca + conta) e tag de envio (Full, Flex...) */
+  .tag-canal{ display:inline-flex; align-items:center; gap:6px; padding:2px 8px 2px 3px; border:1px solid var(--border);
+    border-radius:6px; background:#fff; font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; line-height:18px; }
+  .tag-marca{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:18px; padding:0 4px;
+    border-radius:4px; font-size:10px; font-weight:700; letter-spacing:0.2px; }
+  .tag-marca.ml{ background:#fff3c4; color:#6b4e00; }
+  .tag-marca.shopee{ background:#fde4dc; color:#8a2a0f; }
+  .tag-marca.fisica{ background:#eef0f3; color:#3d4452; }
+  .tag-marca.online{ background:#fbe4ee; color:#7a1f47; }
+  .tag-marca.outros{ background:#ede9fe; color:#4c2fa3; }
+  .tag-envio{ display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px;
+    font-size:11px; font-weight:600; white-space:nowrap; line-height:16px; }
+  .tag-envio svg{ width:12px; height:12px; flex-shrink:0; }
+  .tag-envio.full{ background:#dff5ec; color:#0b5a41; }
+  .tag-envio.flex{ background:#ebe9fd; color:#3c3489; }
+  .tag-envio.coleta, .tag-envio.agencia, .tag-envio.envio_proprio, .tag-envio.balcao{ background:#f0f1f3; color:#444a55; }
+  .tags-pedido{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
   .badge[class*=" cr-"]{ white-space:nowrap; }
   .badge.cr-a_receber{ background:#e6f0ff; color:#1d4ed8; }
   .badge.cr-recebido{ background:#e4f7ea; color:var(--ok); }
@@ -568,9 +586,9 @@
         <div class="field"><label data-t="VENDAS_LABEL_CANAL">Canal *</label>
           <select id="v-canal" required>
             <option value="loja_fisica">Loja Física</option>
-            <option value="ml_conta1">Mercado Livre - Conta 1</option>
-            <option value="ml_conta2">Mercado Livre - Conta 2</option>
-            <option value="ml_conta3">Mercado Livre - Conta 3</option>
+            <option value="ml_conta1">Mercado Livre - E-Factory</option>
+            <option value="ml_conta2">Mercado Livre - JG</option>
+            <option value="ml_conta3">Mercado Livre - Gustavo</option>
           </select>
         </div>
         <div class="field" id="campo-local-baixa" style="display:none;">
@@ -653,9 +671,21 @@
           <select id="f-canal">
             <option value="">Todos</option>
             <option value="loja_fisica">Loja Física</option>
-            <option value="ml_conta1">Mercado Livre - Conta 1</option>
-            <option value="ml_conta2">Mercado Livre - Conta 2</option>
-            <option value="ml_conta3">Mercado Livre - Conta 3</option>
+            <option value="ml_conta1">Mercado Livre - E-Factory</option>
+            <option value="ml_conta2">Mercado Livre - JG</option>
+            <option value="ml_conta3">Mercado Livre - Gustavo</option>
+            <option value="loja_online">Loja Online</option>
+          </select>
+        </div>
+        <div class="field"><label data-t="FILTRO_LABEL_ENVIO" for="f-modalidade">Envio</label>
+          <select id="f-modalidade">
+            <option value="">Todos</option>
+            <option value="full">Full</option>
+            <option value="flex">Flex</option>
+            <option value="coleta">Coleta</option>
+            <option value="agencia">Agência</option>
+            <option value="envio_proprio">Envio próprio</option>
+            <option value="balcao">Balcão</option>
           </select>
         </div>
         <div class="field"><label data-t="FILTRO_LABEL_PRODUTO" for="f-produto">Produto</label><select id="f-produto"><option value="">Todos os produtos</option></select></div>
@@ -673,7 +703,7 @@
         <span class="muted" id="resultado-revincular" data-t="TEXTO_REVINCULAR_AJUDA">Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.</span>
       </div>
       <div class="tabela-rolavel" id="pedidos-tabela-wrap">
-        <table><thead><tr><th>Data</th><th>Canal</th><th>Produtos</th><th>Cliente</th><th>Total</th><th title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th></th><th></th></tr></thead>
+        <table><thead><tr><th>Data</th><th>Canal</th><th>Envio</th><th>Produtos</th><th>Cliente</th><th>Total</th><th title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th></th><th></th></tr></thead>
           <tbody id="tabela-pedidos"></tbody>
         </table>
       </div>
@@ -724,9 +754,9 @@
         <div class="field"><label>CSOSN</label><input type="text" id="p-csosn" inputmode="numeric" placeholder="ex: 102" maxlength="3"></div>
         <div class="field"><label>CFOP dentro de SP</label><input type="text" id="p-cfop-sp" inputmode="numeric" placeholder="ex: 5101" maxlength="4"></div>
         <div class="field"><label>CFOP fora de SP</label><input type="text" id="p-cfop-fora" inputmode="numeric" placeholder="ex: 6101" maxlength="4"></div>
-        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO1">ID anúncio - Conta 1</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
-        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO2">ID anúncio - Conta 2</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
-        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO3">ID anúncio - Conta 3</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO1">ID anúncio - E-Factory</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO2">ID anúncio - JG</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
+        <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO3">ID anúncio - Gustavo</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
         <button data-t="BTN_SALVAR_PRODUTO" type="submit" id="btn-salvar-produto">Salvar produto</button>
         <button data-t="BTN_CANCELAR_EDICAO" type="button" class="secondary" id="btn-cancelar-edicao-produto" style="display:none;">Cancelar edição</button>
       </form>
@@ -1099,9 +1129,9 @@
             <option value="loja_fisica">Físico</option>
             <option value="loja_online">Loja online</option>
             <option value="outros">Outros</option>
-            <option value="ml_conta1">ML 1</option>
-            <option value="ml_conta2">ML 2</option>
-            <option value="ml_conta3">ML 3</option>
+            <option value="ml_conta1">ML E-Factory</option>
+            <option value="ml_conta2">ML JG</option>
+            <option value="ml_conta3">ML Gustavo</option>
           </select>
         </div>
         <div class="field"><label for="cr-m-desc">Descrição *</label><input type="text" id="cr-m-desc" maxlength="200" placeholder="ex: Venda balcão — 2 caixas de etiqueta"></div>
@@ -1231,21 +1261,53 @@ const MENU_LABELS = {
 
 // Nomes de cada canal de venda
 const CANAL_LABEL = {
-  ml_conta1: 'Mercado Livre - Conta 1',
-  ml_conta2: 'Mercado Livre - Conta 2',
-  ml_conta3: 'Mercado Livre - Conta 3',
+  ml_conta1: 'Mercado Livre - E-Factory',
+  ml_conta2: 'Mercado Livre - JG',
+  ml_conta3: 'Mercado Livre - Gustavo',
+  shopee: 'Shopee',
   loja_fisica: 'Loja Física',
   loja_online: 'Loja Online',
   outros: 'Outros'
+};
+
+// Tag de canal (Lote 9): selo da marca + nome curto da conta.
+// "marca" escolhe a cor do selo: ml, shopee, fisica, online, outros.
+const CANAL_TAG = {
+  ml_conta1: { marca: 'ml', selo: 'ML', nome: 'E-Factory' },
+  ml_conta2: { marca: 'ml', selo: 'ML', nome: 'JG' },
+  ml_conta3: { marca: 'ml', selo: 'ML', nome: 'Gustavo' },
+  shopee: { marca: 'shopee', selo: 'S', nome: 'Shopee' },
+  loja_fisica: { marca: 'fisica', selo: 'LF', nome: 'Loja física' },
+  loja_online: { marca: 'online', selo: 'LO', nome: 'Loja online' },
+  outros: { marca: 'outros', selo: '•', nome: 'Outros' },
+};
+
+// Tag de envio (Lote 9): como o pedido sai. Edite os nomes aqui.
+const ENVIO_LABEL = {
+  full: 'Full',
+  flex: 'Flex',
+  coleta: 'Coleta',
+  agencia: 'Agência',
+  envio_proprio: 'Envio próprio',
+  balcao: 'Balcão',
+};
+const ENVIO_DICA = {
+  full: 'Sai do estoque Full (centro de distribuição do marketplace)',
+  flex: 'Mercado Envios Flex — entrega no mesmo dia, feita por vocês',
+  coleta: 'O marketplace coleta no depósito',
+  agencia: 'Vocês levam até uma agência / ponto de postagem',
+  envio_proprio: 'Sai do estoque físico (pedidos antigos sem detalhe do tipo de envio)',
+  balcao: 'Venda no balcão da loja física',
 };
 
 // Contas a receber: nome curto e COR de cada canal (a cor acompanha o canal
 // em todo lugar — gráfico, legenda e lista). Cores validadas pra daltonismo.
 const CANAL_CURTO = {
   loja_fisica: 'Físico',
-  ml_conta1: 'ML 1',
-  ml_conta2: 'ML 2',
-  ml_conta3: 'ML 3',
+  ml_conta1: 'ML E-Factory',
+  ml_conta2: 'ML JG',
+  ml_conta3: 'ML Gustavo',
+  shopee: 'Shopee',
   loja_online: 'Loja online',
   outros: 'Outros'
 };
@@ -1253,10 +1315,32 @@ const CANAL_COR = {
   ml_conta1: '#2a78d6',   // azul
   ml_conta2: '#eb6834',   // laranja
   ml_conta3: '#1baf7a',   // verde-água
+  shopee: '#c8323f',      // vermelho (longe do laranja do ML JG)
   loja_fisica: '#eda100', // amarelo
   loja_online: '#e87ba4', // rosa
   outros: '#7c5cd6'       // violeta (bem diferente do verde do ML 3)
 };
+
+// Ícones das tags de envio (traço simples, 12px)
+const ENVIO_ICONE = {
+  full: '<path d="M3 21V8l9-5 9 5v13"/><path d="M8 21v-6h8v6"/>',
+  flex: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  coleta: '<path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',
+  agencia: '<path d="M3 9l2-5h14l2 5"/><path d="M4 9v11h16V9"/><path d="M10 20v-6h4v6"/>',
+  envio_proprio: '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4"/><path d="M12 11v10"/>',
+  balcao: '<path d="M4 4h16v6H4z"/><path d="M6 10v10M18 10v10"/><path d="M4 20h16"/>',
+};
+
+function tagCanal(c){
+  const t = CANAL_TAG[c];
+  if (!t) return `<span class="tag-canal">${esc(c || '-')}</span>`;
+  return `<span class="tag-canal" title="${esc(CANAL_LABEL[c] || c)}"><span class="tag-marca ${t.marca}">${esc(t.selo)}</span>${esc(t.nome)}</span>`;
+}
+function tagEnvio(m){
+  if (!m) return '<span class="muted">-</span>';
+  const ic = ENVIO_ICONE[m] ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ENVIO_ICONE[m]}</svg>` : '';
+  return `<span class="tag-envio ${esc(m)}" title="${esc(ENVIO_DICA[m] || '')}">${ic}${esc(ENVIO_LABEL[m] || m)}</span>`;
+}
 
 // Nomes de exibição dos estoques Full de cada conta — edite aqui se mudar de responsável.
 const FULL_LABEL = {
@@ -1280,6 +1364,7 @@ const TEXTOS = {
   FILTRO_LABEL_DE: 'De',
   FILTRO_LABEL_ATE: 'Até',
   FILTRO_LABEL_CANAL: 'Canal',
+  FILTRO_LABEL_ENVIO: 'Envio',
   PRODUTOS_LABEL_SKU: 'SKU interno *',
   PRODUTOS_LABEL_NOME: 'Nome *',
   PRODUTOS_LABEL_TIPO: 'Tipo *',
@@ -1294,9 +1379,9 @@ const TEXTOS = {
   PRODUTOS_LABEL_COMPR: 'Comprimento (cm)',
   PRODUTOS_LABEL_LARG: 'Largura (cm)',
   PRODUTOS_LABEL_ALT: 'Altura (cm)',
-  PRODUTOS_LABEL_ANUNCIO1: 'ID anúncio - Conta 1',
-  PRODUTOS_LABEL_ANUNCIO2: 'ID anúncio - Conta 2',
-  PRODUTOS_LABEL_ANUNCIO3: 'ID anúncio - Conta 3',
+  PRODUTOS_LABEL_ANUNCIO1: 'ID anúncio - E-Factory',
+  PRODUTOS_LABEL_ANUNCIO2: 'ID anúncio - JG',
+  PRODUTOS_LABEL_ANUNCIO3: 'ID anúncio - Gustavo',
   FICHA_LABEL_ACABADO: 'Produto feito *',
   FICHA_LABEL_MATERIA: 'Componente *',
   FICHA_AJUDA_ETAPAS: 'O produto feito pode ser um produto acabado ou uma matéria-prima feita aqui (ex: Chapa Cortada ← Chapa; Caixa ← Chapa Cortada). Assim a produção pode ser feita em etapas.',
@@ -1711,6 +1796,7 @@ function criarAutocomplete(select, cfg = {}){
 ['v-item-produto', 'm-produto', 't-produto', 'f-acabado', 'f-materia', 'oc-i-produto', 'o-produto', 'f-produto', 'cp-produto']
   .forEach(id => criarAutocomplete(document.getElementById(id)));
 criarAutocomplete(document.getElementById('f-canal'), { curto: true });
+criarAutocomplete(document.getElementById('f-modalidade'), { curto: true });
 criarAutocomplete(document.getElementById('oc-filtro-status'), { curto: true });
 // Data de hoje no horário de Brasília (não depende do fuso do computador)
 function hojeSP(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); }
@@ -1807,7 +1893,7 @@ async function loadDashboard(){
     document.getElementById('dash-canal-vazio').style.display = canaisOrdenados.length ? 'none' : 'block';
     canaisOrdenados.forEach(c => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${CANAL_LABEL[c] || c}</td><td>${fmtMoeda(porCanal[c])}</td>`;
+      tr.innerHTML = `<td>${tagCanal(c)}</td><td>${fmtMoeda(porCanal[c])}</td>`;
       tbodyCanal.appendChild(tr);
     });
   } else if (errFat) {
@@ -3131,7 +3217,7 @@ document.getElementById('btn-sincronizar-perguntas').addEventListener('click', a
     if (!data.resultado) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
  
     const CANAL_LABEL_PERG = {
-      ml_conta1: 'Conta 1', ml_conta2: 'Conta 2', ml_conta3: 'Conta 3',
+      ml_conta1: 'E-Factory', ml_conta2: 'JG', ml_conta3: 'Gustavo',
     };
  
     let texto = '';
@@ -3162,7 +3248,7 @@ document.getElementById('btn-sincronizar-promocoes').addEventListener('click', a
     if (!data.resultado) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
 
     const CANAL_LABEL_PROMO = {
-      ml_conta1: 'Conta 1', ml_conta2: 'Conta 2', ml_conta3: 'Conta 3',
+      ml_conta1: 'E-Factory', ml_conta2: 'JG', ml_conta3: 'Gustavo',
     };
 
     let texto = '';
@@ -3194,7 +3280,7 @@ document.getElementById('btn-sincronizar-anuncios-metricas').addEventListener('c
     if (!data.resultado) { el.textContent = 'Erro: ' + JSON.stringify(data); return; }
 
     const CANAL_LABEL_AM = {
-      ml_conta1: 'Conta 1', ml_conta2: 'Conta 2', ml_conta3: 'Conta 3',
+      ml_conta1: 'E-Factory', ml_conta2: 'JG', ml_conta3: 'Gustavo',
     };
 
     let texto = '';
@@ -3602,7 +3688,7 @@ const pedidosPag = {
   pagina: 1,
   tamanho: 50,
   total: null,          // total de pedidos do filtro (null = ainda não carregado)
-  filtro: { inicio: null, fimExclusivo: null, canal: null, produto: null, texto: null },
+  filtro: { inicio: null, fimExclusivo: null, canal: null, produto: null, texto: null, modalidade: null },
   seq: 0,               // descarta respostas antigas se o usuário clicar rápido
 };
 
@@ -3621,12 +3707,14 @@ function lerFiltroPedidos(){
   }
   const produto = document.getElementById('f-produto').value;
   const texto = document.getElementById('f-busca').value.trim();
+  const modalidade = document.getElementById('f-modalidade').value;
   return {
     inicio: dataInicio ? new Date(dataInicio + 'T00:00:00').toISOString() : null,
     fimExclusivo,
     canal: canal || null,
     produto: produto || null,
     texto: texto || null,
+    modalidade: modalidade || null,
   };
 }
 
@@ -3691,8 +3779,9 @@ function celulaLiquido(p){
 
 // Total líquido do filtro (mesmos filtros do faturamento)
 async function carregarLiquidoFiltro(f, seq){
-  const { data, error } = await supabaseClient.rpc('resumo_liquido_filtro', {
+  const { data, error } = await supabaseClient.rpc('resumo_liquido_filtro_v3', {
     p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto,
+    p_modalidade: f.modalidade || null,
   });
   if (seq !== pedidosPag.seq) return;
   const el = document.getElementById('v-liquido-filtro');
@@ -3737,8 +3826,8 @@ async function loadPedidos(){
   const SELECT_PEDIDOS = '*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))';
   let lista, resumo;
 
-  if (!f.produto && !f.texto) {
-    // Sem filtro de produto/texto: exatamente a mesma consulta de antes
+  if (!f.produto && !f.texto && !f.modalidade) {
+    // Sem filtro de produto/texto/envio: exatamente a mesma consulta de antes
     let query = supabaseClient
       .from('pedidos_venda')
       .select(SELECT_PEDIDOS)
@@ -3754,11 +3843,11 @@ async function loadPedidos(){
       supabaseClient.rpc('resumo_vendas_filtro', { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal }),
     ]);
   } else {
-    // Com produto e/ou texto: o banco acha os pedidos da página (funções do Lote 2)
-    const params = { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto };
+    // Com produto, texto e/ou envio: o banco acha os pedidos da página (funções _v3 do Lote 9)
+    const params = { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto, p_modalidade: f.modalidade };
     const [ids, res] = await Promise.all([
-      supabaseClient.rpc('listar_pedidos_filtro_ids', { ...params, p_limite: pedidosPag.tamanho, p_offset: inicio }),
-      supabaseClient.rpc('resumo_vendas_filtro_v2', params),
+      supabaseClient.rpc('listar_pedidos_filtro_ids_v3', { ...params, p_limite: pedidosPag.tamanho, p_offset: inicio }),
+      supabaseClient.rpc('resumo_vendas_filtro_v3', params),
     ]);
     resumo = res;
     if (ids.error) {
@@ -3766,7 +3855,7 @@ async function loadPedidos(){
     } else if (!ids.data.length) {
       lista = { data: [], error: null };
     } else {
-      const idsPagina = ids.data.map(x => (typeof x === 'string' ? x : x.listar_pedidos_filtro_ids || Object.values(x)[0]));
+      const idsPagina = ids.data.map(x => (typeof x === 'string' ? x : x.listar_pedidos_filtro_ids_v3 || Object.values(x)[0]));
       lista = await supabaseClient
         .from('pedidos_venda')
         .select(SELECT_PEDIDOS)
@@ -3828,7 +3917,8 @@ async function loadPedidos(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
-      <td>${CANAL_LABEL[p.canal] || esc(p.canal)}</td>
+      <td>${tagCanal(p.canal)}</td>
+      <td>${tagEnvio(p.modalidade_envio)}</td>
       <td>${produtosTexto}</td>
       <td>${esc(p.cliente_nome_avulso || '-')}</td>
       <td>${fmtMoeda(p.valor_total)}</td>

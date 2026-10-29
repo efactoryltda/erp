@@ -4,8 +4,8 @@
 > Documento de contexto. Cole isso no "Project knowledge" de um Claude Project
 > pra qualquer chat novo já nascer sabendo do estado atual do projeto.
 > Atualize este arquivo de vez em quando (peça pro Claude regenerar) conforme
-> o sistema evoluir. **Última atualização: 2026-10-06** (Lotes 4 a 7 —
-> Contas a receber, Consumo próprio, Produção em etapas e Condição de pagamento).
+> o sistema evoluir. **Última atualização: 2026-10-29** (Lote 9 — tags de canal/envio
+> e varredura de pedidos do ML; Lotes 4 a 8 antes disso).
 
 ## Visão geral
 
@@ -1027,6 +1027,34 @@ caso das 227 caixas 30x12,3x8 em 08/10).
 - Limitação conhecida: se uma OC recebida **depois** da OP for estornada
   **depois** do estorno da OP, o `custo_anterior` da OC pode trazer de volta o
   custo com a OP embutida (caso raro; conferir custo).
+
+## Canal e modalidade de envio + varredura de pedidos (Lote 9 — 2026-10-29)
+
+- **Coluna nova `pedidos_venda.modalidade_envio`**: `full`, `flex`, `coleta`,
+  `agencia`, `envio_proprio` ou `balcao` (`sql/2026-10-29_lote9_modalidade_envio.sql`).
+  - Pedido novo do ML: o `ml-webhook` grava a partir do `logistic_type` do envio
+    (fulfillment→full, self_service→flex, cross_docking→coleta,
+    drop_off/xd_drop_off→agencia, resto→envio_proprio).
+  - Quem não informa (PDV, loja online): gatilho `trg_preencher_modalidade_envio`
+    preenche (local Full→full, loja física→balcao, resto→envio_proprio).
+  - Histórico NÃO foi consultado no ML (decisão do JG): ML com baixa no Full→full,
+    ML com baixa no físico→envio_proprio, loja física→balcao.
+- **Funções `_v3`** (`filtrar_pedidos_venda_v3`, `listar_pedidos_filtro_ids_v3`,
+  `resumo_vendas_filtro_v3`, `resumo_liquido_filtro_v3`): iguais às v2 + `p_modalidade`.
+  Sem modalidade, conferidas iguais às anteriores.
+- **Tela**: tag de canal (selo da marca + dono da conta: ML · E-Factory / JG /
+  Gustavo, Shopee, Loja física, Loja online) e tag de envio na lista de Vendas
+  (coluna "Envio") e no Dashboard; filtro "Envio" em Vendas. Nomes/ícones nos
+  dicionários `CANAL_TAG`, `ENVIO_LABEL`, `ENVIO_DICA` no topo do `index.html`.
+  Contas: Conta 1 = E-Factory, Conta 2 = JG, Conta 3 = Gustavo (rótulos renomeados
+  em toda a tela). Shopee já tem rótulo/cor, mas o canal `shopee` ainda NÃO existe
+  no enum `canal_venda` (entra junto com a integração Shopee).
+- **Edge Function `ml-sync-pedidos`** + pg_cron `sync-pedidos-ml`
+  (minutos 7/22/37/52): rede de segurança do webhook. Olha os pedidos
+  atualizados nas últimas 3h das 3 contas e reenvia ao `ml-webhook` só os que
+  faltam no ERP ou foram cancelados no ML e seguem confirmados. Não grava nada
+  direto. `?horas=N` (até 72) e `?simular=1` (só lista). No 1º teste achou 1
+  pedido da conta JG que o webhook tinha perdido (cancelado de agosto).
 
 ## Credenciais e onde ficam
 

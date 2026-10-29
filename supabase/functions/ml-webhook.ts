@@ -39,6 +39,16 @@ const FULL_LOCAL_POR_CANAL: Record<string, string> = {
   ml_conta3: 'full_conta3',
 };
 
+// Lote 9: modalidade de envio a partir do logistic_type do envio no ML.
+// Qualquer valor desconhecido (ou sem envio) vira "envio_proprio".
+const MODALIDADE_POR_LOGISTIC_TYPE: Record<string, string> = {
+  fulfillment: 'full',
+  self_service: 'flex',
+  cross_docking: 'coleta',
+  drop_off: 'agencia',
+  xd_drop_off: 'agencia',
+};
+
 // forcarRenovacao = true: usado quando o Mercado Livre recusou o token (401)
 // mesmo dentro da validade — pede um token novo antes de tentar de novo.
 async function getAccessToken(canal: string, forcarRenovacao = false): Promise<string | null> {
@@ -329,6 +339,7 @@ Deno.serve(async (req) => {
 
     // descobre se o envio é Full (fulfillment) pra baixar do estoque certo
     let localBaixa = 'fisico';
+    let modalidadeEnvio = 'envio_proprio';
     if (order.shipping?.id) {
       try {
         const shipResp = await fetch(`https://api.mercadolibre.com/shipments/${order.shipping.id}`, {
@@ -337,6 +348,11 @@ Deno.serve(async (req) => {
         const ship = await shipResp.json();
         if (shipResp.ok && ship.logistic_type === 'fulfillment') {
           localBaixa = FULL_LOCAL_POR_CANAL[canal] || 'fisico';
+        }
+        if (shipResp.ok) {
+          modalidadeEnvio = MODALIDADE_POR_LOGISTIC_TYPE[String(ship.logistic_type || '')] || 'envio_proprio';
+          // segurança: só marca Full se o estoque também saiu do Full
+          if (modalidadeEnvio === 'full' && localBaixa === 'fisico') modalidadeEnvio = 'envio_proprio';
         }
       } catch (e) {
         console.error('Erro ao checar tipo de envio:', e);
@@ -359,6 +375,7 @@ Deno.serve(async (req) => {
         canal,
         cliente_nome_avulso: order.buyer?.nickname || '',
         local_baixa_estoque: localBaixa,
+        modalidade_envio: modalidadeEnvio,
         data_pedido: order.date_created,
         status: jaCancelado ? 'cancelado' : 'confirmado',
         ...(jaCancelado ? { cancelado_ml_em: new Date().toISOString(), cancelamento_estoque: 'nao_devolvido' } : {}),
