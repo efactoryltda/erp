@@ -268,6 +268,23 @@
   .tag-envio.full{ background:#dff5ec; color:#0b5a41; }
   .tag-envio.flex{ background:#ebe9fd; color:#3c3489; }
   .tag-envio.coleta, .tag-envio.agencia, .tag-envio.envio_proprio, .tag-envio.balcao{ background:#f0f1f3; color:#444a55; }
+  /* Lote 9b — Vendas usa a largura da tela e a tabela não rola de lado */
+  #main:has(#view-vendas.active){ max-width:1680px; }
+  #tabela-pedidos-lista th, #tabela-pedidos-lista td{ padding:8px 7px; vertical-align:middle; }
+  #tabela-pedidos-lista .col-data{ white-space:nowrap; }
+  #tabela-pedidos-lista .col-produtos{ min-width:170px; line-height:1.35; }
+  #tabela-pedidos-lista .col-cliente{ max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #tabela-pedidos-lista td.num .muted{ display:block; font-size:11px; }
+  @media (max-width:1400px){
+    #tabela-pedidos-lista .col-produtos{ min-width:150px; }
+    #tabela-pedidos-lista .col-cliente{ max-width:120px; }
+    #tabela-pedidos-lista .col-acoes button.acao-linha{ display:block; width:100%; margin:3px 0; }
+  }
+  #tabela-pedidos-lista .col-acoes{ white-space:nowrap; text-align:right; }
+  button.acao-linha{ background:transparent; color:var(--muted); border:1px solid var(--border); padding:4px 10px;
+    font-size:12px; font-weight:600; border-radius:6px; margin-left:6px; }
+  button.acao-linha:hover{ opacity:1; color:var(--text); border-color:#c9ced8; background:#f7f8fa; }
+  button.acao-linha.perigo:hover{ color:var(--danger); border-color:#f0b4b4; background:#fdf2f2; }
   .tags-pedido{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
   .badge[class*=" cr-"]{ white-space:nowrap; }
   .badge.cr-a_receber{ background:#e6f0ff; color:#1d4ed8; }
@@ -703,7 +720,7 @@
         <span class="muted" id="resultado-revincular" data-t="TEXTO_REVINCULAR_AJUDA">Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.</span>
       </div>
       <div class="tabela-rolavel" id="pedidos-tabela-wrap">
-        <table><thead><tr><th>Data</th><th>Canal</th><th>Envio</th><th>Produtos</th><th>Cliente</th><th>Total</th><th title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th></th><th></th></tr></thead>
+        <table id="tabela-pedidos-lista"><thead><tr><th>Data</th><th>Canal</th><th>Envio</th><th>Produtos</th><th>Cliente</th><th class="num">Total</th><th class="num" title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th></th></tr></thead>
           <tbody id="tabela-pedidos"></tbody>
         </table>
       </div>
@@ -3916,16 +3933,15 @@ async function loadPedidos(){
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
+      <td class="col-data">${new Date(p.data_pedido).toLocaleDateString('pt-BR')}</td>
       <td>${tagCanal(p.canal)}</td>
       <td>${tagEnvio(p.modalidade_envio)}</td>
-      <td>${produtosTexto}</td>
-      <td>${esc(p.cliente_nome_avulso || '-')}</td>
-      <td>${fmtMoeda(p.valor_total)}</td>
-      <td>${celulaLiquido(p)}</td>
+      <td class="col-produtos">${produtosTexto}</td>
+      <td class="col-cliente" title="${esc(p.cliente_nome_avulso || '')}">${esc(p.cliente_nome_avulso || '-')}</td>
+      <td class="num">${fmtMoeda(p.valor_total)}</td>
+      <td class="num">${celulaLiquido(p)}</td>
       <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${esc(p.status)}</span></td>
-      <td>${p.status === 'confirmado' ? `<button class="danger" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}</td>
-      <td><button class="danger" onclick="excluirPedido('${p.id}')">Excluir</button></td>
+      <td class="col-acoes">${p.status === 'confirmado' ? `<button type="button" class="acao-linha" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}<button type="button" class="acao-linha perigo" onclick="excluirPedido('${p.id}')">Excluir</button></td>
     `;
     tbody.appendChild(tr);
   });
