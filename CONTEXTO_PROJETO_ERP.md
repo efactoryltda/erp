@@ -1056,6 +1056,24 @@ caso das 227 caixas 30x12,3x8 em 08/10).
   direto. `?horas=N` (até 72) e `?simular=1` (só lista). No 1º teste achou 1
   pedido da conta JG que o webhook tinha perdido (cancelado de agosto).
 
+## Integração Shopee — base no banco (Lote 10a — 2026-10-30)
+
+- Decisões do JG: 1 loja Shopee (canal único `shopee` no enum `canal_venda`);
+  SKUs dos anúncios iguais aos do ML / SKU interno; ERP NÃO envia estoque pra
+  Shopee por enquanto; NF emitida no emissor gratuito da Shopee (o ERP só mostra
+  "NF pendente" e um botão que abre o pedido na Central do Vendedor — "opção 1").
+- `integracoes_shopee` (shop_id, tokens, validades; RLS sem política) + RPC
+  `listar_integracoes_shopee()` (sem tokens) pra tela.
+- `pedidos_venda.shopee_order_sn` (único) e `shopee_status`; `pedido_itens.shopee_item_id/shopee_model_id`.
+- **Gatilho `trg_lancamento_pedido` agora tem `WHEN (new.shopee_order_sn is null)`**:
+  pedido Shopee não gera o lançamento "à vista recebido" automático (o dinheiro
+  sai da Shopee depois; será lançado pela integração, como no ML).
+- `lancamentos_financeiros`: canal aceita `shopee`, origem aceita `shopee`.
+- Ainda falta (depende das chaves do app Shopee): Edge Functions
+  `shopee-oauth-callback`, `shopee-webhook`, `shopee-sync-pedidos`, tela de conexão.
+  API Brasil: host `https://openplatform.shopee.com.br`; access_token 4h,
+  refresh_token 30 dias, autorização da loja até 365 dias, Partner Key 180 dias.
+
 ## Credenciais e onde ficam
 
 - **Supabase URL + chave anon/publishable**: embutidas no `index.html`
