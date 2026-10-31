@@ -4,8 +4,9 @@
 > Documento de contexto. Cole isso no "Project knowledge" de um Claude Project
 > pra qualquer chat novo já nascer sabendo do estado atual do projeto.
 > Atualize este arquivo de vez em quando (peça pro Claude regenerar) conforme
-> o sistema evoluir. **Última atualização: 2026-10-29** (Lote 9 — tags de canal/envio
-> e varredura de pedidos do ML; Lotes 4 a 8 antes disso).
+> o sistema evoluir. **Última atualização: 2026-10-30** (Lote 9 — tags de canal/envio,
+> varredura de pedidos do ML e tabela de Vendas larga; Lote 10a — base da
+> integração Shopee e plano completo da Shopee; Lotes 4 a 8 antes disso).
 
 ## Visão geral
 
@@ -15,7 +16,9 @@ do zero em HTML/JS puro (sem framework, sem build step) + Supabase (Postgres)
 como backend, substituindo o Tiny ERP — exceto a emissão de nota fiscal, que
 continua sendo feita pelo Tiny.
 
-Operação: 3 contas de Mercado Livre + loja física. Sócios: João Gabriel (JG),
+Operação: 3 contas de Mercado Livre (Conta 1 = E-Factory, Conta 2 = JG,
+Conta 3 = Gustavo) + loja física + **Shopee (1 loja, integração em
+construção desde 2026-10-22)**. Sócios: João Gabriel (JG),
 Gustavo Baruffi, e outro(s). Dono do projeto não sabe programar — todo o
 código é escrito e mantido pelo Claude, com o dono fazendo apenas
 copiar/colar e cliques guiados passo a passo.
@@ -1055,6 +1058,11 @@ caso das 227 caixas 30x12,3x8 em 08/10).
   faltam no ERP ou foram cancelados no ML e seguem confirmados. Não grava nada
   direto. `?horas=N` (até 72) e `?simular=1` (só lista). No 1º teste achou 1
   pedido da conta JG que o webhook tinha perdido (cancelado de agosto).
+- **Lote 9b (layout, 2026-10-29)**: a tela de Vendas usa até 1680px de largura
+  (`#main:has(#view-vendas.active)`), a tabela de pedidos (`#tabela-pedidos-lista`)
+  não rola de lado: Total/Líquido numa linha, cliente longo com reticências,
+  Cancelar/Excluir como botões discretos (`button.acao-linha`) na mesma coluna;
+  até 1400px os botões empilham. Testado em 1920, 1568, 1366 e 1280px.
 
 ## Integração Shopee — base no banco (Lote 10a — 2026-10-30)
 
@@ -1074,6 +1082,85 @@ caso das 227 caixas 30x12,3x8 em 08/10).
   API Brasil: host `https://openplatform.shopee.com.br`; access_token 4h,
   refresh_token 30 dias, autorização da loja até 365 dias, Partner Key 180 dias.
 
+## Integração Shopee — plano combinado (2026-10-22 a 2026-10-30)
+
+**Status**: banco pronto (Lote 10a). Aguardando o dono concluir o cadastro na
+Shopee Open Platform (aprovação da conta em até 3 dias úteis) e criar o app.
+Próximo passo do Claude assim que as **chaves de teste** estiverem no Supabase:
+construir e testar no sandbox as Edge Functions e a tela.
+
+**Decisões do dono**
+- 1 loja Shopee → canal único `shopee` (tag "S · Shopee", cor vermelha).
+- SKUs dos anúncios Shopee = SKUs do ML / SKU interno → casamento pelo
+  `encontrar_produto_por_sku` (sem tabela de anúncios Shopee por enquanto).
+- ERP **não** atualiza estoque na Shopee por enquanto (fase opcional futura).
+- Pedido pago baixa do estoque **físico**. Full da Shopee ainda não existe pra
+  eles; quando existir: local `full_shopee` + sync diário (fase 4).
+- **Nota fiscal — "opção 1"**: a equipe emite a NF-e no **emissor gratuito da
+  Shopee** (Central do Vendedor), não no ERP. A API da Shopee NÃO tem comando
+  para "emitir pelo emissor da Shopee" (só `upload_invoice_doc`, para quem emite
+  fora). Então o ERP mostra a tag **"NF pendente"** no pedido Shopee + botão que
+  abre o pedido na Central do Vendedor; depois lê de volta o número da nota
+  (`invoice_data` do `get_order_detail` — confirmar campos no sandbox).
+  Emitir pelo ERP (módulo NF) e subir o XML fica como opção futura; exigiria
+  dados completos do comprador (IP fixo) e respeitar a espera de ~5 min após a
+  emissão (a Shopee valida a chave na SERPRO). Contexto: antes de 22/10 as
+  vendas da Shopee saíam sem NF; o dono foi orientado a falar com o contador
+  sobre o passado; desde então a equipe emite pela Shopee.
+
+**Fatos da API (Shopee Open Platform v2, Brasil)**
+- Host Brasil: `https://openplatform.shopee.com.br` (sandbox:
+  `https://openplatform.sandbox.test-stable.shopee.sg` ou
+  `https://partner.test-stable.shopeemobile.com`, com chaves de teste).
+- Assinatura: HMAC-SHA256 com a Partner Key sobre
+  `partner_id + path + timestamp (+ access_token + shop_id)`; timestamp vale 5 min.
+- Tokens: `code` vale 10 min (uso único); access_token **4 h**; refresh_token
+  **30 dias**; autorização da loja até **365 dias** (escolhida pela loja);
+  Partner Key vale **180 dias** (reset no Console, transição de até 72 h, não
+  derruba autorizações) → ERP deve alertar vencimentos.
+- Categoria do app define as permissões e não muda depois: **"Seller In
+  House System"** (vendedor integrando a própria loja).
+- Dados do comprador vêm **mascarados** sem IP Whitelist (e em alguns status
+  mesmo com). Para vendas/estoque/taxas isso basta; IP Whitelist desligado.
+- Pedidos: `get_order_list` (por `update_time`, cursor) + `get_order_detail`
+  (`response_optional_fields`); status: UNPAID, READY_TO_SHIP, PROCESSED,
+  SHIPPED, COMPLETED, IN_CANCEL, CANCELLED, INVOICE_PENDING (+ TO_RETURN).
+- Taxas/líquido: `payment.get_escrow_detail` → `order_income` (escrow_amount,
+  commission_fee, service_fee, seller_transaction_fee, actual_shipping_fee,
+  shopee_shipping_rebate, vouchers...).
+- Push (webhook): configurado no app (URL de callback + eventos); a função
+  responde 2xx com corpo vazio e valida a assinatura.
+- Full Shopee (FBS): pedido traz indicação de atendido pela Shopee; notas FBS
+  em lote via `generate_fbs_invoices` / `get_fbs_invoices_result`.
+
+**Arquitetura (mesmo padrão do ML)**
+- Edge Functions (Verify JWT desligado): `shopee-oauth-callback` (grava em
+  `integracoes_shopee`), `shopee-webhook` (aviso de status → importa/atualiza),
+  `shopee-sync-pedidos` (pg_cron 15 min, rede de segurança, igual ao
+  `ml-sync-pedidos`), `shopee-refresh-tokens` (renova antes de vencer),
+  depois `shopee-sync-liquido` (escrow → colunas de líquido + lançamentos
+  `origem = 'shopee'`).
+- Ciclo: UNPAID não entra (ou entra sem baixa); pago (READY_TO_SHIP /
+  INVOICE_PENDING) entra e baixa do físico; CANCELLED antes do despacho devolve
+  ao físico; devoluções numa fase posterior.
+- Lembrete: o gatilho `trg_lancamento_pedido` ignora pedidos Shopee (Lote 10a)
+  — o lançamento em Contas a receber virá do escrow, não do gatilho.
+
+**Fases**
+0. Dono: cadastro (Registered Business Seller) + app + chaves (passo a passo
+   entregue em 30/10: open.shopee.com → Console → Brazil → Shopee Seller →
+   Registered Business Seller → dados da empresa → app "Seller In House System",
+   Redirect URL Domain `https://jrkuzyhobgzhjjyblmed.supabase.co` → secrets
+   `SHOPEE_TEST_PARTNER_ID/KEY` → Go Live (URL do ERP, usuário de teste criado
+   só pra revisão e apagado depois, print da tela de Vendas) → secrets
+   `SHOPEE_PARTNER_ID/KEY` → URL de Push → "Conectar Shopee" em Integrações,
+   autorização de 365 dias).
+1. Conexão, importação de pedidos, baixa do físico, cancelamentos, tag
+   "NF pendente" + botão para a Central do Vendedor.
+2. Taxas, líquido e Contas a receber.
+3. Full Shopee.
+4. Opcionais: enviar estoque físico pra Shopee, etiquetas, devoluções, Ads.
+
 ## Credenciais e onde ficam
 
 - **Supabase URL + chave anon/publishable**: embutidas no `index.html`
@@ -1086,6 +1173,11 @@ caso das 227 caixas 30x12,3x8 em 08/10).
   Functions → Secrets (`ANTHROPIC_API_KEY`), mesmo padrão do
   `ML_CLIENT_SECRET` — nunca no front-end, nunca colada no chat com o
   Claude. Usada só pela Edge Function `ml-analise-ia`.
+- **Shopee (quando o app existir)**: Supabase → Edge Functions → Secrets:
+  `SHOPEE_TEST_PARTNER_ID` / `SHOPEE_TEST_PARTNER_KEY` (sandbox) e
+  `SHOPEE_PARTNER_ID` / `SHOPEE_PARTNER_KEY` (produção). Partner Key nunca no
+  chat nem no repositório; tokens da loja ficam em `integracoes_shopee`
+  (sem acesso pelo site).
 - **Permissões do app Mercado Livre habilitadas**: Métricas do negócio
   (leitura), Venda e envios de um produto (leitura e escrita), Orders_v2 +
   Stock-Locations + Shipments + Fbm Stock Operations (tópicos/webhooks).
@@ -1113,7 +1205,11 @@ caso das 227 caixas 30x12,3x8 em 08/10).
 - ✅ Produção (ordens, conclusão com baixa automática)
 - ✅ Vendas (manual + importação automática via webhook ML; filtros por
   produto e texto; revínculo de itens sem produto; coluna e total de
-  valor líquido do ML — 2026-10-05)
+  valor líquido do ML — 2026-10-05; tags de canal e envio, filtro "Envio",
+  varredura de pedidos perdidos a cada 15 min e tabela sem rolagem lateral —
+  2026-10-29)
+- 🟡 Integração Shopee — banco pronto (Lote 10a, 2026-10-30); Edge Functions
+  e tela aguardando as chaves do app (ver "Integração Shopee — plano combinado")
 - ✅ Integrações ML (OAuth das 3 contas com renovação automática de token,
   sincronização de estoque Full automática via pg_cron diário + botão
   manual, sincronização de métricas de campanhas de Mercado Ads também
@@ -1156,6 +1252,13 @@ caso das 227 caixas 30x12,3x8 em 08/10).
   por enquanto); pode ser um passo futuro
 
 ## Pendências específicas em aberto no momento
+
+- **Nova (2026-10-30): Shopee** — dono fazendo o cadastro na Shopee Open
+  Platform; quando as chaves de teste estiverem nos secrets do Supabase,
+  construir a fase 1 (ver "Integração Shopee — plano combinado").
+- **Nova (2026-10-29): Flex/Coleta/Agência** só são identificados em pedidos
+  novos do ML; os 702 antigos sem detalhe ficaram como "Envio próprio"
+  (decisão do dono: não consultar o histórico no ML).
 
 - **Nova (2026-10-08): movimentações órfãs de OPs excluídas antes do Lote 8**
   — além das 227 caixas 30x12,3x8 (já corrigidas à mão em 08/10), há 3 OPs
