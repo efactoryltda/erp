@@ -355,6 +355,31 @@
     .page-head .oc-acoes{ width:100%; }
   }
   .busca-tabela{ padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:100%; max-width:380px; margin-bottom:12px; box-sizing:border-box; font-family:inherit; }
+  /* ---- Notas fiscais (Lote 11) ---- */
+  .nfe-banner{ padding:12px 16px; border-radius:8px; margin-bottom:20px; font-size:14px; border:1px solid var(--border); background:#f1f2f4; line-height:1.5; }
+  .nfe-banner.simulacao, .nfe-amb-aviso.simulacao{ background:#fff7e0; border-color:#f0c36d; color:#7a5200; }
+  .nfe-banner.homologacao, .nfe-amb-aviso.homologacao{ background:#e6f0ff; border-color:#9cbcf0; color:#1d4ed8; }
+  .nfe-banner.producao, .nfe-amb-aviso.producao{ background:#e4f7ea; border-color:#8fd3a8; color:#1d6b3c; }
+  .nfe-banner.erro{ background:#fde8e8; border-color:#f3b0b0; color:var(--danger); }
+  .nfe-amb-aviso{ padding:8px 12px; border-radius:6px; border:1px solid var(--border); font-size:13px; font-weight:600; margin-bottom:12px; }
+  .nfe-msg{ font-size:13px; margin-top:10px; min-height:16px; line-height:1.5; }
+  .nfe-msg.ok{ color:var(--ok); } .nfe-msg.erro{ color:var(--danger); } .nfe-msg.aviso{ color:#b5610a; }
+  .nfe-pendencias{ background:#fde8e8; color:#8a1c1c; border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:13px; }
+  .nfe-avisos{ background:#fff7e0; color:#7a5200; border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:13px; }
+  .nfe-pendencias ul, .nfe-avisos ul{ margin:6px 0 0 18px; padding:0; }
+  .nfe-bloco{ font-size:13px; margin-bottom:10px; line-height:1.5; }
+  .nfe-totais{ text-align:right; margin:8px 0; font-size:14px; }
+  table.nfe-itens{ font-size:12px; }
+  .nfe-acoes{ white-space:nowrap; } .nfe-acoes .cr-link-btn{ margin-right:8px; }
+  .cr-link-btn.perigo{ color:var(--danger); }
+  .nfe-acoes-lote{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+  .badge.nfe-autorizada{ background:#e4f7ea; color:var(--ok); white-space:nowrap; }
+  .badge.nfe-processando, .badge.nfe-cancelando{ background:#fff2e0; color:#b5610a; }
+  .badge.nfe-rejeitada, .badge.nfe-erro{ background:#fde8e8; color:var(--danger); }
+  .badge.nfe-cancelada{ background:#f1f2f4; color:var(--muted); }
+  #card-nfe-clientes .collapsible-content-inner, #card-nfe-config .collapsible-content-inner{ padding:0; }
+  .nfe-col-pad{ padding:0 20px 20px 20px; }
+  .nfe-btn-emitir{ padding:5px 10px; font-size:12px; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -376,6 +401,7 @@
   <h1 id="nome-sistema-header">E-Factory <span>ERP</span></h1>
   <div class="nav-item active" data-view="dashboard"></div>
   <div class="nav-item" data-view="vendas"></div>
+  <div class="nav-item" data-view="notas-fiscais"></div>
   <div class="nav-item" data-view="contas-receber"></div>
   <div class="nav-item" data-view="integracoes"></div>
   <div class="nav-item" data-view="produtos"></div>
@@ -707,6 +733,10 @@
         </div>
         <div class="field"><label data-t="FILTRO_LABEL_PRODUTO" for="f-produto">Produto</label><select id="f-produto"><option value="">Todos os produtos</option></select></div>
         <div class="field"><label data-t="FILTRO_LABEL_BUSCA" for="f-busca">Cliente, nº do pedido ou SKU</label><input type="text" id="f-busca" data-t-ph="FILTRO_PH_BUSCA" placeholder="ex: maria, 2000018…, ROLO200"></div>
+        <div class="field"><label data-t="FILTRO_LABEL_NF" for="f-nf">Nota fiscal</label>
+          <select id="f-nf" title="Com NF = nota autorizada (não cancelada). Vendas do Mercado Livre contam como 'com NF' quando as notas do ML forem importadas (próxima fase).">
+            <option value="">Todas</option><option value="com">Com NF emitida</option><option value="sem">Sem NF</option>
+          </select></div>
         <button data-t="BTN_FILTRAR" type="submit">Filtrar</button>
       </form>
       <p style="margin-top:12px;"><strong>Faturamento no período filtrado: <span id="v-faturamento-filtro">R$ 0,00</span></strong> <span class="muted" id="v-qtd-pedidos-filtro"></span></p>
@@ -720,7 +750,7 @@
         <span class="muted" id="resultado-revincular" data-t="TEXTO_REVINCULAR_AJUDA">Liga ao produto os itens marcados "⚠️ SKU não identificado" (pelo SKU, SKU alternativo ou ID do anúncio). Não mexe em estoque.</span>
       </div>
       <div class="tabela-rolavel" id="pedidos-tabela-wrap">
-        <table id="tabela-pedidos-lista"><thead><tr><th>Data</th><th>Canal</th><th>Envio</th><th>Produtos</th><th>Cliente</th><th class="num">Total</th><th class="num" title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th></th></tr></thead>
+        <table id="tabela-pedidos-lista"><thead><tr><th>Data</th><th>Canal</th><th>Envio</th><th>Produtos</th><th>Cliente</th><th class="num">Total</th><th class="num" title="O que entra de fato: total − tarifa ML − frete pago pelo vendedor − taxas Mercado Pago">Líquido</th><th>Status</th><th>NF-e</th><th></th></tr></thead>
           <tbody id="tabela-pedidos"></tbody>
         </table>
       </div>
@@ -740,6 +770,138 @@
           </select>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ================= NOTAS FISCAIS (Lote 11) ================= -->
+  <div class="view" id="view-notas-fiscais">
+    <h2 data-t="TITULO_NFE">Notas fiscais</h2>
+    <div class="nfe-banner" id="nfe-banner">Carregando configuração fiscal…</div>
+
+    <div class="card">
+      <h3 data-t="CARD_NFE_PENDENTES">Vendas sem nota fiscal (fora do Mercado Livre)</h3>
+      <p class="muted" style="margin-top:-6px;" data-t="NFE_PENDENTES_AJUDA">A nota NÃO é emitida sozinha: escolha a venda e clique em "Emitir NF-e" quando quiser. Vendas do Mercado Livre têm a nota emitida pelo próprio ML.</p>
+      <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap; margin-bottom:10px;">
+        <div class="field"><label for="nfe-p-dias">Vendas dos últimos</label>
+          <select id="nfe-p-dias"><option value="30">30 dias</option><option value="60" selected>60 dias</option><option value="180">180 dias</option><option value="365">1 ano</option></select>
+        </div>
+        <button type="button" class="secondary" id="nfe-p-atualizar">Atualizar</button>
+      </div>
+      <div class="tabela-rolavel">
+        <table><thead><tr><th>Data</th><th>Canal</th><th>Cliente</th><th class="num">Total</th><th>Última tentativa</th><th></th></tr></thead>
+          <tbody id="nfe-p-tbody"></tbody></table>
+      </div>
+      <div class="empty" id="nfe-p-vazio" style="display:none;">Nenhuma venda sem nota no período.</div>
+    </div>
+
+    <div class="card">
+      <h3 data-t="CARD_NFE_NOTAS">Notas emitidas</h3>
+      <form class="inline" id="nfe-f-form">
+        <div class="field"><label for="nfe-f-de">Emitidas de</label><input type="date" id="nfe-f-de"></div>
+        <div class="field"><label for="nfe-f-ate">até</label><input type="date" id="nfe-f-ate"></div>
+        <div class="field"><label for="nfe-f-status">Status</label>
+          <select id="nfe-f-status">
+            <option value="">Todos</option><option value="autorizada">Autorizadas</option><option value="cancelada">Canceladas</option>
+            <option value="rejeitada">Rejeitadas</option><option value="erro">Com erro</option><option value="processando">Processando</option>
+          </select></div>
+        <div class="field"><label for="nfe-f-ambiente">Ambiente</label>
+          <select id="nfe-f-ambiente"><option value="producao">Produção (notas reais)</option><option value="homologacao">Homologação (teste)</option><option value="simulacao">Simulação</option></select></div>
+        <button type="submit">Filtrar</button>
+      </form>
+      <div class="nfe-acoes-lote">
+        <button type="button" class="secondary" id="nfe-zip-periodo">⬇ Baixar XML do período (.zip)</button>
+        <button type="button" class="secondary" id="nfe-zip-selecionadas" disabled>⬇ Baixar XML das selecionadas (.zip)</button>
+        <span class="muted" id="nfe-zip-msg"></span>
+      </div>
+      <div class="tabela-rolavel">
+        <table id="nfe-tabela"><thead><tr>
+          <th><input type="checkbox" id="nfe-sel-todas" title="Selecionar todas"></th>
+          <th>Nº / Série</th><th>Emissão</th><th>Cliente</th><th class="num">Valor</th><th>Status</th><th>Ações</th>
+        </tr></thead><tbody id="nfe-tbody"></tbody></table>
+      </div>
+      <div class="empty" id="nfe-vazio" style="display:none;">Nenhuma nota no filtro.</div>
+      <div class="muted" id="nfe-info" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card collapsible-card" id="card-nfe-clientes">
+      <div class="collapsible-header" onclick="toggleCollapsible('nfe-clientes')">
+        <span class="collapsible-chevron">▸</span>
+        <h3 data-t="CARD_NFE_CLIENTES">Clientes (destinatários das notas)</h3>
+        <span class="badge-contador" id="badge-nfe-clientes">0</span>
+      </div>
+      <div class="collapsible-content-wrap"><div class="collapsible-content-inner"><div class="nfe-col-pad">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <input type="search" class="busca-tabela" id="nfe-cli-busca" placeholder="Buscar por nome, CPF/CNPJ ou cidade…" autocomplete="off" style="flex:1; min-width:220px; margin:0;">
+          <button type="button" id="nfe-cli-novo">+ Novo cliente</button>
+        </div>
+        <div class="tabela-rolavel"><table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Cidade/UF</th><th>E-mail</th><th></th></tr></thead>
+          <tbody id="nfe-cli-tbody"></tbody></table></div>
+        <div class="empty" id="nfe-cli-vazio" style="display:none;">Nenhum cliente cadastrado ainda.</div>
+      </div></div></div>
+    </div>
+
+    <div class="card collapsible-card" id="card-nfe-config">
+      <div class="collapsible-header" onclick="toggleCollapsible('nfe-config')">
+        <span class="collapsible-chevron">▸</span>
+        <h3 data-t="CARD_NFE_CONFIG">Configuração fiscal da empresa</h3>
+        <span class="badge-contador" id="badge-nfe-config">!</span>
+      </div>
+      <div class="collapsible-content-wrap"><div class="collapsible-content-inner"><div class="nfe-col-pad">
+        <p class="muted" style="margin-top:0;">Dados que saem como EMITENTE na nota. Confira com o cartão CNPJ e o cadastro na SEFAZ-SP.</p>
+        <form class="inline" id="nfe-c-form" onsubmit="return false;">
+          <div class="field" style="min-width:260px;"><label for="nfe-c-razao">Razão social *</label><input type="text" id="nfe-c-razao" maxlength="60"></div>
+          <div class="field"><label for="nfe-c-fantasia">Nome fantasia</label><input type="text" id="nfe-c-fantasia" maxlength="60"></div>
+          <div class="field"><label for="nfe-c-cnpj">CNPJ *</label><input type="text" id="nfe-c-cnpj" inputmode="numeric"></div>
+          <div class="field"><label for="nfe-c-ie">Inscrição Estadual *</label><input type="text" id="nfe-c-ie"></div>
+          <div class="field"><label for="nfe-c-im">Inscrição Municipal</label><input type="text" id="nfe-c-im"></div>
+          <div class="field"><label for="nfe-c-crt">Regime (CRT) *</label>
+            <select id="nfe-c-crt"><option value="1">1 — Simples Nacional</option><option value="4">4 — MEI</option><option value="2">2 — Simples (excesso de sublimite)</option><option value="3">3 — Regime normal</option></select></div>
+          <div class="field"><label for="nfe-c-cep">CEP *</label><input type="text" id="nfe-c-cep" inputmode="numeric" style="width:120px;"></div>
+          <button type="button" class="secondary" id="nfe-c-buscacep">Buscar CEP</button>
+          <div class="field" style="min-width:240px;"><label for="nfe-c-logradouro">Rua *</label><input type="text" id="nfe-c-logradouro"></div>
+          <div class="field"><label for="nfe-c-numero">Número *</label><input type="text" id="nfe-c-numero" style="width:90px;"></div>
+          <div class="field"><label for="nfe-c-compl">Complemento</label><input type="text" id="nfe-c-compl"></div>
+          <div class="field"><label for="nfe-c-bairro">Bairro *</label><input type="text" id="nfe-c-bairro"></div>
+          <div class="field"><label for="nfe-c-municipio">Município *</label><input type="text" id="nfe-c-municipio"></div>
+          <div class="field"><label for="nfe-c-ibge">Cód. IBGE *</label><input type="text" id="nfe-c-ibge" inputmode="numeric" style="width:100px;"></div>
+          <div class="field"><label for="nfe-c-uf">UF *</label><input type="text" id="nfe-c-uf" maxlength="2" style="width:60px;"></div>
+          <div class="field"><label for="nfe-c-fone">Telefone</label><input type="text" id="nfe-c-fone"></div>
+          <div class="field"><label for="nfe-c-email">E-mail</label><input type="email" id="nfe-c-email"></div>
+        </form>
+        <h4 style="margin:18px 0 8px;">Padrões da nota</h4>
+        <form class="inline" onsubmit="return false;">
+          <div class="field" style="min-width:240px;"><label for="nfe-c-natureza">Natureza da operação *</label><input type="text" id="nfe-c-natureza" maxlength="60"></div>
+          <div class="field"><label for="nfe-c-cfop-dentro">CFOP padrão dentro de SP *</label><input type="text" id="nfe-c-cfop-dentro" maxlength="4" style="width:90px;"></div>
+          <div class="field"><label for="nfe-c-cfop-fora">CFOP padrão fora de SP *</label><input type="text" id="nfe-c-cfop-fora" maxlength="4" style="width:90px;"></div>
+          <div class="field"><label for="nfe-c-csosn">CSOSN padrão *</label><input type="text" id="nfe-c-csosn" maxlength="3" style="width:70px;"></div>
+          <div class="field"><label for="nfe-c-cstpis">CST PIS *</label><input type="text" id="nfe-c-cstpis" maxlength="2" style="width:60px;" title="O Tiny usa 99 nas notas da E-Factory"></div>
+          <div class="field"><label for="nfe-c-cstcofins">CST COFINS *</label><input type="text" id="nfe-c-cstcofins" maxlength="2" style="width:60px;" title="O Tiny usa 99 nas notas da E-Factory"></div>
+          <div class="field"><label for="nfe-c-presenca">Venda da Loja Física é…</label>
+            <select id="nfe-c-presenca"><option value="1">1 — Presencial</option><option value="2">2 — Não presencial, internet</option><option value="3">3 — Não presencial, teleatendimento</option><option value="9">9 — Não presencial, outros</option></select></div>
+          <div class="field"><label for="nfe-c-copia">Cópia das notas para (e-mail)</label><input type="email" id="nfe-c-copia"></div>
+          <div class="field" style="flex-basis:100%;"><label for="nfe-c-info">Informações complementares (saem em toda nota)</label><textarea id="nfe-c-info" rows="2" maxlength="2000"></textarea></div>
+        </form>
+        <p class="muted" style="font-size:12px;">O CFOP/CSOSN de cada produto (aba Produtos) tem prioridade sobre o padrão. Vazio no produto = usa o padrão daqui. As "informações complementares" só entram na nota de simulação: a SysVelox monta esse texto sozinha (o teste mostra o que ela coloca).</p>
+        <h4 style="margin:18px 0 8px;">Ambiente e numeração</h4>
+        <form class="inline" onsubmit="return false;">
+          <div class="field"><label for="nfe-c-modo">Onde as notas são emitidas</label>
+            <select id="nfe-c-modo">
+              <option value="simulacao|simulacao">Simulação dentro do ERP (sem SEFAZ, sem valor fiscal)</option>
+              <option value="homologacao|sysvelox">SysVelox — TESTE / sandbox (sem valor fiscal)</option>
+              <option value="producao|sysvelox" disabled>SysVelox — PRODUÇÃO (libera depois do teste + certificado)</option>
+            </select></div>
+          <div class="field"><label for="nfe-c-serie">Série</label><input type="number" id="nfe-c-serie" min="0" max="999" style="width:80px;"></div>
+        </form>
+        <div class="tabela-rolavel" style="margin-top:10px;"><table><thead><tr><th>Ambiente</th><th>Série</th><th class="num">Último nº usado</th><th class="num">Próxima nota</th><th></th></tr></thead>
+          <tbody id="nfe-num-tbody"></tbody></table></div>
+        <p class="muted" style="font-size:12px;" id="nfe-num-ajuda"></p>
+        <div class="nfe-msg" id="nfe-c-msg"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button type="button" id="nfe-c-salvar">Salvar configuração</button>
+          <button type="button" class="secondary" id="nfe-c-testar-sv">Testar SysVelox (emite 1 nota de teste)</button>
+          <button type="button" class="danger" id="nfe-c-limpar-sim">Apagar notas de simulação</button>
+        </div>
+      </div></div></div>
     </div>
   </div>
 
@@ -771,6 +933,14 @@
         <div class="field"><label>CSOSN</label><input type="text" id="p-csosn" inputmode="numeric" placeholder="ex: 102" maxlength="3"></div>
         <div class="field"><label>CFOP dentro de SP</label><input type="text" id="p-cfop-sp" inputmode="numeric" placeholder="ex: 5101" maxlength="4"></div>
         <div class="field"><label>CFOP fora de SP</label><input type="text" id="p-cfop-fora" inputmode="numeric" placeholder="ex: 6101" maxlength="4"></div>
+        <div class="field"><label for="p-cest">CEST</label><input type="text" id="p-cest" inputmode="numeric" placeholder="se houver" maxlength="9" style="width:110px;"></div>
+        <div class="field"><label for="p-origem">Origem da mercadoria</label>
+          <select id="p-origem">
+            <option value="0">0 — Nacional</option><option value="1">1 — Estrangeira (importação direta)</option><option value="2">2 — Estrangeira (mercado interno)</option>
+            <option value="3">3 — Nacional, 40–70% importado</option><option value="4">4 — Nacional (processo produtivo básico)</option><option value="5">5 — Nacional, até 40% importado</option>
+            <option value="6">6 — Estrangeira sem similar (direta)</option><option value="7">7 — Estrangeira sem similar (interno)</option><option value="8">8 — Nacional, mais de 70% importado</option>
+          </select></div>
+        <div class="field"><label class="opcao-radio"><input type="checkbox" id="p-ncm-validado"><span>Fiscal conferido pelo contador<small>NCM, CFOP e CSOSN. Sem isso a nota não sai em produção.</small></span></label></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO1">ID anúncio - E-Factory</label><input type="text" id="p-anuncio1" placeholder="ex: MLBU..."></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO2">ID anúncio - JG</label><input type="text" id="p-anuncio2" placeholder="ex: MLBU..."></div>
         <div class="field"><label data-t="PRODUTOS_LABEL_ANUNCIO3">ID anúncio - Gustavo</label><input type="text" id="p-anuncio3" placeholder="ex: MLBU..."></div>
@@ -782,7 +952,7 @@
       <h3 data-t="CARD_PRODUTOS_CADASTRADOS">Produtos cadastrados</h3>
       <input type="search" class="busca-tabela" id="busca-produtos" data-t-ph="PH_BUSCA_PRODUTOS" placeholder="Buscar por SKU, nome ou SKU do ML…" autocomplete="off">
       <table id="tabela-produtos"><thead>
-        <tr><th>SKU</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Custo</th><th>Preço venda</th><th>Ativo</th><th></th><th></th></tr>
+        <tr><th>SKU</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>NCM</th><th>Custo</th><th>Preço venda</th><th>Ativo</th><th></th><th></th></tr>
       </thead><tbody></tbody></table>
       <div class="empty" id="produtos-vazio" style="display:none;">Nenhum produto cadastrado ainda.</div>
     </div>
@@ -1166,6 +1336,84 @@
     </div>
   </div>
 
+  <!-- Notas fiscais (Lote 11): emitir -->
+  <div id="nfe-modal-emitir" class="modal-overlay">
+    <div class="modal-box" style="width:760px;">
+      <h3>Emitir NF-e</h3>
+      <div class="nfe-amb-aviso" id="nfe-e-amb"></div>
+      <div id="nfe-e-pedido" class="muted" style="margin-bottom:12px;"></div>
+      <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+        <div class="field" style="flex:1; min-width:260px; margin-bottom:0;"><label for="nfe-e-cliente">Cliente (destinatário) *</label><select id="nfe-e-cliente"><option value=""></option></select></div>
+        <button type="button" class="secondary" id="nfe-e-cli-novo">+ Novo cliente</button>
+        <button type="button" class="secondary" id="nfe-e-cli-editar">Editar cliente</button>
+      </div>
+      <div id="nfe-e-previa" style="margin-top:16px;"></div>
+      <div class="nfe-msg" id="nfe-e-msg"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="nfe-e-fechar">Fechar</button>
+        <button type="button" id="nfe-e-emitir" disabled>Emitir NF-e</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notas fiscais (Lote 11): cliente -->
+  <div id="nfe-modal-cliente" class="modal-overlay" style="z-index:9999;">
+    <div class="modal-box" style="width:640px;">
+      <h3 id="nfe-k-titulo">Novo cliente</h3>
+      <form id="nfe-k-form" onsubmit="return false;">
+        <div style="display:flex; gap:10px; align-items:end;">
+          <div class="field" style="flex:1;"><label for="nfe-k-doc">CPF ou CNPJ *</label><input type="text" id="nfe-k-doc" inputmode="numeric"></div>
+          <button type="button" class="secondary" id="nfe-k-buscacnpj" style="margin-bottom:14px;">Buscar dados do CNPJ</button>
+        </div>
+        <div class="field"><label for="nfe-k-nome">Nome / Razão social *</label><input type="text" id="nfe-k-nome" maxlength="60"></div>
+        <div class="field"><label for="nfe-k-indie">Situação no ICMS *</label>
+          <select id="nfe-k-indie">
+            <option value="9">Não contribuinte (pessoa física ou empresa sem IE)</option>
+            <option value="1">Contribuinte do ICMS (tem Inscrição Estadual)</option>
+            <option value="2">Contribuinte isento de inscrição</option>
+          </select></div>
+        <div class="field" id="nfe-k-ie-campo"><label for="nfe-k-ie">Inscrição Estadual</label><input type="text" id="nfe-k-ie"></div>
+        <div class="field"><label class="opcao-radio"><input type="checkbox" id="nfe-k-consfinal" checked><span>Consumidor final<small>Compra para usar (ex: embalar os próprios envios), não para revender. É o que o Tiny usava ("Consumidor final: Sim"). Confirme com o contador quando o cliente revende.</small></span></label></div>
+        <div style="display:flex; gap:10px; align-items:end;">
+          <div class="field"><label for="nfe-k-cep">CEP *</label><input type="text" id="nfe-k-cep" inputmode="numeric" style="width:130px;"></div>
+          <button type="button" class="secondary" id="nfe-k-buscacep" style="margin-bottom:14px;">Buscar CEP</button>
+        </div>
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:0 10px;">
+          <div class="field"><label for="nfe-k-logradouro">Rua *</label><input type="text" id="nfe-k-logradouro"></div>
+          <div class="field"><label for="nfe-k-numero">Número *</label><input type="text" id="nfe-k-numero"></div>
+          <div class="field"><label for="nfe-k-compl">Complemento</label><input type="text" id="nfe-k-compl"></div>
+          <div class="field"><label for="nfe-k-bairro">Bairro *</label><input type="text" id="nfe-k-bairro"></div>
+          <div class="field"><label for="nfe-k-municipio">Município *</label><input type="text" id="nfe-k-municipio"></div>
+          <div class="field"><label for="nfe-k-uf">UF *</label><input type="text" id="nfe-k-uf" maxlength="2"></div>
+          <div class="field"><label for="nfe-k-ibge">Cód. IBGE do município *</label><input type="text" id="nfe-k-ibge" inputmode="numeric"></div>
+          <div class="field"><label for="nfe-k-fone">Telefone</label><input type="text" id="nfe-k-fone"></div>
+        </div>
+        <div class="field"><label for="nfe-k-email">E-mail (a nota vai pra cá)</label><input type="email" id="nfe-k-email"></div>
+        <div class="nfe-msg" id="nfe-k-msg"></div>
+        <div class="modal-botoes">
+          <button type="button" class="secondary" id="nfe-k-cancelar">Cancelar</button>
+          <button type="submit" id="nfe-k-salvar">Salvar cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notas fiscais (Lote 11): cancelar nota -->
+  <div id="nfe-modal-cancelar" class="modal-overlay">
+    <div class="modal-box">
+      <h3>Cancelar NF-e</h3>
+      <div id="nfe-x-info" class="muted" style="margin-bottom:10px;"></div>
+      <div class="field"><label for="nfe-x-just">Justificativa (15 a 255 caracteres) *</label>
+        <textarea id="nfe-x-just" rows="3" maxlength="255" placeholder="ex: Pedido cancelado pelo cliente antes do envio"></textarea>
+        <small class="muted" id="nfe-x-cont">0 / 255</small></div>
+      <div class="nfe-msg" id="nfe-x-msg"></div>
+      <div class="modal-botoes">
+        <button type="button" class="secondary" id="nfe-x-fechar">Voltar</button>
+        <button type="button" class="danger" id="nfe-x-confirmar">Cancelar a nota</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Condições de pagamento (Lote 7) -->
   <div id="pg-modal" class="modal-overlay">
     <div class="modal-box" style="width:560px;">
@@ -1265,6 +1513,7 @@ const NOME_SISTEMA = 'E-Factory ERP';
 const MENU_LABELS = {
   dashboard: 'Dashboard',
   vendas: 'Vendas',
+  'notas-fiscais': 'Notas fiscais',
   'contas-receber': 'Contas a receber',
   integracoes: 'Integrações',
   produtos: 'Produtos',
@@ -1447,6 +1696,12 @@ const TEXTOS = {
   CONSUMO_SUBTITULO_LISTA: 'Últimos consumos',
   CARD_FILTRAR_PEDIDOS: 'Filtrar pedidos',
   CARD_PEDIDOS: 'Pedidos',
+  TITULO_NFE: 'Notas fiscais',
+  CARD_NFE_PENDENTES: 'Vendas sem nota fiscal (fora do Mercado Livre)',
+  CARD_NFE_NOTAS: 'Notas emitidas',
+  CARD_NFE_CLIENTES: 'Clientes (destinatários das notas)',
+  CARD_NFE_CONFIG: 'Configuração fiscal da empresa',
+  FILTRO_LABEL_NF: 'Nota fiscal',
   FILTRO_LABEL_PRODUTO: 'Produto',
   FILTRO_LABEL_BUSCA: 'Cliente, nº do pedido ou SKU',
   FILTRO_PH_BUSCA: 'ex: maria, 2000018…, ROLO200',
@@ -1598,6 +1853,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.add('active');
     document.getElementById('view-' + item.dataset.view).classList.add('active');
     if (item.dataset.view === 'contas-receber') abrirContasReceber();
+    if (item.dataset.view === 'notas-fiscais') abrirNotasFiscais();
     if (item.dataset.view === 'gestao-contas' && Date.now() - perguntasUltimaSync > 5 * 60 * 1000) {
       sincronizarPerguntasEListar();
     }
@@ -1954,6 +2210,7 @@ function renderTabelaProdutos(){
       <td>${p.nome}</td>
       <td><span class="badge ${p.tipo === 'produto_acabado' ? 'acabado' : 'materia'}">${p.tipo === 'produto_acabado' ? 'Acabado' : 'Matéria-prima'}</span></td>
       <td>${p.unidade_medida}</td>
+      <td>${p.ncm ? esc(p.ncm) + (p.ncm_validado ? ' <span title="Conferido pelo contador">✔</span>' : ' <span class="muted" title="Ainda não conferido pelo contador">?</span>') : '<span class="muted">—</span>'}</td>
       <td>${fmtCusto(p.custo_atual)}</td>
       <td>${fmtMoeda(p.preco_venda)}</td>
       <td>${p.ativo ? 'Sim' : 'Não'}</td>
@@ -2221,6 +2478,9 @@ async function editarProduto(id){
   document.getElementById('p-csosn').value = produto.csosn || '';
   document.getElementById('p-cfop-sp').value = produto.cfop_dentro_sp || '';
   document.getElementById('p-cfop-fora').value = produto.cfop_fora_sp || '';
+  document.getElementById('p-cest').value = produto.cest || '';
+  document.getElementById('p-origem').value = String(produto.origem ?? 0);
+  document.getElementById('p-ncm-validado').checked = !!produto.ncm_validado;
 
   const { data: anuncios } = await supabaseClient.from('produto_anuncios_ml').select('canal, item_id').eq('produto_id', id);
   const anuncioPorCanal = {};
@@ -2274,12 +2534,29 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
   if (csosnVal && !/^\d{3}$/.test(csosnVal)) { alert('CSOSN precisa ter 3 dígitos (ex: 102).'); return; }
   if (cfopSpVal && !/^5\d{3}$/.test(cfopSpVal)) { alert('CFOP dentro de SP precisa ter 4 dígitos e começar com 5 (ex: 5101).'); return; }
   if (cfopForaVal && !/^6\d{3}$/.test(cfopForaVal)) { alert('CFOP fora de SP precisa ter 4 dígitos e começar com 6 (ex: 6101).'); return; }
+  const cestDigitos = document.getElementById('p-cest').value.replace(/\D/g, '');
+  if (cestDigitos && cestDigitos.length !== 7) { alert('CEST tem 7 dígitos (deixe vazio se o produto não tem).'); return; }
   const fiscal = {
     ncm: ncmDigitos ? ncmDigitos.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3') : null,
     csosn: csosnVal || null,
     cfopSp: cfopSpVal || null,
     cfopFora: cfopForaVal || null,
+    cest: cestDigitos || null,
+    origem: Number(document.getElementById('p-origem').value) || 0,
+    validado: document.getElementById('p-ncm-validado').checked,
   };
+  // Lote 11: mudou NCM/CFOP/CSOSN/origem de produto "conferido"? pergunta se continua conferido
+  if (fiscal.validado && !fiscal.ncm) { alert('Não dá para marcar "Fiscal conferido pelo contador" sem NCM.'); return; }
+  if (editandoProdutoId && fiscal.validado) {
+    const antes = (ultimosProdutosCache || []).find(p => p.id === editandoProdutoId) || {};
+    const dig = (x) => String(x ?? '').replace(/\D/g, '');
+    const mudou = dig(antes.ncm) !== dig(fiscal.ncm) || dig(antes.csosn) !== dig(fiscal.csosn) || dig(antes.cfop_dentro_sp) !== dig(fiscal.cfopSp)
+      || dig(antes.cfop_fora_sp) !== dig(fiscal.cfopFora) || Number(antes.origem ?? 0) !== fiscal.origem;
+    if (mudou && antes.ncm_validado &&
+        !confirm('Você mudou NCM/CFOP/CSOSN/origem de um produto que estava "conferido pelo contador".\n\nOK = o contador já conferiu os dados NOVOS.\nCancelar = salvar como NÃO conferido.')) {
+      fiscal.validado = false;
+    }
+  }
   const payload = {
     sku_interno: document.getElementById('p-sku').value,
     nome: document.getElementById('p-nome').value,
@@ -2299,6 +2576,9 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
     csosn: fiscal.csosn,
     cfop_dentro_sp: fiscal.cfopSp,
     cfop_fora_sp: fiscal.cfopFora,
+    cest: fiscal.cest,
+    origem: fiscal.origem,
+    ncm_validado: fiscal.validado,
   };
 
   try {
@@ -3705,7 +3985,7 @@ const pedidosPag = {
   pagina: 1,
   tamanho: 50,
   total: null,          // total de pedidos do filtro (null = ainda não carregado)
-  filtro: { inicio: null, fimExclusivo: null, canal: null, produto: null, texto: null, modalidade: null },
+  filtro: { inicio: null, fimExclusivo: null, canal: null, produto: null, texto: null, modalidade: null, nf: null },
   seq: 0,               // descarta respostas antigas se o usuário clicar rápido
 };
 
@@ -3725,6 +4005,7 @@ function lerFiltroPedidos(){
   const produto = document.getElementById('f-produto').value;
   const texto = document.getElementById('f-busca').value.trim();
   const modalidade = document.getElementById('f-modalidade').value;
+  const nf = document.getElementById('f-nf').value;
   return {
     inicio: dataInicio ? new Date(dataInicio + 'T00:00:00').toISOString() : null,
     fimExclusivo,
@@ -3732,6 +4013,7 @@ function lerFiltroPedidos(){
     produto: produto || null,
     texto: texto || null,
     modalidade: modalidade || null,
+    nf: nf || null,
   };
 }
 
@@ -3796,10 +4078,13 @@ function celulaLiquido(p){
 
 // Total líquido do filtro (mesmos filtros do faturamento)
 async function carregarLiquidoFiltro(f, seq){
-  const { data, error } = await supabaseClient.rpc('resumo_liquido_filtro_v3', {
+  const paramsLiq = {
     p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto,
     p_modalidade: f.modalidade || null,
-  });
+  };
+  const { data, error } = f.nf
+    ? await supabaseClient.rpc('resumo_liquido_filtro_v4', { ...paramsLiq, p_nf: f.nf })
+    : await supabaseClient.rpc('resumo_liquido_filtro_v3', paramsLiq);
   if (seq !== pedidosPag.seq) return;
   const el = document.getElementById('v-liquido-filtro');
   const det = document.getElementById('v-liquido-detalhe');
@@ -3843,7 +4128,7 @@ async function loadPedidos(){
   const SELECT_PEDIDOS = '*, pedido_itens(quantidade, sku_ml_item, produtos(sku_interno, nome))';
   let lista, resumo;
 
-  if (!f.produto && !f.texto && !f.modalidade) {
+  if (!f.produto && !f.texto && !f.modalidade && !f.nf) {
     // Sem filtro de produto/texto/envio: exatamente a mesma consulta de antes
     let query = supabaseClient
       .from('pedidos_venda')
@@ -3862,7 +4147,11 @@ async function loadPedidos(){
   } else {
     // Com produto, texto e/ou envio: o banco acha os pedidos da página (funções _v3 do Lote 9)
     const params = { p_inicio: f.inicio, p_fim: f.fimExclusivo, p_canal: f.canal, p_produto: f.produto, p_texto: f.texto, p_modalidade: f.modalidade };
-    const [ids, res] = await Promise.all([
+    // Com filtro de NF: funções _v4 (Lote 11) — mesmas regras da _v3 + o filtro de nota
+    const [ids, res] = await Promise.all(f.nf ? [
+      supabaseClient.rpc('listar_pedidos_filtro_ids_v4', { ...params, p_nf: f.nf, p_limite: pedidosPag.tamanho, p_offset: inicio }),
+      supabaseClient.rpc('resumo_vendas_filtro_v4', { ...params, p_nf: f.nf }),
+    ] : [
       supabaseClient.rpc('listar_pedidos_filtro_ids_v3', { ...params, p_limite: pedidosPag.tamanho, p_offset: inicio }),
       supabaseClient.rpc('resumo_vendas_filtro_v3', params),
     ]);
@@ -3872,7 +4161,7 @@ async function loadPedidos(){
     } else if (!ids.data.length) {
       lista = { data: [], error: null };
     } else {
-      const idsPagina = ids.data.map(x => (typeof x === 'string' ? x : x.listar_pedidos_filtro_ids_v3 || Object.values(x)[0]));
+      const idsPagina = ids.data.map(x => (typeof x === 'string' ? x : x.listar_pedidos_filtro_ids_v3 || x.listar_pedidos_filtro_ids_v4 || Object.values(x)[0]));
       lista = await supabaseClient
         .from('pedidos_venda')
         .select(SELECT_PEDIDOS)
@@ -3912,6 +4201,8 @@ async function loadPedidos(){
   }
 
   const data = lista.data || [];
+  const nfMapa = await carregarNfDosPedidos(data.map(p => p.id));
+  if (seq !== pedidosPag.seq) return;
   carregarLiquidoFiltro(f, seq);
   const confirmados = Number(r.pedidos_confirmados);
   document.getElementById('v-faturamento-filtro').textContent = fmtMoeda(r.faturamento);
@@ -3941,6 +4232,7 @@ async function loadPedidos(){
       <td class="num">${fmtMoeda(p.valor_total)}</td>
       <td class="num">${celulaLiquido(p)}</td>
       <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${esc(p.status)}</span></td>
+      <td class="col-nf">${nfMapa === null ? '<span class="muted">—</span>' : celulaNfPedido(p, nfMapa[p.id])}</td>
       <td class="col-acoes">${p.status === 'confirmado' ? `<button type="button" class="acao-linha" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}<button type="button" class="acao-linha perigo" onclick="excluirPedido('${p.id}')">Excluir</button></td>
     `;
     tbody.appendChild(tr);
@@ -5033,6 +5325,825 @@ function carregarApp(){
   loadPromocoesAtivas();
   loadHistoricoAnalises();
 }
+
+// ============================================================
+// NOTAS FISCAIS — NF-e modelo 55 (Lote 11)
+// A tela só LÊ notas. Emitir / cancelar / e-mail passam pela Edge
+// Function "nfe" (servidor), que confere o login e grava tudo.
+// A nota NUNCA é emitida sozinha: só pelo botão "Emitir NF-e".
+// ============================================================
+const URL_FN_NFE = SUPABASE_URL + '/functions/v1/nfe';
+const NFE_AMBIENTE_LABEL = {
+  simulacao: 'SIMULAÇÃO — teste dentro do ERP, a nota NÃO vai para a SEFAZ e não tem valor fiscal',
+  homologacao: 'HOMOLOGAÇÃO — teste na SEFAZ, sem valor fiscal',
+  producao: 'PRODUÇÃO — notas reais, com valor fiscal',
+};
+const NFE_AMBIENTE_CURTO = { simulacao: 'Simulação', homologacao: 'Homologação', producao: 'Produção' };
+const NFE_STATUS_LABEL = {
+  processando: 'Processando', autorizada: 'Autorizada', rejeitada: 'Rejeitada',
+  erro: 'Erro', cancelando: 'Cancelando', cancelada: 'Cancelada',
+};
+const NFE_PROVEDOR_LABEL = { simulacao: 'Simulação (dentro do ERP)', sysvelox: 'SysVelox' };
+const NFE_ORIGEM_LABEL = ['0 — Nacional', '1 — Estrangeira (importação direta)', '2 — Estrangeira (mercado interno)',
+  '3 — Nacional, conteúdo importado 40–70%', '4 — Nacional, processo produtivo básico', '5 — Nacional, conteúdo importado ≤ 40%',
+  '6 — Estrangeira sem similar (importação direta)', '7 — Estrangeira sem similar (mercado interno)', '8 — Nacional, conteúdo importado > 70%'];
+
+let nfeConfig = null;          // linha de fiscal_config
+let nfeNumeracao = [];
+let nfeClientes = [];
+let nfeNotasCache = [];
+let nfeEmissao = { pedidoId: null, pronto: false };
+let nfeCancelarId = null;
+let nfeClienteEditandoId = null;
+let nfeClienteDepoisDeSalvar = null;
+
+const soDigitos = (t) => String(t || '').replace(/\D/g, '');
+function fmtDoc(d){
+  d = soDigitos(d);
+  if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  return d || '-';
+}
+function fmtChave(c){ return String(c || '').replace(/(\d{4})(?=\d)/g, '$1 '); }
+function fmtDataHora(iso){ return iso ? new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '-'; }
+function fmtDataBR(iso){ return iso ? new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '-'; }
+function msgNfe(id, texto, tipo){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'nfe-msg' + (tipo ? ' ' + tipo : '');
+  el.innerHTML = texto || '';
+}
+function badgeNfe(status){ return `<span class="badge nfe-${esc(status)}">${esc(NFE_STATUS_LABEL[status] || status)}</span>`; }
+
+// Chama a Edge Function "nfe" com o login do usuário
+async function chamarNfe(corpo){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) throw new Error('Sua sessão expirou — saia e entre de novo no ERP.');
+  let resp;
+  try {
+    resp = await fetch(URL_FN_NFE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify(corpo),
+    });
+  } catch (e) {
+    throw new Error('Sem conexão com o servidor de notas (a função "nfe" está publicada no Supabase?).');
+  }
+  let j = null;
+  try { j = await resp.json(); } catch (_) { /* resposta não-JSON */ }
+  if (!j) throw new Error(`Resposta inesperada do servidor de notas (HTTP ${resp.status}). Confira se a função "nfe" foi publicada.`);
+  return j;
+}
+
+// ---------- configuração ----------
+async function loadNfeConfig(){
+  const [cfg, num] = await Promise.all([
+    supabaseClient.from('fiscal_config').select('*').eq('id', 1).maybeSingle(),
+    supabaseClient.from('nfe_numeracao').select('*').order('ambiente'),
+  ]);
+  if (cfg.error || !cfg.data) {
+    nfeConfig = null;
+    const b = document.getElementById('nfe-banner');
+    b.className = 'nfe-banner erro';
+    b.textContent = 'O módulo de notas fiscais ainda não foi instalado no banco (falta rodar o SQL do Lote 9).';
+    return null;
+  }
+  nfeConfig = cfg.data;
+  nfeNumeracao = num.data || [];
+  renderNfeBanner();
+  preencherNfeConfigForm();
+  return nfeConfig;
+}
+
+function nfeConfigPendencias(c){
+  const p = [];
+  if (!c) return ['Configuração não carregada.'];
+  if (!c.razao_social) p.push('razão social');
+  if (!/^\d{14}$/.test(c.cnpj || '')) p.push('CNPJ');
+  if (!c.ie) p.push('Inscrição Estadual');
+  if (!c.logradouro || !c.numero || !c.bairro) p.push('endereço');
+  if (!/^\d{8}$/.test(c.cep || '')) p.push('CEP');
+  if (!/^\d{7}$/.test(c.codigo_municipio || '') || !c.municipio) p.push('município/IBGE');
+  return p;
+}
+
+function renderNfeBanner(){
+  const c = nfeConfig;
+  const b = document.getElementById('nfe-banner');
+  const pend = nfeConfigPendencias(c);
+  b.className = 'nfe-banner ' + c.ambiente;
+  b.innerHTML = `<strong>Ambiente: ${esc(NFE_AMBIENTE_LABEL[c.ambiente])}</strong> · plataforma: ${esc(NFE_PROVEDOR_LABEL[c.provedor] || c.provedor)} · série ${esc(c.serie)}` +
+    (pend.length ? `<br>⚠️ Configuração fiscal incompleta: falta ${esc(pend.join(', '))} — abra "Configuração fiscal da empresa" abaixo.` : '');
+  const bc = document.getElementById('badge-nfe-config');
+  bc.textContent = pend.length ? pend.length + ' pendente' + (pend.length > 1 ? 's' : '') : 'ok';
+  bc.classList.toggle('pendente', pend.length > 0);
+  document.getElementById('nfe-f-ambiente').value = document.getElementById('nfe-f-ambiente').dataset.mexido ? document.getElementById('nfe-f-ambiente').value : c.ambiente;
+}
+
+function preencherNfeConfigForm(){
+  const c = nfeConfig;
+  const set = (id, v) => { document.getElementById(id).value = v ?? ''; };
+  set('nfe-c-razao', c.razao_social); set('nfe-c-fantasia', c.nome_fantasia);
+  set('nfe-c-cnpj', fmtDoc(c.cnpj)); set('nfe-c-ie', c.ie); set('nfe-c-im', c.im); set('nfe-c-crt', String(c.crt));
+  set('nfe-c-cep', c.cep); set('nfe-c-logradouro', c.logradouro); set('nfe-c-numero', c.numero); set('nfe-c-compl', c.complemento);
+  set('nfe-c-bairro', c.bairro); set('nfe-c-municipio', c.municipio); set('nfe-c-ibge', c.codigo_municipio); set('nfe-c-uf', c.uf);
+  set('nfe-c-fone', c.telefone); set('nfe-c-email', c.email);
+  set('nfe-c-natureza', c.natureza_operacao); set('nfe-c-cfop-dentro', c.cfop_padrao_dentro_uf); set('nfe-c-cfop-fora', c.cfop_padrao_fora_uf);
+  set('nfe-c-csosn', c.csosn_padrao); set('nfe-c-presenca', String(c.indicador_presenca_fisica)); set('nfe-c-copia', c.email_copia);
+  set('nfe-c-cstpis', c.cst_pis_padrao); set('nfe-c-cstcofins', c.cst_cofins_padrao);
+  set('nfe-c-info', c.info_complementar); set('nfe-c-modo', c.ambiente + '|' + c.provedor); set('nfe-c-serie', c.serie);
+  document.getElementById('nfe-num-ajuda').textContent = c.provedor === 'sysvelox'
+    ? `Na SysVelox o número da nota é dado pela própria SysVelox (série ${c.serie} configurada no portal dela). A tabela acima vale só para a simulação.`
+    : 'Na simulação o ERP numera sozinho (último + 1).';
+  const tb = document.getElementById('nfe-num-tbody');
+  tb.innerHTML = nfeNumeracao.map(n => `<tr>
+      <td>${esc(NFE_AMBIENTE_CURTO[n.ambiente] || n.ambiente)}${n.ambiente === c.ambiente ? ' <span class="badge concluida">atual</span>' : ''}</td>
+      <td>${esc(n.serie)}</td><td class="num">${Number(n.ultimo_numero).toLocaleString('pt-BR')}</td>
+      <td class="num"><strong>${(Number(n.ultimo_numero) + 1).toLocaleString('pt-BR')}</strong></td>
+      <td><button type="button" class="cr-link-btn" onclick="ajustarNumeracaoNfe('${esc(n.ambiente)}', ${Number(n.serie)}, ${Number(n.ultimo_numero)})">Ajustar</button></td>
+    </tr>`).join('');
+}
+
+async function salvarNfeConfig(){
+  const v = (id) => document.getElementById(id).value.trim();
+  const upd = {
+    razao_social: v('nfe-c-razao') || null, nome_fantasia: v('nfe-c-fantasia') || null,
+    cnpj: soDigitos(v('nfe-c-cnpj')) || null, ie: v('nfe-c-ie').toUpperCase().replace(/[^0-9A-Z]/g, '') || null,
+    im: v('nfe-c-im') || null, crt: Number(v('nfe-c-crt')),
+    cep: soDigitos(v('nfe-c-cep')) || null, logradouro: v('nfe-c-logradouro') || null, numero: v('nfe-c-numero') || null,
+    complemento: v('nfe-c-compl') || null, bairro: v('nfe-c-bairro') || null, municipio: v('nfe-c-municipio') || null,
+    codigo_municipio: soDigitos(v('nfe-c-ibge')) || null, uf: v('nfe-c-uf').toUpperCase(),
+    telefone: v('nfe-c-fone') || null, email: v('nfe-c-email') || null,
+    natureza_operacao: v('nfe-c-natureza'), cfop_padrao_dentro_uf: soDigitos(v('nfe-c-cfop-dentro')),
+    cfop_padrao_fora_uf: soDigitos(v('nfe-c-cfop-fora')), csosn_padrao: soDigitos(v('nfe-c-csosn')),
+    indicador_presenca_fisica: Number(v('nfe-c-presenca')), email_copia: v('nfe-c-copia') || null,
+    cst_pis_padrao: soDigitos(v('nfe-c-cstpis')), cst_cofins_padrao: soDigitos(v('nfe-c-cstcofins')),
+    ambiente: v('nfe-c-modo').split('|')[0], provedor: v('nfe-c-modo').split('|')[1],
+    info_complementar: document.getElementById('nfe-c-info').value.trim() || null,
+    serie: Number(v('nfe-c-serie')),
+    updated_at: new Date().toISOString(),
+    updated_by: document.getElementById('email-logado').textContent || null,
+  };
+  const erros = [];
+  if (upd.cnpj && !/^\d{14}$/.test(upd.cnpj)) erros.push('CNPJ precisa ter 14 dígitos.');
+  if (upd.cep && !/^\d{8}$/.test(upd.cep)) erros.push('CEP precisa ter 8 dígitos.');
+  if (upd.codigo_municipio && !/^\d{7}$/.test(upd.codigo_municipio)) erros.push('Código IBGE do município tem 7 dígitos.');
+  if (!/^[A-Z]{2}$/.test(upd.uf)) erros.push('UF com 2 letras (ex: SP).');
+  if (!upd.natureza_operacao) erros.push('Natureza da operação é obrigatória.');
+  if (!/^5\d{3}$/.test(upd.cfop_padrao_dentro_uf)) erros.push('CFOP dentro de SP começa com 5 e tem 4 dígitos (ex: 5102).');
+  if (!/^6\d{3}$/.test(upd.cfop_padrao_fora_uf)) erros.push('CFOP fora de SP começa com 6 e tem 4 dígitos (ex: 6102).');
+  if (!/^\d{3}$/.test(upd.csosn_padrao)) erros.push('CSOSN tem 3 dígitos (ex: 102).');
+  if (!/^\d{2}$/.test(upd.cst_pis_padrao) || !/^\d{2}$/.test(upd.cst_cofins_padrao)) erros.push('CST de PIS e de COFINS têm 2 dígitos (o Tiny usa 99).');
+  if (upd.ambiente === 'producao') erros.push('Produção ainda não está liberada.');
+  if (!Number.isInteger(upd.serie) || upd.serie < 0 || upd.serie > 999) erros.push('Série entre 0 e 999.');
+  if (erros.length) { msgNfe('nfe-c-msg', '❌ ' + erros.map(esc).join('<br>❌ '), 'erro'); return; }
+  if (upd.serie !== Number(nfeConfig.serie) &&
+      !confirm(`Mudar a série de ${nfeConfig.serie} para ${upd.serie}?\n\nCada série tem numeração própria. Só mude se o contador orientou (lembre: a série 1 era do Tiny e a 2 é do Mercado Livre).`)) return;
+  const btn = document.getElementById('nfe-c-salvar');
+  btn.disabled = true;
+  const { error } = await supabaseClient.from('fiscal_config').update(upd).eq('id', 1);
+  btn.disabled = false;
+  if (error) { msgNfe('nfe-c-msg', '❌ Não salvou: ' + esc(error.message), 'erro'); return; }
+  // garante a linha de numeração da série nova (começa do zero)
+  if (!nfeNumeracao.some(n => n.ambiente === nfeConfig.ambiente && Number(n.serie) === upd.serie)) {
+    await supabaseClient.rpc('nfe_ajustar_numeracao', { p_ambiente: nfeConfig.ambiente, p_serie: upd.serie, p_ultimo: 0 });
+  }
+  msgNfe('nfe-c-msg', '✅ Configuração salva.', 'ok');
+  if (upd.provedor !== nfeConfig.provedor) { loadNotasFiscais(); loadNfePendentes(); loadPedidos(); }
+  await loadNfeConfig();
+}
+
+async function ajustarNumeracaoNfe(ambiente, serie, atual){
+  const txt = prompt(`Último número JÁ USADO na série ${serie} (${NFE_AMBIENTE_CURTO[ambiente]}).\n\nA próxima nota sai com esse número + 1. Use só se o contador disser que esta série já teve notas antes.\n\nAtual: ${atual}`, String(atual));
+  if (txt === null) return;
+  const n = Number(soDigitos(txt));
+  if (!Number.isInteger(n) || txt.trim() === '') { alert('Número inválido.'); return; }
+  const { error } = await supabaseClient.rpc('nfe_ajustar_numeracao', { p_ambiente: ambiente, p_serie: serie, p_ultimo: n });
+  if (error) { alert('Não ajustou: ' + error.message); return; }
+  await loadNfeConfig();
+}
+
+async function testarSysVelox(){
+  if (!confirm('Emitir 1 nota de TESTE no sandbox da SysVelox (sem valor fiscal) para conferir a integração?')) return;
+  const btn = document.getElementById('nfe-c-testar-sv');
+  btn.disabled = true;
+  msgNfe('nfe-c-msg', 'Testando… pode levar até 1 minuto.');
+  try {
+    const r = await chamarNfe({ acao: 'teste_sysvelox' });
+    msgNfe('nfe-c-msg', (r.passos || [r.erro || 'Sem resposta']).map(esc).join('<br>'), r.ok ? 'ok' : 'erro');
+  } catch (e) { msgNfe('nfe-c-msg', '❌ ' + esc(e.message), 'erro'); }
+  btn.disabled = false;
+}
+
+async function limparSimulacaoNfe(){
+  if (!confirm('Apagar TODAS as notas de SIMULAÇÃO (e os arquivos delas)?\n\nNotas de homologação/produção não são tocadas. A numeração de simulação volta para 1.')) return;
+  msgNfe('nfe-c-msg', 'Apagando…');
+  try {
+    const r = await chamarNfe({ acao: 'limpar_simulacao' });
+    if (!r.ok) throw new Error(r.erro || 'falhou');
+    msgNfe('nfe-c-msg', `✅ ${r.notas} nota(s) de simulação apagada(s).`, 'ok');
+    await loadNfeConfig(); loadNotasFiscais(); loadNfePendentes(); loadPedidos();
+  } catch (e) { msgNfe('nfe-c-msg', '❌ ' + esc(e.message), 'erro'); }
+}
+
+// Busca de CEP (ViaCEP — gratuito, dá o código IBGE do município)
+async function buscarCepNfe(prefixo){
+  const cep = soDigitos(document.getElementById(prefixo + 'cep').value);
+  const msgId = prefixo === 'nfe-c-' ? 'nfe-c-msg' : 'nfe-k-msg';
+  if (cep.length !== 8) { msgNfe(msgId, 'Digite o CEP com 8 números.', 'erro'); return; }
+  msgNfe(msgId, 'Buscando CEP…');
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const j = await r.json();
+    if (j.erro) throw new Error('CEP não encontrado.');
+    const set = (suf, v) => { const el = document.getElementById(prefixo + suf); if (el && v) el.value = v; };
+    set('logradouro', j.logradouro); set('bairro', j.bairro); set('municipio', j.localidade);
+    set('uf', j.uf); set('ibge', j.ibge);
+    msgNfe(msgId, '✅ Endereço preenchido pelo CEP — complete o número.', 'ok');
+  } catch (e) { msgNfe(msgId, '❌ ' + esc(e.message || 'Falha na busca do CEP'), 'erro'); }
+}
+
+// ---------- clientes ----------
+async function loadClientesNfe(){
+  const { data, error } = await supabaseClient.from('clientes').select('*').order('nome').limit(2000);
+  if (error) { console.error(error); return; }
+  nfeClientes = data || [];
+  renderClientesNfe();
+  preencherSelectClienteNfe();
+}
+function renderClientesNfe(){
+  const partes = normalizarBusca(document.getElementById('nfe-cli-busca').value).split(/\s+/).filter(Boolean);
+  const lista = nfeClientes.filter(c => !partes.length ||
+    partes.every(x => normalizarBusca([c.nome, c.documento, fmtDoc(c.documento), c.municipio, c.uf, c.email].join(' ')).includes(x)));
+  document.getElementById('badge-nfe-clientes').textContent = nfeClientes.length;
+  document.getElementById('nfe-cli-vazio').style.display = lista.length ? 'none' : 'block';
+  document.getElementById('nfe-cli-tbody').innerHTML = lista.map(c => `<tr>
+      <td>${esc(c.nome)}</td><td>${esc(fmtDoc(c.documento))}</td>
+      <td>${esc(c.municipio || '-')}${c.uf ? '/' + esc(c.uf) : ''}</td><td>${esc(c.email || '-')}</td>
+      <td><button type="button" class="secondary" onclick="abrirClienteNfe('${c.id}')">Editar</button></td></tr>`).join('');
+}
+function preencherSelectClienteNfe(){
+  const sel = document.getElementById('nfe-e-cliente');
+  const antes = sel.value;
+  sel.innerHTML = '<option value=""></option>' + nfeClientes.filter(c => c.ativo)
+    .map(c => `<option value="${c.id}">${esc(c.nome)} — ${esc(fmtDoc(c.documento))}${c.municipio ? ' — ' + esc(c.municipio) + '/' + esc(c.uf || '') : ''}</option>`).join('');
+  if (antes) sel.value = antes;
+}
+
+function abrirClienteNfe(id, depoisDeSalvar){
+  nfeClienteEditandoId = id || null;
+  nfeClienteDepoisDeSalvar = depoisDeSalvar || null;
+  const c = id ? nfeClientes.find(x => x.id === id) : null;
+  document.getElementById('nfe-k-titulo').textContent = c ? 'Editar cliente' : 'Novo cliente';
+  const set = (s, v) => { document.getElementById('nfe-k-' + s).value = v ?? ''; };
+  set('doc', c ? fmtDoc(c.documento) : ''); set('nome', c?.nome); set('indie', String(c?.indicador_ie ?? 9)); set('ie', c?.ie);
+  set('cep', c?.cep); set('logradouro', c?.logradouro); set('numero', c?.numero); set('compl', c?.complemento);
+  set('bairro', c?.bairro); set('municipio', c?.municipio); set('uf', c?.uf); set('ibge', c?.codigo_municipio);
+  set('fone', c?.telefone); set('email', c?.email);
+  document.getElementById('nfe-k-consfinal').checked = c ? c.consumidor_final !== false : true;
+  atualizarCampoIeNfe();
+  msgNfe('nfe-k-msg', '');
+  document.getElementById('nfe-modal-cliente').style.display = 'flex';
+}
+function atualizarCampoIeNfe(){
+  const ind = document.getElementById('nfe-k-indie').value;
+  document.getElementById('nfe-k-ie-campo').style.display = ind === '1' ? '' : 'none';
+  const cf = document.getElementById('nfe-k-consfinal');
+  if (ind === '9') { cf.checked = true; cf.disabled = true; } else { cf.disabled = false; }
+}
+
+async function buscarCnpjNfe(){
+  const doc = soDigitos(document.getElementById('nfe-k-doc').value);
+  if (doc.length !== 14) { msgNfe('nfe-k-msg', 'A busca automática funciona só com CNPJ (14 números).', 'erro'); return; }
+  msgNfe('nfe-k-msg', 'Buscando CNPJ…');
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
+    if (!r.ok) throw new Error(r.status === 404 ? 'CNPJ não encontrado.' : 'Serviço de consulta indisponível agora — preencha à mão.');
+    const j = await r.json();
+    const set = (s, v) => { if (v) document.getElementById('nfe-k-' + s).value = v; };
+    set('nome', (j.razao_social || '').slice(0, 60)); set('cep', soDigitos(j.cep)); set('logradouro', [j.descricao_tipo_de_logradouro, j.logradouro].filter(Boolean).join(' '));
+    set('numero', j.numero); set('compl', j.complemento); set('bairro', j.bairro); set('municipio', j.municipio);
+    set('uf', j.uf); set('ibge', j.codigo_municipio_ibge ? String(j.codigo_municipio_ibge) : ''); set('email', (j.email || '').toLowerCase());
+    if (!document.getElementById('nfe-k-ibge').value && soDigitos(j.cep).length === 8) await buscarCepNfe('nfe-k-');
+    msgNfe('nfe-k-msg', '✅ Dados da Receita preenchidos. Confira a Inscrição Estadual (não vem nessa consulta) e o e-mail.', 'ok');
+  } catch (e) { msgNfe('nfe-k-msg', '❌ ' + esc(e.message), 'erro'); }
+}
+
+async function salvarClienteNfe(){
+  const v = (s) => document.getElementById('nfe-k-' + s).value.trim();
+  const rec = {
+    nome: v('nome'), documento: soDigitos(v('doc')) || null, indicador_ie: Number(v('indie')),
+    ie: v('indie') === '1' ? (v('ie') || null) : null,
+    consumidor_final: document.getElementById('nfe-k-consfinal').checked,
+    cep: soDigitos(v('cep')) || null, logradouro: v('logradouro') || null, numero: v('numero') || null,
+    complemento: v('compl') || null, bairro: v('bairro') || null, municipio: v('municipio') || null,
+    uf: v('uf').toUpperCase() || null, codigo_municipio: soDigitos(v('ibge')) || null,
+    telefone: v('fone') || null, email: v('email').toLowerCase() || null,
+  };
+  const erros = [];
+  if (!rec.nome) erros.push('Nome é obrigatório.');
+  if (!rec.documento || !/^(\d{11}|\d{14})$/.test(rec.documento)) erros.push('CPF (11) ou CNPJ (14 números).');
+  else if (!docValido(rec.documento)) erros.push('CPF/CNPJ com dígito verificador errado — confira.');
+  if (rec.documento && rec.documento.length === 11 && rec.indicador_ie !== 9) erros.push('Pessoa física (CPF) normalmente é "Não contribuinte".');
+  if (rec.indicador_ie === 1 && !rec.ie) erros.push('Contribuinte do ICMS precisa da Inscrição Estadual.');
+  if (rec.cep && rec.cep.length !== 8) erros.push('CEP com 8 números.');
+  if (rec.codigo_municipio && rec.codigo_municipio.length !== 7) erros.push('Código IBGE com 7 números (use "Buscar CEP").');
+  if (rec.uf && !/^[A-Z]{2}$/.test(rec.uf)) erros.push('UF com 2 letras.');
+  if (rec.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rec.email)) erros.push('E-mail inválido.');
+  if (erros.length) { msgNfe('nfe-k-msg', '❌ ' + erros.map(esc).join('<br>❌ '), 'erro'); return; }
+  const btn = document.getElementById('nfe-k-salvar');
+  btn.disabled = true;
+  const q = nfeClienteEditandoId
+    ? supabaseClient.from('clientes').update(rec).eq('id', nfeClienteEditandoId).select('id').single()
+    : supabaseClient.from('clientes').insert(rec).select('id').single();
+  const { data, error } = await q;
+  btn.disabled = false;
+  if (error) {
+    const dup = /clientes_documento_unico|duplicate/i.test(error.message);
+    msgNfe('nfe-k-msg', '❌ ' + (dup ? 'Já existe um cliente com esse CPF/CNPJ — use "Editar" nele.' : esc(error.message)), 'erro');
+    return;
+  }
+  document.getElementById('nfe-modal-cliente').style.display = 'none';
+  await loadClientesNfe();
+  if (nfeClienteDepoisDeSalvar) nfeClienteDepoisDeSalvar(data.id);
+}
+
+// Dígitos verificadores de CPF/CNPJ
+function docValido(d){
+  d = soDigitos(d);
+  if (/^(\d)\1+$/.test(d)) return false;
+  if (d.length === 11) {
+    for (const t of [9, 10]) {
+      let s = 0; for (let i = 0; i < t; i++) s += Number(d[i]) * (t + 1 - i);
+      if (((s * 10) % 11) % 10 !== Number(d[t])) return false;
+    }
+    return true;
+  }
+  if (d.length === 14) {
+    const calc = (n) => { const pesos = n === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+      let s = 0; for (let i = 0; i < n; i++) s += Number(d[i]) * pesos[i]; const r = s % 11; return r < 2 ? 0 : 11 - r; };
+    return calc(12) === Number(d[12]) && calc(13) === Number(d[13]);
+  }
+  return false;
+}
+
+// ---------- emitir ----------
+async function abrirEmissaoNF(pedidoId){
+  if (!nfeConfig) await loadNfeConfig();
+  if (!nfeConfig) { alert('O módulo de notas fiscais ainda não foi instalado no banco.'); return; }
+  if (!nfeClientes.length) await loadClientesNfe();
+  nfeEmissao = { pedidoId, pronto: false };
+  const { data: p, error } = await supabaseClient.from('pedidos_venda')
+    .select('id, data_pedido, canal, cliente_nome_avulso, cliente_id, valor_total, status').eq('id', pedidoId).single();
+  if (error) { alert('Pedido não encontrado: ' + error.message); return; }
+  const amb = document.getElementById('nfe-e-amb');
+  amb.className = 'nfe-amb-aviso ' + nfeConfig.ambiente;
+  amb.textContent = NFE_AMBIENTE_LABEL[nfeConfig.ambiente];
+  document.getElementById('nfe-e-pedido').innerHTML =
+    `Venda de <strong>${fmtDataBR(p.data_pedido)}</strong> · ${esc(CANAL_LABEL[p.canal] || p.canal)} · <strong>${fmtMoeda(p.valor_total)}</strong>` +
+    (p.cliente_nome_avulso ? ` · nome digitado na venda: <strong>${esc(p.cliente_nome_avulso)}</strong>` : '');
+  const sel = document.getElementById('nfe-e-cliente');
+  sel.value = p.cliente_id || '';
+  msgNfe('nfe-e-msg', '');
+  document.getElementById('nfe-e-emitir').textContent = 'Emitir NF-e';
+  document.getElementById('nfe-modal-emitir').style.display = 'flex';
+  await previaEmissaoNF();
+}
+
+async function definirClienteDoPedido(clienteId){
+  const { error } = await supabaseClient.from('pedidos_venda').update({ cliente_id: clienteId || null }).eq('id', nfeEmissao.pedidoId);
+  if (error) { msgNfe('nfe-e-msg', '❌ Não consegui ligar o cliente à venda: ' + esc(error.message), 'erro'); return false; }
+  return true;
+}
+
+async function previaEmissaoNF(){
+  const box = document.getElementById('nfe-e-previa');
+  const btn = document.getElementById('nfe-e-emitir');
+  btn.disabled = true;
+  nfeEmissao.pronto = false;
+  box.innerHTML = '<span class="muted">Montando a nota…</span>';
+  const { data: r, error } = await supabaseClient.rpc('nfe_preparar', { p_pedido_id: nfeEmissao.pedidoId });
+  if (error) { box.innerHTML = '<div class="nfe-msg erro">❌ ' + esc(error.message) + '</div>'; return; }
+  const d = r.dados || {};
+  const pend = r.pendencias || [], avisos = r.avisos || [];
+  let html = '';
+  if (pend.length) html += `<div class="nfe-pendencias"><strong>Falta resolver antes de emitir:</strong><ul>${pend.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+  if (avisos.length) html += `<div class="nfe-avisos"><strong>Atenção:</strong><ul>${avisos.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+  const dest = d.destinatario;
+  if (dest) {
+    html += `<div class="nfe-bloco"><strong>Destinatário:</strong> ${esc(dest.nome)} — ${esc(fmtDoc(dest.documento))}` +
+      `${dest.ie ? ' — IE ' + esc(dest.ie) : ''}<br><span class="muted">${esc([dest.logradouro, dest.numero, dest.complemento, dest.bairro].filter(Boolean).join(', '))} — ${esc(dest.municipio || '')}/${esc(dest.uf || '')} — CEP ${esc(dest.cep || '')}` +
+      ` · ${d.destino === 2 ? 'venda para OUTRO estado' : 'venda dentro de SP'} · consumidor final: ${d.consumidor_final ? 'sim' : 'não'}</span></div>`;
+  }
+  const itens = d.itens || [];
+  if (itens.length) {
+    html += `<div class="tabela-rolavel"><table class="nfe-itens"><thead><tr><th>Produto</th><th>NCM</th><th>CFOP</th><th>CSOSN</th><th class="num">Qtd</th><th class="num">Unit.</th><th class="num">Total</th></tr></thead><tbody>` +
+      itens.map(it => `<tr><td>${esc(it.codigo)} — ${esc(it.descricao)}</td><td>${esc(it.ncm || '—')}</td><td>${esc(it.cfop)}</td><td>${esc(it.csosn)}</td>
+        <td class="num">${fmt(it.quantidade)} ${esc(it.unidade)}</td><td class="num">${fmtMoeda(it.valor_unitario)}</td><td class="num">${fmtMoeda(it.valor_bruto)}</td></tr>`).join('') +
+      `</tbody></table></div>`;
+    const t = d.totais || {};
+    html += `<div class="nfe-totais">Produtos ${fmtMoeda(t.produtos)}${Number(t.frete) ? ' + frete ' + fmtMoeda(t.frete) : ''}${Number(t.desconto) ? ' − desconto ' + fmtMoeda(t.desconto) : ''} = <strong>Total da nota ${fmtMoeda(t.total)}</strong></div>`;
+    const prox = nfeNumeracao.find(n => n.ambiente === nfeConfig.ambiente && Number(n.serie) === Number(nfeConfig.serie));
+    html += `<div class="muted" style="font-size:12px;">Natureza: ${esc(d.natureza_operacao)} · série ${esc(d.serie)} · CST PIS/COFINS ${esc(itens[0].cst_pis)}/${esc(itens[0].cst_cofins)} · ` +
+      (nfeConfig.provedor === 'sysvelox' ? 'número: dado pela SysVelox na autorização'
+        : 'número: definido pelo servidor na hora de emitir' + (prox ? ` (próximo livre: ${Number(prox.ultimo_numero) + 1}; nota rejeitada antes reaproveita o número dela)` : '')) + `</div>`;
+  }
+  box.innerHTML = html;
+  nfeEmissao.pronto = !!r.ok;
+  btn.disabled = !r.ok;
+  document.getElementById('nfe-e-cli-editar').disabled = !document.getElementById('nfe-e-cliente').value;
+}
+
+async function emitirNF(){
+  if (!nfeEmissao.pronto) return;
+  const amb = nfeConfig.ambiente;
+  const aviso = amb === 'producao'
+    ? 'Emitir a NF-e REAL (produção) desta venda na SEFAZ?\n\nDepois de autorizada, só dá para cancelar em até 24 horas.'
+    : `Emitir a nota em ${NFE_AMBIENTE_CURTO[amb].toUpperCase()} (sem valor fiscal)?`;
+  if (!confirm(aviso)) return;
+  const btn = document.getElementById('nfe-e-emitir');
+  btn.disabled = true; btn.textContent = 'Emitindo…';
+  msgNfe('nfe-e-msg', 'Enviando… não feche esta janela.');
+  try {
+    const r = await chamarNfe({ acao: 'emitir', pedido_id: nfeEmissao.pedidoId });
+    if (r.pendencias) { msgNfe('nfe-e-msg', '❌ ' + r.pendencias.map(esc).join('<br>❌ '), 'erro'); btn.textContent = 'Emitir NF-e'; await previaEmissaoNF(); return; }
+    if (!r.nota) throw new Error(r.erro || 'Falha desconhecida.');
+    const n = r.nota;
+    if (n.status === 'autorizada') {
+      msgNfe('nfe-e-msg', `✅ <strong>NF-e nº ${n.numero} (série ${n.serie}) AUTORIZADA</strong> — ${esc(n.motivo || '')}<br>Chave: ${esc(fmtChave(n.chave))}`, 'ok');
+      btn.textContent = 'Emitida';
+    } else if (n.status === 'processando') {
+      msgNfe('nfe-e-msg', `⏳ Nota enviada, a SEFAZ ainda está processando… o ERP vai conferindo sozinho.`, 'aviso');
+      btn.textContent = 'Enviada';
+      acompanharNfe(n.id);
+    } else {
+      msgNfe('nfe-e-msg', `❌ Nota${n.numero ? ' nº ' + n.numero : ''} <strong>${esc(NFE_STATUS_LABEL[n.status])}</strong>: ${esc(n.codigo_status ? n.codigo_status + ' — ' : '')}${esc(n.motivo || '')}<br>Corrija e clique em "Emitir NF-e" de novo.`, 'erro');
+      btn.textContent = 'Emitir NF-e'; btn.disabled = false;
+    }
+  } catch (e) {
+    msgNfe('nfe-e-msg', '❌ ' + esc(e.message), 'erro');
+    btn.textContent = 'Emitir NF-e'; btn.disabled = false;
+  }
+  await loadNfeConfig();
+  loadNotasFiscais(); loadNfePendentes(); loadPedidos();
+}
+
+// Confere a nota "processando" a cada 3 s por até 1 minuto (a SysVelox é assíncrona)
+async function acompanharNfe(notaId){
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    let r;
+    try { r = await chamarNfe({ acao: 'consultar', nota_id: notaId }); } catch (_) { continue; }
+    const n = r && r.nota;
+    if (!n || n.status === 'processando') continue;
+    if (document.getElementById('nfe-modal-emitir').style.display === 'flex' && nfeEmissao.pedidoId === n.pedido_id) {
+      msgNfe('nfe-e-msg', n.status === 'autorizada'
+        ? `✅ <strong>NF-e nº ${n.numero} (série ${n.serie}) AUTORIZADA</strong> — ${esc(n.motivo || '')}<br>Chave: ${esc(fmtChave(n.chave))}`
+        : `❌ <strong>${esc(NFE_STATUS_LABEL[n.status])}</strong>: ${esc(n.codigo_status ? n.codigo_status + ' — ' : '')}${esc(n.motivo || '')}`,
+        n.status === 'autorizada' ? 'ok' : 'erro');
+      if (n.status !== 'autorizada') { const b = document.getElementById('nfe-e-emitir'); b.textContent = 'Emitir NF-e'; b.disabled = false; }
+    }
+    loadNotasFiscais(); loadNfePendentes(); loadPedidos();
+    return;
+  }
+}
+
+// ---------- vendas pendentes de nota ----------
+async function loadNfePendentes(){
+  const tb = document.getElementById('nfe-p-tbody');
+  const dias = Number(document.getElementById('nfe-p-dias').value);
+  const { data, error } = await supabaseClient.rpc('nfe_pedidos_sem_nota', { p_dias: dias });
+  if (error) { tb.innerHTML = ''; const v = document.getElementById('nfe-p-vazio'); v.style.display = 'block'; v.textContent = 'Indisponível: ' + error.message; return; }
+  const v = document.getElementById('nfe-p-vazio');
+  v.textContent = 'Nenhuma venda sem nota no período.';
+  v.style.display = data.length ? 'none' : 'block';
+  tb.innerHTML = data.map(p => `<tr>
+      <td>${fmtDataBR(p.data_pedido)}</td><td>${esc(CANAL_LABEL[p.canal] || p.canal)}</td><td>${esc(p.cliente_nome || '-')}</td>
+      <td class="num">${fmtMoeda(p.valor_total)}</td>
+      <td>${p.ultima_nota_status ? badgeNfe(p.ultima_nota_status) + (p.ultima_nota_numero != null ? ` nº ${esc(p.ultima_nota_numero)}` : '') + `<br><small class="muted">${esc(p.ultima_nota_motivo || '')}</small>` : '<span class="muted">—</span>'}</td>
+      <td><button type="button" onclick="abrirEmissaoNF('${p.id}')">${p.ultima_nota_status ? 'Tentar de novo' : 'Emitir NF-e'}</button></td></tr>`).join('');
+}
+
+// ---------- lista de notas ----------
+function filtroNotasNfe(){
+  const de = document.getElementById('nfe-f-de').value, ate = document.getElementById('nfe-f-ate').value;
+  // dias inteiros no horário de Brasília
+  return {
+    de: de ? new Date(de + 'T00:00:00-03:00').toISOString() : null,
+    ate: ate ? new Date(new Date(ate + 'T00:00:00-03:00').getTime() + 864e5).toISOString() : null,
+    status: document.getElementById('nfe-f-status').value || null,
+    ambiente: document.getElementById('nfe-f-ambiente').value,
+    deTxt: de, ateTxt: ate,
+  };
+}
+function queryNotasNfe(f, colunas){
+  let q = supabaseClient.from('notas_fiscais').select(colunas, { count: 'exact' }).eq('ambiente', f.ambiente);
+  if (f.de) q = q.gte('data_emissao', f.de);
+  if (f.ate) q = q.lt('data_emissao', f.ate);
+  if (f.status) q = q.eq('status', f.status);
+  return q.order('data_emissao', { ascending: false }).order('numero', { ascending: false });
+}
+async function loadNotasFiscais(){
+  if (!nfeConfig) return;
+  const f = filtroNotasNfe();
+  const { data, error, count } = await queryNotasNfe(f, 'id, pedido_id, numero, serie, chave, status, codigo_status, motivo, data_emissao, data_autorizacao, destinatario_nome, destinatario_documento, destinatario_email, valor_total, xml_path, pdf_path, xml_cancelamento_path, ambiente, provedor, simulado, email_enviado_em, cancelada_em, motivo_cancelamento').range(0, 199);
+  const tb = document.getElementById('nfe-tbody');
+  const vazio = document.getElementById('nfe-vazio');
+  if (error) { tb.innerHTML = ''; vazio.style.display = 'block'; vazio.textContent = 'Indisponível: ' + error.message; return; }
+  nfeNotasCache = data || [];
+  vazio.textContent = 'Nenhuma nota no filtro.';
+  vazio.style.display = nfeNotasCache.length ? 'none' : 'block';
+  document.getElementById('nfe-info').textContent = count > nfeNotasCache.length
+    ? `Mostrando as ${nfeNotasCache.length} mais recentes de ${count}. O "Baixar XML do período" baixa todas as ${count}.`
+    : (count ? `${count} nota(s) no filtro.` : '');
+  document.getElementById('nfe-sel-todas').checked = false;
+  tb.innerHTML = nfeNotasCache.map(n => {
+    const acoes = [];
+    if (n.status === 'autorizada') {
+      acoes.push(`<button type="button" class="cr-link-btn" onclick="abrirDanfeNfe('${n.id}')">DANFE</button>`);
+      acoes.push(`<button type="button" class="cr-link-btn" onclick="baixarXmlNfe('${n.id}')">XML</button>`);
+      if (n.provedor === 'simulacao') acoes.push(`<button type="button" class="cr-link-btn" onclick="enviarEmailNfe('${n.id}')">E-mail</button>`);
+      acoes.push(`<button type="button" class="cr-link-btn perigo" onclick="abrirCancelarNfe('${n.id}')">Cancelar</button>`);
+    } else if (n.status === 'cancelada') {
+      if (n.xml_path) acoes.push(`<button type="button" class="cr-link-btn" onclick="baixarXmlNfe('${n.id}')">XML</button>`);
+      if (n.xml_cancelamento_path) acoes.push(`<button type="button" class="cr-link-btn" onclick="baixarXmlNfe('${n.id}', true)">XML cancel.</button>`);
+    } else if (n.status === 'rejeitada' || n.status === 'erro') {
+      if (n.pedido_id) acoes.push(`<button type="button" class="cr-link-btn" onclick="abrirEmissaoNF('${n.pedido_id}')">Corrigir e tentar de novo</button>`);
+    } else {
+      acoes.push(`<button type="button" class="cr-link-btn" onclick="consultarNfe('${n.id}')">Atualizar status</button>`);
+    }
+    const detalhe = n.status === 'cancelada' ? `Cancelada em ${fmtDataHora(n.cancelada_em)} — ${n.motivo_cancelamento || ''}`
+      : (n.codigo_status ? n.codigo_status + ' — ' : '') + (n.motivo || '');
+    return `<tr>
+      <td>${n.xml_path ? `<input type="checkbox" class="nfe-sel" value="${n.id}">` : ''}</td>
+      <td><strong>${n.numero != null ? esc(n.numero) : '—'}</strong> / ${esc(n.serie)}${n.simulado ? ' <small class="muted">(sandbox)</small>' : ''}${n.chave ? `<br><small class="muted" title="${esc(n.chave)}">${esc(n.chave.slice(0, 8))}…${esc(n.chave.slice(-6))}</small>` : ''}</td>
+      <td>${fmtDataHora(n.data_emissao)}</td>
+      <td>${esc(n.destinatario_nome || '-')}<br><small class="muted">${esc(fmtDoc(n.destinatario_documento))}</small></td>
+      <td class="num">${fmtMoeda(n.valor_total)}</td>
+      <td>${badgeNfe(n.status)}<br><small class="muted">${esc(detalhe)}</small>${n.email_enviado_em ? `<br><small class="muted">✉ ${fmtDataBR(n.email_enviado_em)}</small>` : ''}</td>
+      <td class="nfe-acoes">${acoes.join(' ')}</td></tr>`;
+  }).join('');
+  atualizarBotaoZipSelecionadas();
+}
+function atualizarBotaoZipSelecionadas(){
+  const n = document.querySelectorAll('.nfe-sel:checked').length;
+  const b = document.getElementById('nfe-zip-selecionadas');
+  b.disabled = !n;
+  b.textContent = n ? `⬇ Baixar XML das ${n} selecionada${n > 1 ? 's' : ''} (.zip)` : '⬇ Baixar XML das selecionadas (.zip)';
+}
+
+async function consultarNfe(id){
+  try {
+    const r = await chamarNfe({ acao: 'consultar', nota_id: id });
+    if (!r.ok) throw new Error(r.erro);
+  } catch (e) { alert('Não consegui atualizar: ' + e.message); }
+  loadNotasFiscais(); loadNfePendentes();
+}
+
+async function enviarEmailNfe(id){
+  const n = nfeNotasCache.find(x => x.id === id);
+  const email = prompt('Enviar a nota (XML + DANFE) para qual e-mail?', n?.destinatario_email || '');
+  if (email === null) return;
+  try {
+    const r = await chamarNfe({ acao: 'email', nota_id: id, email: email.trim() });
+    alert((r.ok ? '✅ ' : '❌ ') + (r.mensagem || r.erro || ''));
+  } catch (e) { alert('❌ ' + e.message); }
+  loadNotasFiscais();
+}
+
+function abrirCancelarNfe(id){
+  const n = nfeNotasCache.find(x => x.id === id);
+  if (!n) return;
+  nfeCancelarId = id;
+  const horas = (Date.now() - new Date(n.data_autorizacao || n.data_emissao).getTime()) / 36e5;
+  document.getElementById('nfe-x-info').innerHTML = `NF-e nº <strong>${esc(n.numero)}</strong> (série ${esc(n.serie)}) — ${esc(n.destinatario_nome || '')} — ${fmtMoeda(n.valor_total)}<br>` +
+    `Autorizada há ${Math.floor(horas)}h. ${horas > 24 ? '<strong style="color:var(--danger)">Passou de 24h: em SP o cancelamento comum não é mais aceito — fale com o contador.</strong>' : 'Cancelamento permitido até 24h depois da autorização.'}`;
+  document.getElementById('nfe-x-just').value = '';
+  document.getElementById('nfe-x-cont').textContent = '0 / 255';
+  msgNfe('nfe-x-msg', '');
+  document.getElementById('nfe-x-confirmar').disabled = false;
+  document.getElementById('nfe-modal-cancelar').style.display = 'flex';
+}
+async function confirmarCancelarNfe(){
+  const just = document.getElementById('nfe-x-just').value.trim().replace(/\s+/g, ' ');
+  if (just.length < 15) { msgNfe('nfe-x-msg', 'A justificativa precisa ter pelo menos 15 caracteres.', 'erro'); return; }
+  const btn = document.getElementById('nfe-x-confirmar');
+  btn.disabled = true;
+  msgNfe('nfe-x-msg', 'Cancelando…');
+  try {
+    const r = await chamarNfe({ acao: 'cancelar', nota_id: nfeCancelarId, justificativa: just });
+    if (!r.ok) throw new Error(r.erro || 'Cancelamento não aceito.');
+    msgNfe('nfe-x-msg', '✅ Nota cancelada. Se a venda também foi desfeita, cancele o pedido na aba Vendas.', 'ok');
+  } catch (e) { msgNfe('nfe-x-msg', '❌ ' + esc(e.message), 'erro'); btn.disabled = false; }
+  loadNotasFiscais(); loadNfePendentes(); loadPedidos();
+}
+
+// ---------- arquivos (XML / DANFE / ZIP) ----------
+function salvarBlob(blob, nome){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function baixarArquivoNfe(caminho){
+  const { data, error } = await supabaseClient.storage.from('notas-fiscais').download(caminho);
+  if (error) throw new Error('Arquivo indisponível (' + caminho + '): ' + error.message);
+  return data;
+}
+async function baixarXmlNfe(id, cancelamento){
+  const n = nfeNotasCache.find(x => x.id === id);
+  const caminho = cancelamento ? n?.xml_cancelamento_path : n?.xml_path;
+  if (!caminho) { alert('Esta nota não tem XML guardado.'); return; }
+  try { salvarBlob(await baixarArquivoNfe(caminho), caminho.split('/').pop()); }
+  catch (e) { alert(e.message); }
+}
+
+async function abrirDanfeNfe(id){
+  const { data: n, error } = await supabaseClient.from('notas_fiscais').select('*').eq('id', id).single();
+  if (error) { alert(error.message); return; }
+  if (n.pdf_path) {
+    try { const b = await baixarArquivoNfe(n.pdf_path); window.open(URL.createObjectURL(b), '_blank'); }
+    catch (e) { alert(e.message); }
+    return;
+  }
+  if (n.ambiente !== 'simulacao') { alert('O PDF (DANFE) desta nota ainda não está disponível. Tente "Atualizar status" ou fale com o suporte.'); return; }
+  const w = window.open('', '_blank');
+  if (!w) { alert('O navegador bloqueou a janela. Libere pop-ups para o ERP.'); return; }
+  w.document.write(danfeSimuladoHtml(n));
+  w.document.close();
+}
+
+// DANFE de SIMULAÇÃO (só para conferência visual — marcado "sem valor fiscal")
+function danfeSimuladoHtml(n){
+  const d = n.dados || {}, e = d.emitente || {}, dest = d.destinatario || {}, t = d.totais || {};
+  const itens = (d.itens || []).map(it => `<tr><td>${esc(it.codigo)}</td><td>${esc(it.descricao)}</td><td>${esc(it.ncm)}</td><td>${esc(it.csosn)}</td><td>${esc(it.cfop)}</td><td>${esc(it.unidade)}</td>
+    <td class="r">${fmt(it.quantidade)}</td><td class="r">${fmtMoeda(it.valor_unitario)}</td><td class="r">${fmtMoeda(it.valor_bruto)}</td></tr>`).join('');
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>DANFE simulação nº ${esc(n.numero)}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11px;margin:20px;color:#111}h1{font-size:15px;margin:0}table{border-collapse:collapse;width:100%;margin-top:8px}
+  td,th{border:1px solid #444;padding:4px;vertical-align:top}th{background:#eee;text-align:left}.r{text-align:right}.box{border:1px solid #444;padding:6px;margin-top:8px}
+  .marca{position:fixed;top:40%;left:5%;right:5%;text-align:center;font-size:56px;font-weight:bold;color:rgba(200,0,0,.18);transform:rotate(-20deg);pointer-events:none}
+  .faixa{background:#c00;color:#fff;font-weight:bold;padding:6px;text-align:center;font-size:13px}@media print{.noprint{display:none}}</style></head><body>
+  <div class="marca">SIMULAÇÃO — SEM VALOR FISCAL</div>
+  <div class="faixa">SIMULAÇÃO DO ERP — ESTA NOTA NÃO FOI ENVIADA À SEFAZ E NÃO TEM VALOR FISCAL</div>
+  <p class="noprint"><button onclick="print()">Imprimir / salvar PDF</button></p>
+  <table><tr><td style="width:60%"><h1>${esc(e.razao_social)}</h1>${esc([e.logradouro, e.numero, e.bairro].filter(Boolean).join(', '))} — ${esc(e.municipio)}/${esc(e.uf)} — CEP ${esc(e.cep)}<br>CNPJ ${esc(fmtDoc(e.cnpj))} · IE ${esc(e.ie || '')}</td>
+  <td><strong>DANFE</strong> (simulação)<br>1 — Saída<br>Nº <strong>${esc(n.numero)}</strong> · Série ${esc(n.serie)}<br>Emissão: ${fmtDataHora(n.data_emissao)}</td></tr>
+  <tr><td colspan="2">Chave de acesso: <strong>${esc(fmtChave(n.chave))}</strong><br>Protocolo: ${esc(n.protocolo || '')} · Natureza: ${esc(d.natureza_operacao || '')}</td></tr></table>
+  <div class="box"><strong>DESTINATÁRIO</strong><br>${esc(dest.nome || '')} — ${esc(fmtDoc(dest.documento))}${dest.ie ? ' — IE ' + esc(dest.ie) : ''}<br>
+  ${esc([dest.logradouro, dest.numero, dest.complemento, dest.bairro].filter(Boolean).join(', '))} — ${esc(dest.municipio || '')}/${esc(dest.uf || '')} — CEP ${esc(dest.cep || '')}</div>
+  <table><thead><tr><th>Código</th><th>Descrição</th><th>NCM</th><th>CSOSN</th><th>CFOP</th><th>Un</th><th class="r">Qtd</th><th class="r">Unit.</th><th class="r">Total</th></tr></thead><tbody>${itens}</tbody></table>
+  <table><tr><td>Produtos<br><strong>${fmtMoeda(t.produtos)}</strong></td><td>Frete<br><strong>${fmtMoeda(t.frete)}</strong></td><td>Desconto<br><strong>${fmtMoeda(t.desconto)}</strong></td><td>TOTAL DA NOTA<br><strong>${fmtMoeda(t.total)}</strong></td></tr></table>
+  <div class="box"><strong>INFORMAÇÕES COMPLEMENTARES</strong><br>SIMULAÇÃO — SEM VALOR FISCAL. ${esc(d.informacoes_complementares || '')}</div>
+  </body></html>`;
+}
+
+// JSZip só é carregado quando alguém pede um .zip
+let jszipPromise = null;
+function carregarJSZip(){
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  if (!jszipPromise) jszipPromise = new Promise((ok, erro) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => ok(window.JSZip);
+    s.onerror = () => { jszipPromise = null; erro(new Error('Não consegui carregar o gerador de .zip (sem internet?).')); };
+    document.head.appendChild(s);
+  });
+  return jszipPromise;
+}
+
+// Gera o .zip com os XMLs + uma planilha resumo (CSV) pro contador
+async function gerarZipNfe(notas, nomeArquivo){
+  const msg = document.getElementById('nfe-zip-msg');
+  if (!notas.length) { msg.textContent = 'Nenhuma nota com XML nesse filtro.'; return; }
+  const JSZip = await carregarJSZip();
+  const zip = new JSZip();
+  const linhas = [['numero', 'serie', 'emissao', 'chave', 'status', 'cliente', 'cpf_cnpj', 'valor_total', 'ambiente'].join(';')];
+  let feitos = 0, falhas = [];
+  for (const n of notas) {
+    msg.textContent = `Baixando XML ${feitos + 1} de ${notas.length}…`;
+    try {
+      if (n.xml_path) zip.file(n.xml_path.split('/').pop(), await baixarArquivoNfe(n.xml_path));
+      if (n.xml_cancelamento_path) zip.file(n.xml_cancelamento_path.split('/').pop(), await baixarArquivoNfe(n.xml_cancelamento_path));
+    } catch (e) { falhas.push(n.numero); }
+    linhas.push([n.numero, n.serie, fmtDataHora(n.data_emissao), n.chave ? "'" + n.chave : '', n.status,
+      `"${String(n.destinatario_nome || '').replace(/"/g, '""')}"`, soDigitos(n.destinatario_documento),
+      Number(n.valor_total || 0).toFixed(2).replace('.', ','), n.ambiente].join(';'));
+    feitos++;
+  }
+  zip.file('resumo_notas.csv', '﻿' + linhas.join('\r\n'));
+  msg.textContent = 'Compactando…';
+  salvarBlob(await zip.generateAsync({ type: 'blob' }), nomeArquivo);
+  msg.textContent = `✅ ${feitos} nota(s) no .zip` + (falhas.length ? ` — ⚠️ sem arquivo: nº ${falhas.join(', ')}` : '');
+}
+async function zipPeriodoNfe(){
+  const f = filtroNotasNfe();
+  const msg = document.getElementById('nfe-zip-msg');
+  if (!f.de || !f.ate) { msg.textContent = 'Escolha as datas "Emitidas de" e "até" para baixar o período.'; return; }
+  msg.textContent = 'Listando notas do período…';
+  // busca em páginas de 500 (o Supabase corta em ~1000 linhas por consulta)
+  const todas = [];
+  for (let ini = 0; ; ini += 500) {
+    const { data, error } = await queryNotasNfe(f, 'id, numero, serie, chave, status, data_emissao, destinatario_nome, destinatario_documento, valor_total, ambiente, xml_path, xml_cancelamento_path')
+      .not('xml_path', 'is', null).range(ini, ini + 499);
+    if (error) { msg.textContent = '❌ ' + error.message; return; }
+    todas.push(...data);
+    if (data.length < 500) break;
+  }
+  try { await gerarZipNfe(todas, `NFe_${nfeConfig.cnpj}_${f.deTxt}_a_${f.ateTxt}_${f.ambiente}.zip`); }
+  catch (e) { msg.textContent = '❌ ' + e.message; }
+}
+async function zipSelecionadasNfe(){
+  const ids = [...document.querySelectorAll('.nfe-sel:checked')].map(c => c.value);
+  const notas = nfeNotasCache.filter(n => ids.includes(n.id));
+  try { await gerarZipNfe(notas, `NFe_${nfeConfig.cnpj}_selecionadas_${new Date().toISOString().slice(0, 10)}.zip`); }
+  catch (e) { document.getElementById('nfe-zip-msg').textContent = '❌ ' + e.message; }
+}
+
+// ---------- coluna "NF-e" na lista de Vendas ----------
+async function carregarNfDosPedidos(ids){
+  if (!nfeConfig) await loadNfeConfig();
+  if (!nfeConfig) return null;          // módulo fiscal ainda não instalado no banco
+  if (!ids.length) return {};
+  const { data, error } = await supabaseClient.from('notas_fiscais')
+    .select('pedido_id, numero, serie, status, ambiente, origem, created_at').in('pedido_id', ids)
+    .neq('status', 'cancelada').order('created_at', { ascending: false });
+  if (error) return {};
+  const mapa = {};
+  (data || []).forEach(n => {
+    if (n.origem !== 'ml' && n.ambiente !== nfeConfig.ambiente) return;
+    if (!mapa[n.pedido_id]) mapa[n.pedido_id] = n;
+  });
+  return mapa;
+}
+function celulaNfPedido(p, nota){
+  if (nota) {
+    const sim = nota.ambiente !== 'producao' ? ` <small class="muted">(${esc(NFE_AMBIENTE_CURTO[nota.ambiente])})</small>` : '';
+    if (nota.status === 'autorizada') return `<span class="badge nfe-autorizada" title="Série ${esc(nota.serie)}">NF ${nota.numero != null ? esc(nota.numero) + ' ' : ''}✔</span>${sim}`;
+    if (nota.status === 'rejeitada' || nota.status === 'erro')
+      return `${badgeNfe(nota.status)}${sim}<br><button type="button" class="cr-link-btn" onclick="abrirEmissaoNF('${p.id}')">Tentar de novo</button>`;
+    return badgeNfe(nota.status) + sim;
+  }
+  if (p.status !== 'confirmado') return '<span class="muted">—</span>';
+  if (p.canal === 'loja_fisica' || p.canal === 'loja_online')
+    return `<button type="button" class="secondary nfe-btn-emitir" onclick="abrirEmissaoNF('${p.id}')">Emitir NF-e</button>`;
+  if (p.canal === 'shopee') return '<span class="muted" title="A nota das vendas da Shopee é emitida pelo emissor da própria Shopee.">pela Shopee</span>';
+  return '<span class="muted" title="A nota das vendas do Mercado Livre é emitida pelo próprio ML. Ela aparece aqui quando a importação das notas do ML estiver pronta.">pelo ML</span>';
+}
+
+// ---------- abrir a aba ----------
+async function abrirNotasFiscais(){
+  await loadNfeConfig();
+  if (!nfeConfig) return;
+  loadNfePendentes();
+  loadNotasFiscais();
+  loadClientesNfe();
+}
+
+// ---------- eventos ----------
+(function ligarEventosNfe(){
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on('nfe-p-atualizar', 'click', loadNfePendentes);
+  on('nfe-p-dias', 'change', loadNfePendentes);
+  on('nfe-f-form', 'submit', (e) => { e.preventDefault(); loadNotasFiscais(); });
+  on('nfe-f-ambiente', 'change', (e) => { e.target.dataset.mexido = '1'; });
+  on('nfe-zip-periodo', 'click', zipPeriodoNfe);
+  on('nfe-zip-selecionadas', 'click', zipSelecionadasNfe);
+  on('nfe-sel-todas', 'change', (e) => { document.querySelectorAll('.nfe-sel').forEach(c => { c.checked = e.target.checked; }); atualizarBotaoZipSelecionadas(); });
+  on('nfe-tbody', 'change', (e) => { if (e.target.classList.contains('nfe-sel')) atualizarBotaoZipSelecionadas(); });
+  on('nfe-cli-busca', 'input', renderClientesNfe);
+  on('nfe-cli-novo', 'click', () => abrirClienteNfe(null));
+  on('nfe-c-salvar', 'click', salvarNfeConfig);
+  on('nfe-c-buscacep', 'click', () => buscarCepNfe('nfe-c-'));
+  on('nfe-c-limpar-sim', 'click', limparSimulacaoNfe);
+  on('nfe-c-testar-sv', 'click', testarSysVelox);
+  // modal emitir
+  on('nfe-e-fechar', 'click', () => { document.getElementById('nfe-modal-emitir').style.display = 'none'; });
+  on('nfe-e-emitir', 'click', emitirNF);
+  on('nfe-e-cliente', 'change', async (e) => {
+    if (!nfeEmissao.pedidoId) return;
+    if (await definirClienteDoPedido(e.target.value)) previaEmissaoNF();
+  });
+  on('nfe-e-cli-novo', 'click', () => abrirClienteNfe(null, async (novoId) => {
+    const sel = document.getElementById('nfe-e-cliente');
+    sel.value = novoId;
+    if (await definirClienteDoPedido(novoId)) previaEmissaoNF();
+  }));
+  on('nfe-e-cli-editar', 'click', () => {
+    const id = document.getElementById('nfe-e-cliente').value;
+    if (id) abrirClienteNfe(id, () => previaEmissaoNF());
+  });
+  // modal cliente
+  on('nfe-k-cancelar', 'click', () => { document.getElementById('nfe-modal-cliente').style.display = 'none'; });
+  on('nfe-k-form', 'submit', salvarClienteNfe);
+  on('nfe-k-buscacep', 'click', () => buscarCepNfe('nfe-k-'));
+  on('nfe-k-buscacnpj', 'click', buscarCnpjNfe);
+  on('nfe-k-indie', 'change', atualizarCampoIeNfe);
+  // modal cancelar
+  on('nfe-x-fechar', 'click', () => { document.getElementById('nfe-modal-cancelar').style.display = 'none'; });
+  on('nfe-x-confirmar', 'click', confirmarCancelarNfe);
+  on('nfe-x-just', 'input', (e) => { document.getElementById('nfe-x-cont').textContent = e.target.value.trim().length + ' / 255'; });
+  criarAutocomplete(document.getElementById('nfe-e-cliente'), { placeholder: 'Digite nome ou CPF/CNPJ do cliente…' });
+})();
 
 // SEGURANÇA: a senha não pode ficar guardada na página.
 // - O campo de senha é limpo assim que o "Entrar" é clicado.
