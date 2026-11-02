@@ -1084,10 +1084,33 @@ caso das 227 caixas 30x12,3x8 em 08/10).
 
 ## Integração Shopee — plano combinado (2026-10-22 a 2026-10-30)
 
-**Status**: banco pronto (Lote 10a). Aguardando o dono concluir o cadastro na
-Shopee Open Platform (aprovação da conta em até 3 dias úteis) e criar o app.
-Próximo passo do Claude assim que as **chaves de teste** estiverem no Supabase:
-construir e testar no sandbox as Edge Functions e a tela.
+**Status (2026-11-02)**: fase 1 construída e no ar (Lotes 10a/10b/10c).
+Conta de desenvolvedor aprovada, app "Seller In House System" criado, chaves de
+teste nos Secrets, **loja sandbox conectada** (shop_id 228007809) e testada:
+assinatura aceita, `get_order_list` ok, renovação do token ok. Go Live pedido
+(aguardando aprovação → chaves `SHOPEE_PARTNER_ID/KEY` → reconectar com a loja
+real pelo botão "Conectar Shopee", que substitui a conexão sandbox; cadastrar a
+URL de Push `.../functions/v1/shopee-webhook` no app). Ainda não testado com
+pedido real: mapeamento de modalidade de envio Shopee (hoje só Full; resto vira
+"Envio próprio") e o link exato da Central do Vendedor por pedido.
+
+**Construído (Lote 10b/10c)**
+- `importar_pedido_shopee(p_pedido, p_itens, p_baixar_estoque)` — pedido +
+  itens + baixa do físico numa transação; order_sn repetido não duplica.
+  `registrar_cancelamento_shopee(p_pedido_id, p_devolver_estoque)`. Só service_role.
+- Edge Functions (Verify JWT off; código em `supabase/functions/shopee/`, módulo
+  comum `shopee.ts` enviado junto em cada deploy): `shopee-auth` (monta o link
+  assinado e redireciona; `?ambiente=sandbox`), `shopee-oauth-callback` (troca o
+  code, grava tokens + nome/validade da loja, volta pro ERP com
+  `?shopee=conectado|erro`), `shopee-webhook` (aviso code 3 → relê o pedido na
+  API e aplica; assinatura só é logada), `shopee-sync-pedidos` (`?horas`,
+  `?simular=1`; pg_cron `sync-pedidos-shopee` nos minutos 4/19/34/49, janela 3h).
+- Regras: UNPAID não entra; cancelado sem pagamento não entra; pago entra e
+  baixa do físico; Full Shopee entra sem baixa; cancelado depois devolve o
+  estoque se `pickup_done_time` vazio. Sandbox: número "SANDBOX-…", sem baixa.
+- Tela: cartão Shopee em Integrações; filtro Shopee; nº do pedido sob o cliente;
+  coluna NF-e (do Lote 11) mostra, para Shopee, "NF pendente" + "Emitir na
+  Shopee ↗" quando `shopee_status = INVOICE_PENDING`, senão "pela Shopee".
 
 **Decisões do dono**
 - 1 loja Shopee → canal único `shopee` (tag "S · Shopee", cor vermelha).
