@@ -285,6 +285,20 @@
     font-size:12px; font-weight:600; border-radius:6px; margin-left:6px; }
   button.acao-linha:hover{ opacity:1; color:var(--text); border-color:#c9ced8; background:#f7f8fa; }
   button.acao-linha.perigo:hover{ color:var(--danger); border-color:#f0b4b4; background:#fdf2f2; }
+  /* Lote 10c — Shopee */
+  .tag-nf{ display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-size:11px;
+    font-weight:600; white-space:nowrap; background:#fdecec; color:#8f1f1f; line-height:16px; }
+  .tag-nf.ok{ background:#e4f7ea; color:#1d6b3c; }
+  .cel-envio{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+  button.acao-linha.nf{ color:#8f1f1f; border-color:#f0b4b4; margin-left:0; }
+  button.acao-linha.nf:hover{ background:#fdf2f2; }
+  .sub-pedido{ display:block; font-size:11px; color:var(--muted); }
+  .shopee-aviso{ padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:12px; }
+  .shopee-aviso.ok{ background:#e4f7ea; color:#1d6b3c; }
+  .shopee-aviso.erro{ background:#fdecec; color:#8f1f1f; }
+  .shopee-info{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin:12px 0; }
+  .shopee-info div{ background:var(--bg); border-radius:8px; padding:10px 12px; font-size:13px; }
+  .shopee-info small{ display:block; color:var(--muted); font-size:11px; margin-bottom:2px; }
   .tags-pedido{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
   .badge[class*=" cr-"]{ white-space:nowrap; }
   .badge.cr-a_receber{ background:#e6f0ff; color:#1d4ed8; }
@@ -500,6 +514,19 @@
         <tbody id="tabela-integracoes"></tbody>
       </table>
       <button data-t="BTN_ATUALIZAR_STATUS" class="secondary" id="btn-atualizar-integracoes" style="margin-top:12px;">Atualizar status</button>
+    </div>
+
+    <div class="card" id="card-shopee">
+      <h3 data-t="CARD_SHOPEE">Shopee</h3>
+      <div class="shopee-aviso" id="shopee-aviso" style="display:none;"></div>
+      <p class="muted" style="margin-top:0;">Pedidos pagos entram sozinhos (aviso da Shopee + conferência a cada 15 min) e baixam do estoque Físico. A nota fiscal continua sendo emitida no emissor da Shopee — o ERP mostra quais pedidos estão com NF pendente.</p>
+      <div id="shopee-status" class="muted">Carregando…</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+        <a href="https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/shopee-auth"><button type="button" id="btn-shopee-conectar">Conectar Shopee</button></a>
+        <a href="https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/shopee-auth?ambiente=sandbox"><button type="button" class="secondary">Conectar loja de teste</button></a>
+        <button type="button" class="secondary" id="btn-shopee-sync">Buscar pedidos agora</button>
+      </div>
+      <pre id="resultado-shopee-sync" style="white-space:pre-wrap; margin-bottom:0;"></pre>
     </div>
 
     <div class="card">
@@ -718,6 +745,7 @@
             <option value="ml_conta2">Mercado Livre - JG</option>
             <option value="ml_conta3">Mercado Livre - Gustavo</option>
             <option value="loja_online">Loja Online</option>
+            <option value="shopee">Shopee</option>
           </select>
         </div>
         <div class="field"><label data-t="FILTRO_LABEL_ENVIO" for="f-modalidade">Envio</label>
@@ -1631,6 +1659,7 @@ const TEXTOS = {
   FILTRO_LABEL_ATE: 'Até',
   FILTRO_LABEL_CANAL: 'Canal',
   FILTRO_LABEL_ENVIO: 'Envio',
+  CARD_SHOPEE: 'Shopee',
   PRODUTOS_LABEL_SKU: 'SKU interno *',
   PRODUTOS_LABEL_NOME: 'Nome *',
   PRODUTOS_LABEL_TIPO: 'Tipo *',
@@ -3473,6 +3502,88 @@ async function loadIntegracoes(){
 
 document.getElementById('btn-atualizar-integracoes').addEventListener('click', loadIntegracoes);
 
+// ---------- Shopee (Lote 10c) ----------
+const URL_SHOPEE_SYNC = 'https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/shopee-sync-pedidos';
+const SHOPEE_SELLER_PEDIDOS = 'https://seller.shopee.com.br/portal/sale/order';
+const diasAte = (iso) => iso ? Math.floor((new Date(iso).getTime() - Date.now()) / 86400000) : null;
+
+async function loadShopee(){
+  const el = document.getElementById('shopee-status');
+  if (!el) return;
+  const { data, error } = await supabaseClient.rpc('listar_integracoes_shopee');
+  if (error) { el.textContent = 'Não foi possível ler a conexão: ' + error.message; return; }
+  const c = (data || [])[0];
+  if (!c) {
+    el.innerHTML = '<span class="badge cancelada">Não conectada</span>';
+    document.getElementById('btn-shopee-conectar').textContent = 'Conectar Shopee';
+    return;
+  }
+  const dAut = diasAte(c.autorizacao_expira_em);
+  const avisoAut = dAut !== null && dAut <= 30 ? ` <span class="badge cancelada">vence em ${Math.max(dAut, 0)} dia(s) — reconecte</span>` : '';
+  el.innerHTML = `
+    <span class="badge concluida">Conectada</span>
+    ${c.ambiente === 'sandbox' ? ' <span class="badge em_producao">Loja de teste (sandbox)</span>' : ''}
+    <div class="shopee-info">
+      <div><small>Loja</small>${esc(c.shop_name || '-')} <span class="muted">(${esc(c.shop_id)})</span></div>
+      <div><small>Conectada em</small>${fmtDataHora(c.conectado_em)}</div>
+      <div><small>Autorização da loja vale até</small>${fmtDataHora(c.autorizacao_expira_em)}${avisoAut}</div>
+    </div>`;
+  document.getElementById('btn-shopee-conectar').textContent = 'Reconectar Shopee';
+}
+
+document.getElementById('btn-shopee-sync').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-shopee-sync');
+  const out = document.getElementById('resultado-shopee-sync');
+  btn.disabled = true;
+  out.textContent = 'Buscando pedidos dos últimos 3 dias na Shopee…';
+  try {
+    const r = await (await fetch(URL_SHOPEE_SYNC + '?horas=72')).json();
+    if (r.aviso) { out.textContent = r.aviso + '.'; return; }
+    const partes = Object.entries(r.resultado || {}).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`);
+    out.textContent = `${r.vistos} pedido(s) atualizado(s) na Shopee` + (partes.length ? ` → ${partes.join(', ')}` : '') + '.' +
+      (r.erros && r.erros.length ? '\n\nErros:\n• ' + r.erros.join('\n• ') : '');
+    loadPedidos();
+  } catch (e) {
+    out.textContent = 'Erro ao buscar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Volta da autorização: ?shopee=conectado | ?shopee=erro&msg=...
+function tratarRetornoShopee(){
+  const q = new URLSearchParams(location.search);
+  if (!q.has('shopee')) return;
+  const aviso = document.getElementById('shopee-aviso');
+  if (q.get('shopee') === 'conectado') {
+    aviso.className = 'shopee-aviso ok';
+    aviso.textContent = q.get('ambiente') === 'sandbox' ? 'Loja de teste da Shopee conectada.' : 'Loja Shopee conectada. Os pedidos pagos começam a entrar sozinhos.';
+  } else {
+    aviso.className = 'shopee-aviso erro';
+    aviso.textContent = 'Não foi possível conectar a Shopee: ' + (q.get('msg') || 'erro desconhecido');
+  }
+  aviso.style.display = 'block';
+  history.replaceState(null, '', location.pathname);
+  const nav = document.querySelector('.nav-item[data-view="integracoes"]');
+  if (nav) nav.click();
+}
+
+// Coluna NF-e de pedido Shopee: a nota é emitida no emissor da Shopee ("opção 1").
+// INVOICE_PENDING = a Shopee está esperando a nota → aviso + atalho pra Central do Vendedor.
+function celulaNfShopee(p){
+  if (p.status !== 'confirmado') return '<span class="muted">—</span>';
+  if (p.shopee_status === 'INVOICE_PENDING') {
+    return `<div class="cel-envio"><span class="tag-nf" title="A Shopee está esperando a nota fiscal deste pedido">NF pendente</span>` +
+      `<button type="button" class="acao-linha nf" onclick="emitirNfShopee('${esc(p.shopee_order_sn)}')" title="Copia o nº do pedido e abre a Central do Vendedor">Emitir na Shopee ↗</button></div>`;
+  }
+  return '<span class="muted" title="A nota das vendas da Shopee é emitida pelo emissor da própria Shopee.">pela Shopee</span>';
+}
+
+async function emitirNfShopee(sn){
+  try { await navigator.clipboard.writeText(sn); } catch (_) { /* sem permissão: segue */ }
+  window.open(SHOPEE_SELLER_PEDIDOS, '_blank', 'noopener');
+}
+
 document.getElementById('btn-sincronizar-full').addEventListener('click', async () => {
   const el = document.getElementById('resultado-sync-full');
   el.style.whiteSpace = 'pre-wrap';
@@ -4228,11 +4339,11 @@ async function loadPedidos(){
       <td>${tagCanal(p.canal)}</td>
       <td>${tagEnvio(p.modalidade_envio)}</td>
       <td class="col-produtos">${produtosTexto}</td>
-      <td class="col-cliente" title="${esc(p.cliente_nome_avulso || '')}">${esc(p.cliente_nome_avulso || '-')}</td>
+      <td class="col-cliente" title="${esc(p.cliente_nome_avulso || '')}">${esc(p.cliente_nome_avulso || '-')}${p.shopee_order_sn ? `<span class="sub-pedido">${esc(p.shopee_order_sn)}</span>` : ''}</td>
       <td class="num">${fmtMoeda(p.valor_total)}</td>
       <td class="num">${celulaLiquido(p)}</td>
       <td><span class="badge ${p.status === 'confirmado' ? 'concluida' : 'cancelada'}">${esc(p.status)}</span></td>
-      <td class="col-nf">${nfMapa === null ? '<span class="muted">—</span>' : celulaNfPedido(p, nfMapa[p.id])}</td>
+      <td class="col-nf">${p.canal === 'shopee' ? celulaNfShopee(p) : nfMapa === null ? '<span class="muted">—</span>' : celulaNfPedido(p, nfMapa[p.id])}</td>
       <td class="col-acoes">${p.status === 'confirmado' ? `<button type="button" class="acao-linha" onclick="cancelarPedido('${p.id}')">Cancelar</button>` : ''}<button type="button" class="acao-linha perigo" onclick="excluirPedido('${p.id}')">Excluir</button></td>
     `;
     tbody.appendChild(tr);
@@ -5320,6 +5431,8 @@ function carregarApp(){
   loadPedidos();
   sincronizarLiquidoRecente();
   loadIntegracoes();
+  loadShopee();
+  tratarRetornoShopee();
   loadPerguntasAbertas();
   sincronizarPerguntasEListar();
   loadPromocoesAtivas();
