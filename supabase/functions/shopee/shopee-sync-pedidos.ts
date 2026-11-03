@@ -5,6 +5,7 @@
 // faltar (pedido novo, mudança de status, cancelamento). Também mantém
 // o acesso renovado (o token da Shopee vale só 4h).
 // ?horas=N (padrão 3, máx 360 = 15 dias) · ?simular=1 (não grava nada)
+// ?ver=<order_sn> (mostra o pedido como a Shopee devolve, sem gravar)
 // ============================================================
 import { aplicarPedido, detalharPedidos, json, listarAtualizados, obterConexao } from './shopee.ts';
 
@@ -13,11 +14,13 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const horas = Math.min(Math.max(Number(url.searchParams.get('horas')) || 3, 1), 360);
   const simular = url.searchParams.get('simular') === '1';
+  const verPedido = url.searchParams.get('ver');      // ?ver=<order_sn>: só mostra o pedido cru da Shopee (não grava)
   const resumo: any = { janela_horas: horas, simulacao: simular, vistos: 0, resultado: {}, erros: [] as string[] };
   try {
     const con = await obterConexao();
     if (!con) return json({ ...resumo, aviso: 'Nenhuma loja Shopee conectada' });
     resumo.ambiente = con.ambiente;
+    if (verPedido) return json({ ambiente: con.ambiente, pedido: (await detalharPedidos(con, [verPedido]))[0] || null });
     const ate = Math.floor(Date.now() / 1000);
     const sns = await listarAtualizados(con, ate - horas * 3600, ate);
     resumo.vistos = sns.length;
