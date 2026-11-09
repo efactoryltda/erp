@@ -1084,6 +1084,27 @@ caso das 227 caixas 30x12,3x8 em 08/10).
 
 ## Integração Shopee — plano combinado (2026-10-22 a 2026-10-30)
 
+**Status (2026-11-09): LOJA REAL NO AR.** Go Live aprovado (Live Partner_id
+2051877; **Live Key vence em 03/05/2027** — gerar outra no Console antes disso e
+atualizar `SHOPEE_PARTNER_KEY`). Loja "E-Factory Group" (shop_id 1677860524)
+conectada em 09/11, autorização até 09/11/2027. Push ligado (`order_status_push`,
+código 3, área Brazil; chave do push em `SHOPEE_PUSH_KEY`). O webhook responde
+na hora (limite de 3 s da Shopee) e processa em segundo plano.
+- **Lote 10e/10f** (`sql/2026-11-09_*`): trava `integracoes_shopee.importacao_liberada`
+  (pedido real só grava com true) e `baixa_estoque_desde` (pedido criado antes
+  disso entra SEM baixa: "Venda anterior à integração"). Liberado em 09/11 20:56.
+  Histórico importado: **50 pedidos (20/10 a 09/11), R$ 3.114,80**, todos sem
+  baixa de estoque (a equipe nunca registrava a Shopee no ERP — decisão do dono).
+- SKUs da Shopee com "S" (KIT4ROLOS200, KIT6ROLOS200, KIT4ROLOS127, KIT6ROLOS127)
+  viraram SKU alternativo dos produtos sem "S". Produto novo **Kit 2 Fita Kinesio**
+  (`FITAKINESIO-K2`, ficha = 2 × FITAKINESIO, custo 2 × fita).
+- Transportadoras vistas: "Shopee Xpress" e "Retirada pelo Comprador";
+  `fulfillment_flag` = fulfilled_by_local_seller (todos "Envio próprio" por ora).
+  Nenhum pedido veio com INVOICE_PENDING nos 15 dias.
+- **Cuidado**: excluir um pedido Shopee no ERP não impede que a busca automática o
+  traga de volta se ele mudar na Shopee nas últimas 3 h (aconteceu com o pedido de
+  teste do sandbox). Para tirar uma venda, prefira cancelar.
+
 **Status (2026-11-02)**: fase 1 construída e no ar (Lotes 10a/10b/10c).
 Conta de desenvolvedor aprovada, app "Seller In House System" criado, chaves de
 teste nos Secrets, **loja sandbox conectada** (shop_id 228007809) e testada:
