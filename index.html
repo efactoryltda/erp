@@ -78,6 +78,24 @@
     padding:14px 18px; border-radius:8px; margin-bottom:20px; font-size:14px;
   }
   .empty{ color:var(--muted); font-size:13px; padding:16px 0; text-align:center; }
+  /* aba Site */
+  .site-banners{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px; }
+  .site-banner{ border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--panel); display:flex; flex-direction:column; }
+  .site-banner.ativo{ border-color:var(--ok); box-shadow:0 0 0 2px #e4f7ea; }
+  .site-banner img{ width:100%; aspect-ratio:16/9; object-fit:cover; background:#f1f2f4; display:block; }
+  .site-banner .corpo{ padding:10px 12px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .site-banner .acoes{ display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+  .site-banner .acoes button{ padding:6px 10px; font-size:12px; }
+  .site-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .site-form-full{ grid-column:1 / -1; }
+  .site-form-grid input, .site-form-grid textarea{ width:100%; box-sizing:border-box; }
+  .site-cats{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; }
+  .site-cat{ border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .site-cat img, .site-cat .sem-foto{ width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:8px; background:#f1f2f4; }
+  .site-cat .sem-foto{ display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px; }
+  .site-cat input[type=text], .site-cat textarea{ width:100%; box-sizing:border-box; }
+  .site-thumb{ width:48px; height:48px; object-fit:cover; border-radius:6px; background:#f1f2f4; }
+  @media (max-width:700px){ .site-form-grid{ grid-template-columns:1fr; } }
   .metric-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
   .metric-card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px 20px; }
   .metric-label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; }
@@ -420,6 +438,7 @@
   <div class="nav-item" data-view="integracoes"></div>
   <div class="nav-item" data-view="produtos"></div>
   <div class="nav-item" data-view="loja"></div>
+  <div class="nav-item" data-view="site"></div>
   <div class="nav-item" data-view="ficha"></div>
   <div class="nav-item" data-view="estoque"></div>
   <div class="nav-item" data-view="compras"></div>
@@ -1010,6 +1029,55 @@
     </div>
   </div>
 
+
+  <!-- ================= SITE (banner, categorias e vitrine da página inicial) ================= -->
+  <div class="view" id="view-site">
+    <h2 data-t="TITULO_SITE">Site</h2>
+    <p class="muted" data-t="SITE_INTRO">Aqui você escolhe o que aparece na página inicial do site: a foto do banner do topo com os textos dele, a foto de cada categoria e os produtos da vitrine. As mudanças valem na hora, é só recarregar o site.</p>
+
+    <div class="card">
+      <h3 data-t="CARD_SITE_BANNERS">Banner do topo</h3>
+      <p class="muted" data-t="SITE_BANNER_AJUDA">Suba quantos banners quiser e escolha qual está no site agora (só um fica ativo). Tamanho sugerido: 1920×900 px para computador e 1080×1350 px para celular (opcional — sem ela o site usa a de computador).</p>
+      <div id="site-banners-lista" class="site-banners"></div>
+      <div class="empty" id="site-banners-vazio" style="display:none;">Nenhum banner ainda. Enquanto isso o site mostra a imagem padrão.</div>
+
+      <h4 id="site-banner-form-titulo" style="margin:20px 0 8px;">Novo banner</h4>
+      <form id="form-site-banner">
+        <div class="site-form-grid">
+          <div class="field"><label data-t="SITE_LABEL_BANNER_NOME">Nome (só para você achar aqui)</label><input type="text" id="sb-nome" required placeholder="Ex: Black Friday caixas"></div>
+          <div class="field"><label data-t="SITE_LABEL_BANNER_LINK">Link do botão</label><input type="text" id="sb-link" placeholder="loja.html"></div>
+          <div class="field"><label data-t="SITE_LABEL_BANNER_FOTO">Foto para computador</label><input type="file" id="sb-foto" accept="image/*"></div>
+          <div class="field"><label data-t="SITE_LABEL_BANNER_FOTO_MOBILE">Foto para celular (opcional)</label><input type="file" id="sb-foto-mobile" accept="image/*"></div>
+          <div class="field site-form-full"><label data-t="SITE_LABEL_BANNER_TITULO">Título</label><input type="text" id="sb-titulo" placeholder="Ex: Caixas, sacos e etiquetas de envio"></div>
+          <div class="field site-form-full"><label data-t="SITE_LABEL_BANNER_FRASE">Frase embaixo do título</label><textarea id="sb-frase" rows="2" placeholder="Ex: Da fábrica em Ribeirão Preto, com preço de atacado por quantidade."></textarea></div>
+          <div class="field"><label data-t="SITE_LABEL_BANNER_BOTAO">Texto do botão</label><input type="text" id="sb-botao" placeholder="Montar meu pedido"></div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; margin-top:12px;">
+          <button type="submit" id="sb-salvar">Salvar banner</button>
+          <button type="button" class="secondary" id="sb-cancelar" style="display:none;">Cancelar edição</button>
+          <span class="muted" id="sb-status"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 data-t="CARD_SITE_CATEGORIAS">Fotos das categorias</h3>
+      <p class="muted" data-t="SITE_CATEGORIAS_AJUDA">Os cartões Caixas, Etiquetas, Sacos e Fitas da página inicial. Foto sugerida: quadrada ou 4:5, pelo menos 1000 px de largura.</p>
+      <div id="site-categorias-lista" class="site-cats"></div>
+    </div>
+
+    <div class="card">
+      <h3 data-t="CARD_SITE_VITRINE">Vitrine da página inicial</h3>
+      <p class="muted" data-t="SITE_VITRINE_AJUDA">Os produtos que aparecem na página inicial, nesta ordem. Só entram produtos visíveis na Loja Online. É o mesmo "Destaque" do anúncio.</p>
+      <table id="tabela-site-vitrine"><thead><tr><th style="width:60px;">Ordem</th><th>Produto</th><th>Foto</th><th></th></tr></thead><tbody></tbody></table>
+      <div class="empty" id="site-vitrine-vazio" style="display:none;">Nenhum produto na vitrine ainda.</div>
+      <form class="inline" id="form-site-vitrine" style="margin-top:14px;">
+        <div class="field" style="min-width:320px;"><label data-t="SITE_LABEL_VITRINE_ADD">Adicionar produto à vitrine</label><select id="sv-produto"></select></div>
+        <button type="submit">+ Adicionar</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: gerenciar anúncio na loja (título, descrição, fotos, faixas de preço, promoção) -->
   <div id="modal-loja-overlay" style="display:none; position:fixed; inset:0; background:rgba(20,24,32,0.55); z-index:9998; align-items:center; justify-content:center;">
     <div style="background:var(--panel); border-radius:12px; padding:28px; width:520px; max-height:86vh; overflow-y:auto;">
@@ -1022,6 +1090,16 @@
       <div class="field" style="flex-direction:row; align-items:center; gap:8px; margin-bottom:18px;">
         <input type="checkbox" id="ml-destaque" style="width:auto; min-width:auto; padding:0;">
         <label data-t="MODAL_LOJA_LABEL_DESTAQUE" for="ml-destaque">Destaque (aparece na vitrine)</label>
+      </div>
+      <div class="field" style="margin-bottom:18px; max-width:260px;">
+        <label data-t="MODAL_LOJA_LABEL_CATEGORIA" for="ml-categoria">Categoria no site</label>
+        <select id="ml-categoria">
+          <option value="">Sem categoria</option>
+          <option value="caixas">Caixas de papelão</option>
+          <option value="etiquetas">Etiquetas térmicas</option>
+          <option value="sacos">Sacos de envio</option>
+          <option value="fitas">Fitas adesivas</option>
+        </select>
       </div>
 
       <h4 style="margin-bottom:8px;">Anúncio</h4>
@@ -1546,6 +1624,7 @@ const MENU_LABELS = {
   integracoes: 'Integrações',
   produtos: 'Produtos',
   loja: 'Loja Online',
+  site: 'Site',
   ficha: 'Ficha Técnica',
   estoque: 'Estoque',
   compras: 'Compras',
@@ -1772,6 +1851,23 @@ const TEXTOS = {
   BTN_GERENCIAR_LOJA: 'Gerenciar',
   MODAL_LOJA_LABEL_VISIVEL: 'Visível na loja',
   MODAL_LOJA_LABEL_DESTAQUE: 'Destaque (aparece na vitrine)',
+  MODAL_LOJA_LABEL_CATEGORIA: 'Categoria no site',
+  TITULO_SITE: 'Site',
+  SITE_INTRO: 'Aqui você escolhe o que aparece na página inicial do site: a foto do banner do topo com os textos dele, a foto de cada categoria e os produtos da vitrine. As mudanças valem na hora, é só recarregar o site.',
+  CARD_SITE_BANNERS: 'Banner do topo',
+  SITE_BANNER_AJUDA: 'Suba quantos banners quiser e escolha qual está no site agora (só um fica ativo). Tamanho sugerido: 1920×900 px para computador e 1080×1350 px para celular (opcional — sem ela o site usa a de computador).',
+  SITE_LABEL_BANNER_NOME: 'Nome (só para você achar aqui)',
+  SITE_LABEL_BANNER_LINK: 'Link do botão',
+  SITE_LABEL_BANNER_FOTO: 'Foto para computador',
+  SITE_LABEL_BANNER_FOTO_MOBILE: 'Foto para celular (opcional)',
+  SITE_LABEL_BANNER_TITULO: 'Título',
+  SITE_LABEL_BANNER_FRASE: 'Frase embaixo do título',
+  SITE_LABEL_BANNER_BOTAO: 'Texto do botão',
+  CARD_SITE_CATEGORIAS: 'Fotos das categorias',
+  SITE_CATEGORIAS_AJUDA: 'Os cartões Caixas, Etiquetas, Sacos e Fitas da página inicial. Foto sugerida: quadrada ou 4:5, pelo menos 1000 px de largura.',
+  CARD_SITE_VITRINE: 'Vitrine da página inicial',
+  SITE_VITRINE_AJUDA: 'Os produtos que aparecem na página inicial, nesta ordem. Só entram produtos visíveis na Loja Online. É o mesmo "Destaque" do anúncio.',
+  SITE_LABEL_VITRINE_ADD: 'Adicionar produto à vitrine',
   MODAL_LOJA_LABEL_TITULO: 'Título do anúncio',
   MODAL_LOJA_LABEL_DESCRICAO: 'Descrição do anúncio',
   MODAL_LOJA_LABEL_PROMO_PRECO: 'Preço promocional',
@@ -1883,6 +1979,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById('view-' + item.dataset.view).classList.add('active');
     if (item.dataset.view === 'contas-receber') abrirContasReceber();
     if (item.dataset.view === 'notas-fiscais') abrirNotasFiscais();
+    if (item.dataset.view === 'site') abrirSite();
     if (item.dataset.view === 'gestao-contas' && Date.now() - perguntasUltimaSync > 5 * 60 * 1000) {
       sincronizarPerguntasEListar();
     }
@@ -2334,6 +2431,7 @@ async function abrirModalLoja(produtoId){
   document.getElementById('modal-loja-titulo').textContent = 'Gerenciar anúncio: ' + (produto.titulo_loja || produto.nome);
   document.getElementById('ml-visivel').checked = !!produto.visivel_loja;
   document.getElementById('ml-destaque').checked = !!produto.destaque;
+  document.getElementById('ml-categoria').value = produto.categoria || '';
   document.getElementById('ml-titulo').value = produto.titulo_loja || '';
   document.getElementById('ml-titulo').placeholder = 'Vazio = usa o nome do produto no ERP (' + produto.nome + ')';
   document.getElementById('ml-descricao').value = produto.descricao || '';
@@ -2400,6 +2498,13 @@ document.getElementById('ml-visivel').addEventListener('change', async (e) => {
 document.getElementById('ml-destaque').addEventListener('change', async (e) => {
   if (!lojaProdutoAtualId) return;
   await supabaseClient.from('produtos').update({ destaque: e.target.checked }).eq('id', lojaProdutoAtualId);
+  loadProdutos();
+});
+
+document.getElementById('ml-categoria').addEventListener('change', async (e) => {
+  if (!lojaProdutoAtualId) return;
+  const { error } = await supabaseClient.from('produtos').update({ categoria: e.target.value || null }).eq('id', lojaProdutoAtualId);
+  if (error) { alert('Não foi possível salvar a categoria: ' + error.message); return; }
   loadProdutos();
 });
 
@@ -2485,6 +2590,254 @@ async function removerFoto(fotoId, url){
   await carregarFaixasEFotos(lojaProdutoAtualId);
   loadLojaProdutos();
 }
+
+// ============================================================
+// SITE (banner do topo, fotos das categorias e vitrine da página inicial)
+// Tabelas: site_banners (só 1 ativo), site_categorias, produtos.destaque/ordem_vitrine.
+// O site lê tudo pela função pública site_conteudo().
+// As imagens ficam no mesmo armazenamento das fotos de produto, na pasta "site/".
+// ============================================================
+let siteBannersCache = [];
+let siteBannerEditandoId = null;
+
+async function abrirSite(){
+  await Promise.all([carregarSiteBanners(), carregarSiteCategorias(), carregarSiteVitrine()]);
+}
+
+async function siteSubirImagem(arquivo, pasta){
+  const caminho = `site/${pasta}/${Date.now()}-${arquivo.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const { error } = await supabaseClient.storage.from('produtos-fotos').upload(caminho, arquivo);
+  if (error) throw error;
+  return supabaseClient.storage.from('produtos-fotos').getPublicUrl(caminho).data.publicUrl;
+}
+
+async function siteApagarImagem(url){
+  if (!url) return;
+  try {
+    const partes = url.split('/produtos-fotos/');
+    if (partes[1] && partes[1].startsWith('site/')) await supabaseClient.storage.from('produtos-fotos').remove([decodeURIComponent(partes[1])]);
+  } catch (err) { console.error('Não foi possível remover a imagem do armazenamento:', err); }
+}
+
+// ---------- Banners ----------
+async function carregarSiteBanners(){
+  const { data, error } = await supabaseClient.from('site_banners').select('*').order('created_at', { ascending: false });
+  if (error) { alert('Erro ao carregar banners: ' + error.message); return; }
+  siteBannersCache = data || [];
+  const lista = document.getElementById('site-banners-lista');
+  document.getElementById('site-banners-vazio').style.display = siteBannersCache.length ? 'none' : 'block';
+  lista.innerHTML = siteBannersCache.map(b => `
+    <div class="site-banner ${b.ativo ? 'ativo' : ''}">
+      <img src="${esc(b.imagem_url)}" alt="">
+      <div class="corpo">
+        <div><b>${esc(b.nome)}</b> ${b.ativo ? '<span class="badge concluida">No site agora</span>' : ''}</div>
+        <div class="muted">${esc(b.titulo || '(sem título)')}</div>
+        <div class="muted">${b.imagem_mobile_url ? 'Tem foto de celular' : 'Sem foto de celular'}</div>
+        <div class="acoes">
+          ${b.ativo ? `<button type="button" class="secondary" onclick="siteAtivarBanner('${b.id}', false)">Tirar do site</button>`
+                    : `<button type="button" onclick="siteAtivarBanner('${b.id}', true)">Usar no site</button>`}
+          <button type="button" class="secondary" onclick="siteEditarBanner('${b.id}')">Editar</button>
+          <button type="button" class="danger" onclick="siteExcluirBanner('${b.id}')">Excluir</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function siteAtivarBanner(id, ativar){
+  // só um ativo por vez: desliga o atual antes de ligar o novo
+  const { error: e1 } = await supabaseClient.from('site_banners').update({ ativo: false }).eq('ativo', true);
+  if (e1) { alert('Erro ao trocar o banner: ' + e1.message); return; }
+  if (ativar) {
+    const { error: e2 } = await supabaseClient.from('site_banners').update({ ativo: true }).eq('id', id);
+    if (e2) { alert('Erro ao ativar o banner: ' + e2.message); return; }
+  }
+  carregarSiteBanners();
+}
+
+function siteLimparFormBanner(){
+  siteBannerEditandoId = null;
+  document.getElementById('form-site-banner').reset();
+  document.getElementById('site-banner-form-titulo').textContent = 'Novo banner';
+  document.getElementById('sb-salvar').textContent = 'Salvar banner';
+  document.getElementById('sb-cancelar').style.display = 'none';
+}
+
+function siteEditarBanner(id){
+  const b = siteBannersCache.find(x => x.id === id);
+  if (!b) return;
+  siteBannerEditandoId = id;
+  document.getElementById('sb-nome').value = b.nome || '';
+  document.getElementById('sb-link').value = b.botao_link || '';
+  document.getElementById('sb-titulo').value = b.titulo || '';
+  document.getElementById('sb-frase').value = b.frase || '';
+  document.getElementById('sb-botao').value = b.botao_texto || '';
+  document.getElementById('sb-foto').value = '';
+  document.getElementById('sb-foto-mobile').value = '';
+  document.getElementById('site-banner-form-titulo').textContent = 'Editando: ' + b.nome + ' (só escolha fotos se quiser trocar)';
+  document.getElementById('sb-salvar').textContent = 'Salvar alterações';
+  document.getElementById('sb-cancelar').style.display = 'inline-block';
+  document.getElementById('form-site-banner').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+document.getElementById('sb-cancelar').addEventListener('click', siteLimparFormBanner);
+
+async function siteExcluirBanner(id){
+  const b = siteBannersCache.find(x => x.id === id);
+  if (!b || !confirm(`Excluir o banner "${b.nome}"?` + (b.ativo ? ' Ele está no site agora: o site volta para a imagem padrão.' : ''))) return;
+  const { error } = await supabaseClient.from('site_banners').delete().eq('id', id);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  await siteApagarImagem(b.imagem_url);
+  await siteApagarImagem(b.imagem_mobile_url);
+  if (siteBannerEditandoId === id) siteLimparFormBanner();
+  carregarSiteBanners();
+}
+
+document.getElementById('form-site-banner').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('sb-status');
+  const foto = document.getElementById('sb-foto').files[0];
+  const fotoMobile = document.getElementById('sb-foto-mobile').files[0];
+  const anterior = siteBannerEditandoId ? siteBannersCache.find(x => x.id === siteBannerEditandoId) : null;
+  if (!anterior && !foto) { status.textContent = 'Escolha a foto para computador.'; return; }
+  const dados = {
+    nome: document.getElementById('sb-nome').value.trim(),
+    titulo: document.getElementById('sb-titulo').value.trim() || null,
+    frase: document.getElementById('sb-frase').value.trim() || null,
+    botao_texto: document.getElementById('sb-botao').value.trim() || null,
+    botao_link: document.getElementById('sb-link').value.trim() || null,
+  };
+  const botao = document.getElementById('sb-salvar');
+  botao.disabled = true; status.textContent = 'Enviando...';
+  try {
+    if (foto) dados.imagem_url = await siteSubirImagem(foto, 'banners');
+    if (fotoMobile) dados.imagem_mobile_url = await siteSubirImagem(fotoMobile, 'banners');
+    if (anterior) {
+      const { error } = await supabaseClient.from('site_banners').update(dados).eq('id', anterior.id);
+      if (error) throw error;
+      if (foto) await siteApagarImagem(anterior.imagem_url);
+      if (fotoMobile) await siteApagarImagem(anterior.imagem_mobile_url);
+    } else {
+      const { error } = await supabaseClient.from('site_banners').insert(dados);
+      if (error) throw error;
+    }
+    status.textContent = anterior ? 'Banner atualizado.' : 'Banner salvo. Clique em "Usar no site" para colocá-lo no ar.';
+    siteLimparFormBanner();
+    carregarSiteBanners();
+  } catch (err) {
+    status.textContent = 'Erro: ' + err.message;
+  } finally {
+    botao.disabled = false;
+  }
+});
+
+// ---------- Categorias ----------
+async function carregarSiteCategorias(){
+  const { data, error } = await supabaseClient.from('site_categorias').select('*').order('ordem');
+  if (error) { alert('Erro ao carregar categorias: ' + error.message); return; }
+  document.getElementById('site-categorias-lista').innerHTML = (data || []).map(c => `
+    <div class="site-cat" data-slug="${c.slug}">
+      ${c.imagem_url ? `<img src="${esc(c.imagem_url)}" alt="">` : '<div class="sem-foto">Sem foto (o site usa a padrão)</div>'}
+      <div class="field"><label>Nome</label><input type="text" class="sc-nome" value="${esc(c.nome)}"></div>
+      <div class="field"><label>Frase</label><textarea class="sc-frase" rows="2">${esc(c.frase || '')}</textarea></div>
+      <div class="field"><label>Trocar foto</label><input type="file" class="sc-foto" accept="image/*"></div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button type="button" onclick="siteSalvarCategoria('${c.slug}')">Salvar</button>
+        ${c.imagem_url ? `<button type="button" class="secondary" onclick="siteRemoverFotoCategoria('${c.slug}')">Tirar foto</button>` : ''}
+      </div>
+      <span class="muted sc-status"></span>
+    </div>`).join('');
+}
+
+async function siteSalvarCategoria(slug){
+  const box = document.querySelector(`.site-cat[data-slug="${slug}"]`);
+  const status = box.querySelector('.sc-status');
+  const arquivo = box.querySelector('.sc-foto').files[0];
+  const dados = { nome: box.querySelector('.sc-nome').value.trim(), frase: box.querySelector('.sc-frase').value.trim() || null, updated_at: new Date().toISOString() };
+  if (!dados.nome) { status.textContent = 'O nome não pode ficar vazio.'; return; }
+  status.textContent = 'Salvando...';
+  try {
+    const { data: atual } = await supabaseClient.from('site_categorias').select('imagem_url').eq('slug', slug).single();
+    if (arquivo) dados.imagem_url = await siteSubirImagem(arquivo, 'categorias');
+    const { error } = await supabaseClient.from('site_categorias').update(dados).eq('slug', slug);
+    if (error) throw error;
+    if (arquivo && atual) await siteApagarImagem(atual.imagem_url);
+    carregarSiteCategorias();
+  } catch (err) {
+    status.textContent = 'Erro: ' + err.message;
+  }
+}
+
+async function siteRemoverFotoCategoria(slug){
+  if (!confirm('Tirar a foto desta categoria? O site volta a usar a imagem padrão.')) return;
+  const { data: atual } = await supabaseClient.from('site_categorias').select('imagem_url').eq('slug', slug).single();
+  const { error } = await supabaseClient.from('site_categorias').update({ imagem_url: null, updated_at: new Date().toISOString() }).eq('slug', slug);
+  if (error) { alert('Erro: ' + error.message); return; }
+  if (atual) await siteApagarImagem(atual.imagem_url);
+  carregarSiteCategorias();
+}
+
+// ---------- Vitrine (produtos com destaque, na ordem de ordem_vitrine) ----------
+async function carregarSiteVitrine(){
+  const [{ data: produtos, error }, { data: fotos }] = await Promise.all([
+    supabaseClient.from('produtos').select('id, nome, titulo_loja, sku_interno, destaque, ordem_vitrine, visivel_loja, ativo').eq('visivel_loja', true).eq('ativo', true),
+    supabaseClient.from('produtos_fotos').select('produto_id, url, ordem').order('ordem'),
+  ]);
+  if (error) { alert('Erro ao carregar a vitrine: ' + error.message); return; }
+  const primeiraFoto = {};
+  (fotos || []).forEach(f => { if (!primeiraFoto[f.produto_id]) primeiraFoto[f.produto_id] = f.url; });
+  const nome = p => p.titulo_loja || p.nome;
+  const naVitrine = (produtos || []).filter(p => p.destaque)
+    .sort((a, b) => (a.ordem_vitrine ?? 9999) - (b.ordem_vitrine ?? 9999) || nome(a).localeCompare(nome(b)));
+  const fora = (produtos || []).filter(p => !p.destaque).sort((a, b) => nome(a).localeCompare(nome(b)));
+
+  document.getElementById('site-vitrine-vazio').style.display = naVitrine.length ? 'none' : 'block';
+  document.querySelector('#tabela-site-vitrine tbody').innerHTML = naVitrine.map((p, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${esc(nome(p))} <span class="muted">(${esc(p.sku_interno)})</span></td>
+      <td>${primeiraFoto[p.id] ? `<img class="site-thumb" src="${esc(primeiraFoto[p.id])}" alt="">` : '<span class="muted">sem foto</span>'}</td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button type="button" class="secondary" ${i === 0 ? 'disabled' : ''} onclick="siteMoverVitrine(${i}, -1)" title="Subir">↑</button>
+        <button type="button" class="secondary" ${i === naVitrine.length - 1 ? 'disabled' : ''} onclick="siteMoverVitrine(${i}, 1)" title="Descer">↓</button>
+        <button type="button" class="danger" onclick="siteTirarDaVitrine('${p.id}')">Tirar</button>
+      </td>
+    </tr>`).join('');
+  window.__siteVitrineIds = naVitrine.map(p => p.id);
+  document.getElementById('sv-produto').innerHTML = fora.length
+    ? fora.map(p => `<option value="${p.id}">${esc(nome(p))} (${esc(p.sku_interno)})</option>`).join('')
+    : '<option value="">Todos os produtos visíveis já estão na vitrine</option>';
+}
+
+async function siteGravarOrdemVitrine(ids){
+  for (let i = 0; i < ids.length; i++) {
+    const { error } = await supabaseClient.from('produtos').update({ ordem_vitrine: i + 1, destaque: true }).eq('id', ids[i]);
+    if (error) { alert('Erro ao salvar a ordem: ' + error.message); return false; }
+  }
+  return true;
+}
+
+async function siteMoverVitrine(indice, direcao){
+  const ids = [...(window.__siteVitrineIds || [])];
+  const alvo = indice + direcao;
+  if (alvo < 0 || alvo >= ids.length) return;
+  [ids[indice], ids[alvo]] = [ids[alvo], ids[indice]];
+  if (await siteGravarOrdemVitrine(ids)) { await carregarSiteVitrine(); loadProdutos(); }
+}
+
+async function siteTirarDaVitrine(id){
+  const { error } = await supabaseClient.from('produtos').update({ destaque: false, ordem_vitrine: null }).eq('id', id);
+  if (error) { alert('Erro: ' + error.message); return; }
+  const ids = (window.__siteVitrineIds || []).filter(x => x !== id);
+  await siteGravarOrdemVitrine(ids);
+  await carregarSiteVitrine(); loadProdutos();
+}
+
+document.getElementById('form-site-vitrine').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('sv-produto').value;
+  if (!id) return;
+  const ids = [...(window.__siteVitrineIds || []), id];
+  if (await siteGravarOrdemVitrine(ids)) { await carregarSiteVitrine(); loadProdutos(); }
+});
 
 async function editarProduto(id){
   const produto = ultimosProdutosCache.find(p => p.id === id);
