@@ -1037,7 +1037,7 @@
 
     <div class="card">
       <h3 data-t="CARD_SITE_BANNERS">Banner do topo</h3>
-      <p class="muted" data-t="SITE_BANNER_AJUDA">Suba quantos banners quiser e escolha qual está no site agora (só um fica ativo). Tamanho sugerido: 1920×900 px para computador e 1080×1350 px para celular (opcional — sem ela o site usa a de computador).</p>
+      <p class="muted" data-t="SITE_BANNER_AJUDA">Suba quantos banners quiser e escolha qual está no site agora (só um fica ativo). O banner aparece inteiro, sem cortes, de uma ponta à outra da tela. Tamanho sugerido: 2560×1100 px para computador e 1080×1350 px para celular (no celular, texto desenhado na arte de computador fica pequeno demais). Se a arte já traz título e botão desenhados, deixe Título e Frase vazios: o site mostra só a imagem, e clicar nela leva ao Link do botão.</p>
       <div id="site-banners-lista" class="site-banners"></div>
       <div class="empty" id="site-banners-vazio" style="display:none;">Nenhum banner ainda. Enquanto isso o site mostra a imagem padrão.</div>
 
@@ -1048,7 +1048,7 @@
           <div class="field"><label data-t="SITE_LABEL_BANNER_LINK">Link do botão</label><input type="text" id="sb-link" placeholder="loja.html"></div>
           <div class="field"><label data-t="SITE_LABEL_BANNER_FOTO">Foto para computador</label><input type="file" id="sb-foto" accept="image/*"></div>
           <div class="field"><label data-t="SITE_LABEL_BANNER_FOTO_MOBILE">Foto para celular (opcional)</label><input type="file" id="sb-foto-mobile" accept="image/*"></div>
-          <div class="field site-form-full"><label data-t="SITE_LABEL_BANNER_TITULO">Título</label><input type="text" id="sb-titulo" placeholder="Ex: Caixas, sacos e etiquetas de envio"></div>
+          <div class="field site-form-full"><label data-t="SITE_LABEL_BANNER_TITULO">Título (vazio = só a imagem)</label><input type="text" id="sb-titulo" placeholder="Ex: Caixas, sacos e etiquetas de envio"></div>
           <div class="field site-form-full"><label data-t="SITE_LABEL_BANNER_FRASE">Frase embaixo do título</label><textarea id="sb-frase" rows="2" placeholder="Ex: Da fábrica em Ribeirão Preto, com preço de atacado por quantidade."></textarea></div>
           <div class="field"><label data-t="SITE_LABEL_BANNER_BOTAO">Texto do botão</label><input type="text" id="sb-botao" placeholder="Montar meu pedido"></div>
         </div>
@@ -1855,12 +1855,12 @@ const TEXTOS = {
   TITULO_SITE: 'Site',
   SITE_INTRO: 'Aqui você escolhe o que aparece na página inicial do site: a foto do banner do topo com os textos dele, a foto de cada categoria e os produtos da vitrine. As mudanças valem na hora, é só recarregar o site.',
   CARD_SITE_BANNERS: 'Banner do topo',
-  SITE_BANNER_AJUDA: 'Suba quantos banners quiser e escolha qual está no site agora (só um fica ativo). Tamanho sugerido: 1920×900 px para computador e 1080×1350 px para celular (opcional — sem ela o site usa a de computador).',
+  SITE_BANNER_AJUDA: 'Suba quantos banners quiser e escolha qual está no site agora (só um fica ativo). O banner aparece inteiro, sem cortes, de uma ponta à outra da tela. Tamanho sugerido: 2560×1100 px para computador e 1080×1350 px para celular (no celular, texto desenhado na arte de computador fica pequeno demais). Se a arte já traz título e botão desenhados, deixe Título e Frase vazios: o site mostra só a imagem, e clicar nela leva ao Link do botão.',
   SITE_LABEL_BANNER_NOME: 'Nome (só para você achar aqui)',
   SITE_LABEL_BANNER_LINK: 'Link do botão',
   SITE_LABEL_BANNER_FOTO: 'Foto para computador',
   SITE_LABEL_BANNER_FOTO_MOBILE: 'Foto para celular (opcional)',
-  SITE_LABEL_BANNER_TITULO: 'Título',
+  SITE_LABEL_BANNER_TITULO: 'Título (vazio = só a imagem)',
   SITE_LABEL_BANNER_FRASE: 'Frase embaixo do título',
   SITE_LABEL_BANNER_BOTAO: 'Texto do botão',
   CARD_SITE_CATEGORIAS: 'Fotos das categorias',
