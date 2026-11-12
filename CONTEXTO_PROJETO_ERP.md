@@ -1406,3 +1406,22 @@ pedido real: mapeamento de modalidade de envio Shopee (hoje só Full; resto vira
 - Produtos da linha "Little Tree" já estão marcados como `ativo = false`
   no cadastro — qualquer análise nova deve filtrar por `ativo = true`
   pra excluí-los automaticamente.
+
+## Lote 12 — Aba "Site" (conteúdo do site editável pelo ERP) — 2026-11-12
+
+- SQL: `sql/2026-11-12_lote12_site.sql` (aplicado). Tabelas `site_banners` (só 1 `ativo` por vez, índice único parcial) e
+  `site_categorias` (slugs fixos caixas/etiquetas/sacos/fitas: nome, frase, imagem), coluna `produtos.ordem_vitrine`.
+  RLS: só `authenticated` lê/escreve. O site público lê pela função `site_conteudo()` (security definer, liberada
+  pro `anon`): banner ativo, categorias e a lista ordenada de ids da vitrine (`destaque` + `visivel_loja` + `ativo`).
+  A categoria dos 18 produtos da loja foi preenchida pelo nome (Caixa/Rolo/Etiqueta/Resma/Saco/Fita).
+- Imagens do site vão pro mesmo bucket público `produtos-fotos`, pasta `site/` (banners/, categorias/); trocar ou
+  excluir apaga o arquivo antigo.
+- ERP: aba **Site** (banners com foto de computador e de celular opcional, título, frase, texto e link do botão;
+  "Usar no site" troca o ativo; fotos e frases das categorias; vitrine com ordem por setas). No modal da Loja Online
+  entrou o campo "Categoria no site". Textos novos no dicionário TEXTOS (chaves SITE_* e CARD_SITE_*).
+- Site novo (repo `efactoryltda/site`, pasta `novo/` → efactory.com.br/novo/, em aprovação): `site-dados.js` lê
+  `site_conteudo()` + `listar_produtos_loja()` por fetch REST; sem banner ativo mostra a animação 3D padrão; a loja
+  (`novo/loja.html`) usa o catálogo do ERP e cai num catálogo de reserva se o banco não responder.
+  Banner rotativo foi descartado pelo JG: é uma foto fixa, escolhida no ERP.
+- GitHub Pages do site precisa do arquivo `.nojekyll` na raiz (sem ele o Jekyll ignora pastas que começam com "_",
+  como `assets/objects/_print-core`, e a animação some).
