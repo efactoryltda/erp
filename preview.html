@@ -441,7 +441,21 @@
   #sidebar h1{ color:var(--text); font-size:15px; font-weight:600; letter-spacing:-.02em; padding:4px 8px 16px; border-bottom:none; display:flex; align-items:center; gap:10px; }
   #sidebar h1::before{ content:"E"; width:30px; height:30px; border-radius:8px; background:#111; color:#fff; display:grid; place-items:center; font-size:15px; flex-shrink:0; box-shadow:inset -6px -6px 0 -3px var(--brand); }
   #sidebar h1 span{ color:var(--muted); font-weight:400; }
-  .nav-group{ font-size:12.5px; font-weight:500; color:var(--muted); padding:14px 10px 4px; }
+  /* grupos do menu que abrem e fecham */
+  .nav-grupo{ margin-top:6px; }
+  button.nav-group{ display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:0; border-radius:8px;
+    color:var(--muted); font-size:12.5px; font-weight:500; padding:8px 10px; text-align:left; cursor:pointer; transform:none; }
+  button.nav-group:hover{ background:rgba(17,17,17,.05); color:var(--text); transform:none; }
+  button.nav-group::after{ content:""; width:7px; height:7px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor;
+    transform:rotate(-45deg); transition:transform .2s ease; margin-right:4px; }
+  .nav-grupo.aberto > button.nav-group::after{ transform:rotate(45deg); margin-top:-4px; }
+  /* grupo fechado com a aba atual dentro: o título fica marcado */
+  .nav-grupo:not(.aberto):has(.nav-item.active) > button.nav-group{ color:var(--text); font-weight:600; }
+  .nav-grupo:not(.aberto):has(.nav-item.active) > button.nav-group::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:auto; order:2; }
+  .nav-sub{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .22s ease; }
+  .nav-grupo.aberto > .nav-sub{ grid-template-rows:1fr; }
+  .nav-sub-in{ overflow:hidden; min-height:0; display:flex; flex-direction:column; gap:1px; }
+  @media (prefers-reduced-motion: reduce){ .nav-sub, button.nav-group::after{ transition:none; } }
   .nav-item{ display:flex; align-items:center; gap:10px; height:36px; padding:0 10px; border-radius:8px; border-left:none; color:var(--sidebar-text); font-size:14px; transition:background-color .15s ease, color .15s ease; }
   .nav-item::before{ content:""; width:18px; height:18px; flex-shrink:0; background:currentColor; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-size:contain; mask-size:contain; }
   .nav-item:hover{ background:rgba(17,17,17,.05); color:var(--text); }
@@ -508,6 +522,9 @@
   .badge.estornada{ background:#efefed; color:#3d3d3a; }
   .tag-marca.outros{ background:#e6f4ec; color:#14532d; }
   .cr-chip.ativo{ background:#111; border-color:#111; color:#fff; }
+  /* subtítulos sem caixa alta */
+  .pg-bloco h4{ text-transform:none; letter-spacing:0; font-size:14px; font-weight:600; color:var(--text); }
+  .oc-totais .rotulo{ text-transform:none; letter-spacing:0; font-size:12.5px; }
 
   /* login */
   #login-box{ border-radius:16px; padding:36px 32px; box-shadow:0 12px 32px rgba(17,17,17,.08); }
@@ -522,7 +539,8 @@
     #sidebar{ width:100%; height:auto; padding:0 8px; position:sticky; top:0; border-right:none; border-bottom:1px solid var(--border); }
     #sidebar h1{ padding:12px 8px; }
     #sidebar h1::before{ width:26px; height:26px; font-size:13px; }
-    .nav-group{ display:none; }
+    .nav-grupo, .nav-sub, .nav-sub-in{ display:contents; }
+    button.nav-group{ display:none; }
     .nav-item{ height:auto; padding:12px 10px; border-radius:0; border-bottom:2px solid transparent; box-shadow:none; }
     .nav-item.active{ background:transparent; box-shadow:none; border-bottom:2px solid var(--accent); }
     #sidebar-footer{ padding:0 8px; }
@@ -549,22 +567,38 @@
   <!-- Nome do sistema no topo do menu (estilizado com cor) — edite o texto direto aqui se quiser mudar -->
   <h1 id="nome-sistema-header">E-Factory <span>ERP</span></h1>
   <div class="nav-item active" data-view="dashboard"></div>
-  <div class="nav-group">Vendas</div>
-  <div class="nav-item" data-view="vendas"></div>
-  <div class="nav-item" data-view="notas-fiscais"></div>
-  <div class="nav-item" data-view="contas-receber"></div>
-  <div class="nav-group">Catálogo</div>
-  <div class="nav-item" data-view="produtos"></div>
-  <div class="nav-item" data-view="loja"></div>
-  <div class="nav-item" data-view="site"></div>
-  <div class="nav-group">Operação</div>
-  <div class="nav-item" data-view="estoque"></div>
-  <div class="nav-item" data-view="ficha"></div>
-  <div class="nav-item" data-view="producao"></div>
-  <div class="nav-item" data-view="compras"></div>
-  <div class="nav-group">Canais</div>
-  <div class="nav-item" data-view="integracoes"></div>
-  <div class="nav-item" data-view="gestao-contas"></div>
+  <div class="nav-grupo aberto" data-grupo="vendas">
+    <button type="button" class="nav-group" aria-expanded="true">Vendas</button>
+    <div class="nav-sub"><div class="nav-sub-in">
+      <div class="nav-item" data-view="vendas"></div>
+      <div class="nav-item" data-view="notas-fiscais"></div>
+      <div class="nav-item" data-view="contas-receber"></div>
+    </div></div>
+  </div>
+  <div class="nav-grupo aberto" data-grupo="catalogo">
+    <button type="button" class="nav-group" aria-expanded="true">Catálogo</button>
+    <div class="nav-sub"><div class="nav-sub-in">
+      <div class="nav-item" data-view="produtos"></div>
+      <div class="nav-item" data-view="loja"></div>
+      <div class="nav-item" data-view="site"></div>
+    </div></div>
+  </div>
+  <div class="nav-grupo aberto" data-grupo="operacao">
+    <button type="button" class="nav-group" aria-expanded="true">Operação</button>
+    <div class="nav-sub"><div class="nav-sub-in">
+      <div class="nav-item" data-view="estoque"></div>
+      <div class="nav-item" data-view="ficha"></div>
+      <div class="nav-item" data-view="producao"></div>
+      <div class="nav-item" data-view="compras"></div>
+    </div></div>
+  </div>
+  <div class="nav-grupo aberto" data-grupo="canais">
+    <button type="button" class="nav-group" aria-expanded="true">Canais</button>
+    <div class="nav-sub"><div class="nav-sub-in">
+      <div class="nav-item" data-view="integracoes"></div>
+      <div class="nav-item" data-view="gestao-contas"></div>
+    </div></div>
+  </div>
   <div id="sidebar-footer">
     <div class="email-logado" id="email-logado"></div>
     <button id="btn-sair">Sair</button>
@@ -2090,6 +2124,34 @@ try {
   document.getElementById('config-alert').innerHTML =
     '<div class="config-warning">⚠️ Não consegui conectar ao Supabase. Verifique se a URL e a chave foram coladas certinho (com as aspas) e se há internet ativa. Detalhe técnico: ' + err.message + '</div>';
 }
+
+// ---------- grupos do menu lateral (abrir / fechar) ----------
+// Só visual: cada grupo lembra se você deixou aberto ou fechado (neste navegador).
+// Quando uma aba é aberta (clique ou pelo sistema), o grupo dela abre sozinho.
+(function(){
+  const CHAVE = 'erp_menu_grupos';
+  let salvo = {};
+  try { salvo = JSON.parse(localStorage.getItem(CHAVE) || '{}'); } catch (e) { salvo = {}; }
+  function definir(grupo, aberto, guardar){
+    grupo.classList.toggle('aberto', aberto);
+    grupo.querySelector('.nav-group').setAttribute('aria-expanded', String(aberto));
+    if (guardar) {
+      salvo[grupo.dataset.grupo] = aberto;
+      try { localStorage.setItem(CHAVE, JSON.stringify(salvo)); } catch (e) {}
+    }
+  }
+  document.querySelectorAll('.nav-grupo').forEach(grupo => {
+    const lembrado = salvo[grupo.dataset.grupo];
+    definir(grupo, lembrado === undefined ? true : lembrado, false);
+    grupo.querySelector('.nav-group').addEventListener('click', () => definir(grupo, !grupo.classList.contains('aberto'), true));
+  });
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const grupo = item.closest('.nav-grupo');
+      if (grupo && !grupo.classList.contains('aberto')) definir(grupo, true, true);
+    });
+  });
+})();
 
 // ---------- navegação ----------
 document.querySelectorAll('.nav-item').forEach(item => {
