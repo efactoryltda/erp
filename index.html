@@ -547,6 +547,153 @@
     #main{ padding:16px; }
     h2{ font-size:24px; }
   }
+
+  /* =====================================================================
+     DASHBOARD GERENCIAL (Lote 13) — tudo com prefixo dg- pra não encostar
+     em nenhuma classe das outras abas.
+     ===================================================================== */
+  #main:has(#view-dashboard.active){ max-width:1560px; }
+  #view-dashboard{ --dg-ok:#1a7f45; --dg-ok-soft:#e7f4ec; --dg-danger-soft:#fbeceb; --dg-warn-soft:#fdf2df; --dg-faint:#9a9a95; }
+  .dg-topo{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 20px; margin-bottom:16px; }
+  .dg-topo h2{ margin:0; }
+  .dg-sub{ color:var(--muted); font-size:13px; }
+  .dg-topo .dg-direita{ margin-left:auto; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .dg-seg{ display:inline-flex; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:3px; gap:2px; }
+  .dg-seg button{ border:0; background:none; padding:6px 12px; border-radius:6px; font-size:13px; color:var(--muted); font-weight:500; white-space:nowrap; transform:none; }
+  .dg-seg button:hover{ color:var(--text); background:none; }
+  .dg-seg button.on{ background:#fff; color:var(--text); font-weight:600; box-shadow:0 0 0 1px var(--border), 0 1px 2px rgba(17,17,17,.06); }
+  .dg-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; align-items:center; min-height:30px; }
+  .dg-chips .dg-rotulo{ font-size:12.5px; color:var(--muted); margin-right:4px; }
+  button.dg-chip{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border-strong); background:#fff; border-radius:999px;
+    padding:4px 11px 4px 9px; font-size:13px; font-weight:400; color:var(--text); transform:none; }
+  button.dg-chip i{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  button.dg-chip.off{ color:var(--dg-faint); border-color:var(--border); background:transparent; text-decoration:line-through; }
+  button.dg-chip.off i{ opacity:.25; }
+  button.dg-chip:hover{ border-color:var(--text); background:#fff; }
+  button.dg-link{ background:none; border:0; color:var(--accent); font-size:13px; font-weight:550; padding:4px 6px; border-radius:6px; transform:none; }
+  button.dg-link:hover{ background:var(--accent-soft); }
+
+  .dg-grade{ display:grid; gap:16px; margin-bottom:16px; }
+  .dg-kpis{ grid-template-columns:repeat(5, minmax(0,1fr)); }
+  .dg-g21{ grid-template-columns:minmax(0,3fr) minmax(0,2fr); }
+  .dg-g3{ grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr); }
+  .dg-g2{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  @media (max-width:1250px){ .dg-kpis{ grid-template-columns:repeat(3, minmax(0,1fr)); } .dg-g3{ grid-template-columns:repeat(2, minmax(0,1fr)); } .dg-g21{ grid-template-columns:1fr; } }
+  @media (max-width:820px){ .dg-kpis, .dg-g3, .dg-g2{ grid-template-columns:1fr; } }
+  #view-dashboard .dg-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; min-width:0; margin:0; overflow-x:auto; }
+  .dg-cab{ display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px 12px; margin-bottom:14px; }
+  .dg-cab > div:first-child{ flex:1 1 180px; min-width:0; }
+  #view-dashboard .dg-card h3{ margin:0; font-size:15px; font-weight:600; letter-spacing:-.01em; color:var(--text); text-transform:none; }
+  .dg-desc{ color:var(--muted); font-size:12.5px; margin-top:1px; }
+  .dg-cab .dg-acoes{ margin-left:auto; display:flex; flex-wrap:wrap; gap:8px; align-items:center; flex-shrink:0; }
+  .dg-secao{ font-size:12.5px; color:var(--muted); font-weight:600; letter-spacing:.04em; text-transform:uppercase; margin:28px 0 10px; }
+  .dg-aviso{ background:var(--dg-warn-soft); border:1px solid rgba(168,101,10,.28); color:#5f3a04; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+  .dg-aviso b{ font-weight:650; }
+  .dg-erro{ background:var(--dg-danger-soft); border:1px solid rgba(192,54,44,.3); color:#7a1f18; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+
+  #view-dashboard .dg-hoje{ display:grid; grid-template-columns:minmax(260px, 1fr) minmax(0, 2.2fr); gap:0; padding:0; overflow:hidden; margin-bottom:16px; }
+  .dg-hoje-num{ padding:20px 22px; border-right:1px solid var(--border); background:linear-gradient(180deg,#fff,#fdfaf6); }
+  .dg-hoje-num .dg-rot{ font-size:12.5px; color:var(--muted); font-weight:500; }
+  .dg-hoje-num .dg-valor{ font-size:38px; font-weight:700; letter-spacing:-.03em; line-height:1.15; margin:4px 0 2px; white-space:nowrap; }
+  .dg-hoje-num .dg-linha{ font-size:13.5px; }
+  .dg-hoje-num .dg-linha b{ font-weight:650; }
+  .dg-comp{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; align-items:center; }
+  .dg-hoje-canais{ padding:16px 22px; overflow-x:auto; }
+  #view-dashboard table.dg-limpa{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  #view-dashboard table.dg-limpa th{ font-size:11.5px; color:var(--muted); font-weight:500; text-align:right; padding:0 0 6px 12px; text-transform:none; letter-spacing:0; border:0; background:none; }
+  #view-dashboard table.dg-limpa td{ padding:5px 0 5px 12px; text-align:right; white-space:nowrap; border:0; }
+  #view-dashboard table.dg-limpa th:first-child, #view-dashboard table.dg-limpa td:first-child{ text-align:left; padding-left:0; }
+  #view-dashboard table.dg-limpa tr:hover{ background:none; }
+  @media (max-width:980px){ #view-dashboard .dg-hoje{ grid-template-columns:1fr; } .dg-hoje-num{ border-right:0; border-bottom:1px solid var(--border); } }
+
+  .dg-canal{ display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+  .dg-canal i{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .dg-trilho{ height:8px; background:var(--surface); border-radius:4px; overflow:hidden; min-width:40px; }
+  .dg-trilho span{ display:block; height:100%; border-radius:4px; background:#3d3d3a; min-width:2px; }
+  .dg-num{ font-family:var(--mono); font-size:13px; }
+  .dg-sub2{ color:var(--muted); font-size:12px; }
+
+  .dg-kpi .dg-rot{ font-size:12.5px; color:var(--muted); font-weight:500; }
+  .dg-kpi .dg-valor{ font-size:25px; font-weight:700; letter-spacing:-.025em; margin:4px 0 6px; line-height:1.2; white-space:nowrap; }
+  .dg-kpi .dg-pe{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); min-height:22px; flex-wrap:wrap; }
+  .dg-kpi svg{ display:block; width:100%; height:34px; margin-top:8px; }
+  .dg-delta{ display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; padding:2px 7px; border-radius:6px; background:var(--surface); color:var(--text); white-space:nowrap; }
+  .dg-delta::before{ content:""; border-left:4px solid transparent; border-right:4px solid transparent; }
+  .dg-delta.up{ background:var(--dg-ok-soft); } .dg-delta.up::before{ border-bottom:6px solid var(--dg-ok); }
+  .dg-delta.down{ background:var(--dg-danger-soft); } .dg-delta.down::before{ border-top:6px solid var(--danger); }
+  .dg-delta.flat::before{ display:none; }
+
+  .dg-graf{ position:relative; width:100%; }
+  .dg-graf svg{ display:block; width:100%; overflow:visible; }
+  .dg-graf text{ font-family:var(--font); font-size:11.5px; fill:var(--muted); }
+  .dg-graf .dg-grid{ stroke:rgba(17,17,17,.07); stroke-width:1; }
+  .dg-graf .dg-base{ stroke:rgba(17,17,17,.22); stroke-width:1; }
+  .dg-graf .dg-cursor{ stroke:rgba(17,17,17,.35); stroke-width:1; stroke-dasharray:3 3; }
+  .dg-graf-titulo{ font-size:12.5px; color:var(--muted); font-weight:500; margin:10px 0 2px; }
+  .dg-paineis{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px 18px; }
+  @media (max-width:1100px){ .dg-paineis{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width:560px){ .dg-paineis{ grid-template-columns:1fr; } }
+  .dg-painel{ border:1px solid var(--border); border-radius:10px; padding:12px 12px 6px; min-width:0; }
+  .dg-painel .dg-n{ font-size:13px; font-weight:600; }
+  .dg-painel .dg-v{ font-size:19px; font-weight:700; letter-spacing:-.02em; margin-top:2px; white-space:nowrap; }
+  .dg-painel .dg-s{ font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .dg-legenda{ display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; margin-top:10px; }
+  .dg-legenda span{ display:inline-flex; align-items:center; gap:6px; }
+  .dg-legenda i{ width:14px; height:3px; border-radius:2px; }
+  #dg-tip{ position:fixed; z-index:9000; pointer-events:none; background:#fff; border:1px solid var(--border-strong); border-radius:10px;
+    box-shadow:0 8px 24px rgba(17,17,17,.12); padding:10px 12px; font-size:12.5px; min-width:200px; display:none; color:var(--text); }
+  #dg-tip .dg-t{ font-weight:650; margin-bottom:6px; font-size:13px; }
+  #dg-tip table{ border-collapse:collapse; width:100%; font-size:12.5px; }
+  #dg-tip td{ padding:2px 0 2px 12px; text-align:right; white-space:nowrap; border:0; }
+  #dg-tip td:first-child{ text-align:left; padding-left:0; }
+  #dg-tip tr:hover{ background:none; }
+  #dg-tip tr.dg-tot td{ border-top:1px solid var(--border); padding-top:5px; font-weight:650; }
+
+  #view-dashboard table.dg-t{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  #view-dashboard table.dg-t th{ font-size:11.5px; color:var(--muted); font-weight:500; text-align:right; padding:0 0 8px 12px; border-bottom:1px solid var(--border); white-space:nowrap; text-transform:none; letter-spacing:0; background:none; }
+  #view-dashboard table.dg-t td{ padding:8px 0 8px 12px; text-align:right; border-bottom:1px solid var(--border); white-space:nowrap; }
+  #view-dashboard table.dg-t th:first-child, #view-dashboard table.dg-t td:first-child{ text-align:left; padding-left:0; }
+  #view-dashboard table.dg-t tr:last-child td{ border-bottom:0; }
+  #view-dashboard table.dg-t tr:hover{ background:none; }
+  #view-dashboard table.dg-t tr.dg-total td{ font-weight:650; border-top:1px solid var(--border-strong); }
+  #view-dashboard table.dg-t td.dg-barra{ width:22%; min-width:60px; }
+  .dg-nome{ display:block; max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dg-rolagem{ max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:0 12px; }
+  #view-dashboard .dg-rolagem table.dg-t th{ position:sticky; top:0; background:#fff; padding-top:10px; }
+  .dg-vazio{ color:var(--muted); font-size:13px; padding:18px 0; text-align:center; }
+
+  .dg-selo{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:6px; white-space:nowrap; color:var(--text); }
+  .dg-selo::before{ content:""; width:7px; height:7px; border-radius:50%; }
+  .dg-selo.crit{ background:var(--dg-danger-soft); } .dg-selo.crit::before{ background:var(--danger); }
+  .dg-selo.atn{ background:var(--dg-warn-soft); } .dg-selo.atn::before{ background:#d98a0b; border-radius:1px; transform:rotate(45deg); }
+  .dg-selo.ok{ background:var(--dg-ok-soft); } .dg-selo.ok::before{ background:var(--dg-ok); }
+
+  .dg-fatias{ display:flex; gap:2px; height:22px; border-radius:6px; overflow:hidden; margin:4px 0 14px; }
+  .dg-fatias span{ display:block; min-width:3px; }
+  .dg-lista-fat{ display:grid; gap:7px; }
+  .dg-lista-fat div{ display:flex; align-items:center; gap:8px; font-size:13.5px; }
+  .dg-lista-fat i{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .dg-lista-fat .dg-v{ margin-left:auto; font-family:var(--mono); font-size:13px; white-space:nowrap; }
+  .dg-lista-fat .dg-p{ width:48px; text-align:right; color:var(--muted); font-size:12.5px; }
+  .dg-lista-fat .dg-forte{ font-weight:650; }
+
+  .dg-mini3{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+  .dg-mini3 .dg-m{ background:var(--surface); border-radius:9px; padding:10px 12px; min-width:0; }
+  .dg-mini3 .dg-m .dg-r{ font-size:12px; color:var(--muted); }
+  .dg-mini3 .dg-m .dg-v{ font-size:18px; font-weight:700; letter-spacing:-.02em; white-space:nowrap; }
+  .dg-mini3 .dg-m.alerta{ background:var(--dg-danger-soft); }
+  @media (max-width:560px){ .dg-mini3{ grid-template-columns:1fr; } }
+  #view-dashboard details.dg-det{ margin-top:14px; font-size:13px; }
+  #view-dashboard details.dg-det summary{ cursor:pointer; color:var(--accent); font-weight:550; }
+
+  .dg-pend{ display:grid; gap:2px; }
+  .dg-pend button{ display:flex; align-items:center; gap:12px; width:100%; background:none; border:0; border-radius:8px; padding:9px 8px; text-align:left; font-size:13.5px; font-weight:400; color:var(--text); transform:none; }
+  .dg-pend button:hover{ background:var(--hover); }
+  .dg-pend .dg-qtd{ min-width:38px; text-align:center; font-weight:700; font-size:13px; border-radius:7px; padding:3px 6px; background:var(--surface); }
+  .dg-pend .dg-qtd.crit{ background:var(--dg-danger-soft); color:#8f241c; }
+  .dg-pend .dg-qtd.atn{ background:var(--dg-warn-soft); color:#7a4a05; }
+  .dg-pend .dg-ir{ margin-left:auto; color:var(--accent); font-size:12.5px; font-weight:550; white-space:nowrap; }
+  .dg-pend .dg-det2{ color:var(--muted); font-size:12.5px; }
 </style>
 </head>
 <body>
@@ -611,71 +758,90 @@
 
   <!-- ================= DASHBOARD ================= -->
   <div class="view active" id="view-dashboard">
-    <h2 data-t="TITULO_DASHBOARD">Dashboard</h2>
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-label">Valor em estoque (físico)</div>
-        <div class="metric-value" id="dash-valor-fisico">-</div>
+    <div class="dg-topo">
+      <div>
+        <h2 data-t="TITULO_DASHBOARD">Dashboard</h2>
+        <div class="dg-sub" id="dg-sub-periodo">Carregando…</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-label">Valor em estoque (matéria-prima)</div>
-        <div class="metric-value" id="dash-valor-materia">-</div>
+      <div class="dg-direita">
+        <div class="dg-seg" id="dg-seg-periodo" role="group" aria-label="Período">
+          <button type="button" data-dg-p="7">7 dias</button><button type="button" data-dg-p="30" class="on">30 dias</button><button type="button" data-dg-p="mes">Este mês</button><button type="button" data-dg-p="90">90 dias</button><button type="button" data-dg-p="365">12 meses</button>
+        </div>
       </div>
-      <div class="metric-card">
-        <div class="metric-label">Valor em estoque (ML Full - E-Factory)</div>
-        <div class="metric-value" id="dash-valor-full1">-</div>
+    </div>
+    <div class="dg-chips" id="dg-chips"></div>
+    <div class="dg-erro" id="dg-erro" style="display:none;"></div>
+
+    <div class="dg-card dg-hoje dg-grade" id="dg-hoje"></div>
+    <div class="dg-grade dg-kpis" id="dg-kpis"></div>
+    <div class="dg-aviso" id="dg-aviso" style="display:none;"></div>
+
+    <div class="dg-grade dg-g21">
+      <div class="dg-card">
+        <div class="dg-cab">
+          <div><h3>Vendas por dia</h3><div class="dg-desc" id="dg-desc-vendas"></div></div>
+          <div class="dg-acoes">
+            <div class="dg-seg" id="dg-seg-modo"><button type="button" data-dg-m="canal" class="on">Por canal</button><button type="button" data-dg-m="total">Total</button><button type="button" data-dg-m="sobrepor">Sobrepor</button></div>
+            <button type="button" class="dg-link" id="dg-btn-tabela">Ver como tabela</button>
+          </div>
+        </div>
+        <div class="dg-paineis" id="dg-bloco-paineis"></div>
+        <div id="dg-bloco-graficos" style="display:none;">
+          <div class="dg-graf-titulo">Faturamento (R$)</div>
+          <div class="dg-graf" id="dg-graf-fat"></div>
+          <div class="dg-graf-titulo">Pedidos</div>
+          <div class="dg-graf" id="dg-graf-ped"></div>
+          <div class="dg-legenda" id="dg-legenda"></div>
+        </div>
+        <div class="dg-rolagem" id="dg-bloco-tabela" style="display:none;"></div>
       </div>
-      <div class="metric-card">
-        <div class="metric-label">Valor em estoque (ML Full - JG)</div>
-        <div class="metric-value" id="dash-valor-full2">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Valor em estoque (ML Full - Gustavo Baruffi)</div>
-        <div class="metric-value" id="dash-valor-full3">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Ordens de produção em andamento</div>
-        <div class="metric-value" id="dash-ordens-andamento">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Produtos ativos</div>
-        <div class="metric-value" id="dash-produtos-ativos">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Produtos abaixo do estoque mínimo</div>
-        <div class="metric-value" id="dash-produtos-baixo">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Faturamento hoje</div>
-        <div class="metric-value" id="dash-fat-hoje">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Faturamento no mês</div>
-        <div class="metric-value" id="dash-fat-mes">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Faturamento no ano</div>
-        <div class="metric-value" id="dash-fat-ano">-</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Pedidos no mês</div>
-        <div class="metric-value" id="dash-pedidos-mes">-</div>
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Canais</h3><div class="dg-desc">Faturamento, pedidos e ticket no período</div></div></div>
+        <table class="dg-t" id="dg-tab-canais"></table>
       </div>
     </div>
 
-    <div class="card">
-      <h3 data-t="CARD_ESTOQUE_BAIXO">Produtos com estoque abaixo do mínimo</h3>
-      <table><thead><tr><th>Produto</th><th>Estoque total</th><th>Mínimo</th></tr></thead>
-      <tbody id="tabela-dash-baixo"></tbody></table>
-      <div class="empty" id="dash-baixo-vazio" style="display:none;">Nenhum produto abaixo do mínimo. 🎉</div>
+    <div class="dg-grade dg-g3">
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Do bruto ao lucro</h3><div class="dg-desc">Para onde vai cada real vendido no período</div></div></div>
+        <div id="dg-bruto-lucro"></div>
+      </div>
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Produtos mais vendidos</h3><div class="dg-desc">Por faturamento no período</div></div>
+          <div class="dg-acoes"><button type="button" class="dg-link" data-dg-ir="vendas">Ver vendas</button></div></div>
+        <table class="dg-t" id="dg-tab-produtos"></table>
+      </div>
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Como os pedidos saem</h3><div class="dg-desc">Pedidos por modalidade de envio</div></div></div>
+        <table class="dg-t" id="dg-tab-envio"></table>
+      </div>
     </div>
 
-    <div class="card">
-      <h3 data-t="CARD_VENDAS_CANAL">Vendas por canal (mês atual)</h3>
-      <table><thead><tr><th>Canal</th><th>Faturamento</th></tr></thead>
-      <tbody id="tabela-dash-canal"></tbody></table>
-      <div class="empty" id="dash-canal-vazio" style="display:none;">Nenhuma venda registrada este mês ainda.</div>
+    <div class="dg-secao">Posição de hoje</div>
+    <div class="dg-grade dg-g2">
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Estoque</h3><div class="dg-desc">Valor parado por local e produtos com risco de faltar</div></div>
+          <div class="dg-acoes"><button type="button" class="dg-link" data-dg-ir="estoque">Ver estoque</button></div></div>
+        <div id="dg-estoque"></div>
+      </div>
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Contas a receber</h3><div class="dg-desc">O que já está vendido e ainda vai entrar</div></div>
+          <div class="dg-acoes"><button type="button" class="dg-link" data-dg-ir="contas-receber">Ver contas</button></div></div>
+        <div id="dg-receber"></div>
+      </div>
     </div>
+
+    <div class="dg-grade dg-g2">
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Anúncios pagos (Mercado Ads)</h3><div class="dg-desc" id="dg-desc-ads">Investimento e retorno por conta no período</div></div></div>
+        <table class="dg-t" id="dg-tab-ads"></table>
+      </div>
+      <div class="dg-card">
+        <div class="dg-cab"><div><h3>Precisa de atenção</h3><div class="dg-desc">Pendências que travam venda, caixa ou lucro</div></div></div>
+        <div class="dg-pend" id="dg-pend"></div>
+      </div>
+    </div>
+    <div id="dg-tip"></div>
   </div>
 
   <!-- ================= INTEGRAÇÕES ================= -->
@@ -2160,6 +2326,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     item.classList.add('active');
     document.getElementById('view-' + item.dataset.view).classList.add('active');
+    if (item.dataset.view === 'dashboard' && typeof dgDesenhar === 'function') dgDesenhar();
     if (item.dataset.view === 'contas-receber') abrirContasReceber();
     if (item.dataset.view === 'notas-fiscais') abrirNotasFiscais();
     if (item.dataset.view === 'site') abrirSite();
@@ -2407,81 +2574,344 @@ document.getElementById('t-origem').innerHTML = LOCAIS_ESTOQUE.map(l => `<option
 document.getElementById('t-destino').innerHTML = [...LOCAIS_ESTOQUE].reverse().map(l => `<option value="${l.value}">${l.label}</option>`).join('');
 
 // ============================================================
-// DASHBOARD
+// DASHBOARD GERENCIAL (Lote 13)
 // ============================================================
-async function loadDashboard(){
-  const { data: produtos, error: errProdutos } = await supabaseClient.from('produtos').select('*');
-  const { data: saldos, error: errSaldos } = await supabaseClient.from('estoque_saldos').select('*');
-  const { data: ordens, error: errOrdens } = await supabaseClient.from('ordens_producao').select('status');
-  if (errProdutos || errSaldos || errOrdens) { console.error(errProdutos || errSaldos || errOrdens); return; }
+// Tudo é somado no banco pela função dashboard_gerencial (um JSON só, sem o
+// teto de 1000 linhas e com "hoje" no horário de Brasília). Aqui a tela só
+// desenha. loadDashboard() continua sendo o nome que o resto do sistema chama.
+const DG = { periodo: '30', modo: 'canal', tabela: false, off: new Set(), dados: null, seq: 0, timer: null, grupo: [] };
+const DG_DIA = 86400000;
+const DG_SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+const DG_SEM_LONGO = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const DG_MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const DG_ORDEM_CANAIS = ['ml_conta1', 'ml_conta2', 'ml_conta3', 'shopee', 'loja_fisica', 'loja_online', 'outros'];
+const DG_CHAVES = ['f', 'p', 'fl', 'l', 'fc', 'lc', 'cc', 'tc', 'frc', 'txc', 'nsc', 'fsc', 'nsl', 'fsl'];
 
-  const custoPorProduto = {};
-  produtos.forEach(p => custoPorProduto[p.id] = p.custo_atual || 0);
+const dgEl = id => document.getElementById(id);
+const dgT = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+const dgIso = t => new Date(t).toISOString().slice(0, 10);
+const dgMais = (iso, n) => dgIso(dgT(iso) + n * DG_DIA);
+const dgDdMm = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+const dgHojeSP = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const dgMoeda0 = v => 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR');
+const dgCurto = v => v >= 1000 ? 'R$ ' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: v >= 10000 ? 0 : 1 }) + ' mil' : 'R$ ' + Math.round(v);
+const dgInt = v => Math.round(v || 0).toLocaleString('pt-BR');
+const dgPct = (v, d = 1) => ((v || 0) * 100).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }) + '%';
+const dgNomeCanal = c => CANAL_CURTO[c] || c;
+const dgCorCanal = c => CANAL_COR[c] || '#888888';
+const dgTagCanal = c => `<span class="dg-canal"><i style="background:${dgCorCanal(c)}"></i>${esc(dgNomeCanal(c))}</span>`;
+const dgBarra = (v, max, cor) => `<div class="dg-trilho"><span style="width:${max > 0 ? Math.max(0, v / max * 100).toFixed(1) : 0}%;${cor ? 'background:' + cor : ''}"></span></div>`;
 
-  let valorFisico = 0, valorMateria = 0, valorFull1 = 0, valorFull2 = 0, valorFull3 = 0;
-  const totalPorProduto = {};
-
-  saldos.forEach(s => {
-    const custo = custoPorProduto[s.produto_id] || 0;
-    const valor = (s.quantidade || 0) * custo;
-    if (s.local === 'fisico') valorFisico += valor;
-    if (s.local === 'materia_prima') valorMateria += valor;
-    if (s.local === 'full_conta1') valorFull1 += valor;
-    if (s.local === 'full_conta2') valorFull2 += valor;
-    if (s.local === 'full_conta3') valorFull3 += valor;
-    totalPorProduto[s.produto_id] = (totalPorProduto[s.produto_id] || 0) + (s.quantidade || 0);
-  });
-
-  document.getElementById('dash-valor-fisico').textContent = fmtMoeda(valorFisico);
-  document.getElementById('dash-valor-materia').textContent = fmtMoeda(valorMateria);
-  document.getElementById('dash-valor-full1').textContent = fmtMoeda(valorFull1);
-  document.getElementById('dash-valor-full2').textContent = fmtMoeda(valorFull2);
-  document.getElementById('dash-valor-full3').textContent = fmtMoeda(valorFull3);
-  document.getElementById('dash-ordens-andamento').textContent = ordens.filter(o => o.status === 'em_producao').length;
-  document.getElementById('dash-produtos-ativos').textContent = produtos.filter(p => p.ativo).length;
-
-  const abaixoDoMinimo = produtos.filter(p => (totalPorProduto[p.id] || 0) < (p.estoque_minimo || 0) && p.ativo);
-  document.getElementById('dash-produtos-baixo').textContent = abaixoDoMinimo.length;
-
-  const tbody = document.getElementById('tabela-dash-baixo');
-  tbody.innerHTML = '';
-  document.getElementById('dash-baixo-vazio').style.display = abaixoDoMinimo.length ? 'none' : 'block';
-  abaixoDoMinimo.forEach(p => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.nome} (${p.sku_interno})</td><td>${fmt(totalPorProduto[p.id] || 0)}</td><td>${fmt(p.estoque_minimo)}</td>`;
-    tbody.appendChild(tr);
-  });
-
-  // ---------- faturamento ----------
-  // Calculado direto no banco (funcao dashboard_faturamento) em vez de
-  // buscar todos os pedidos do ano aqui e somar no navegador -- evita o
-  // limite de 1000 linhas por consulta do Supabase (que ja estava
-  // fazendo "Faturamento hoje" aparecer menor que o real) e usa sempre o
-  // horario de Brasilia pra decidir o que e "hoje", nao o relogio de
-  // quem esta com o Dashboard aberto.
-  const { data: fatRows, error: errFat } = await supabaseClient.rpc('dashboard_faturamento');
-
-  if (!errFat && fatRows && fatRows[0]) {
-    const f = fatRows[0];
-    document.getElementById('dash-fat-hoje').textContent = fmtMoeda(f.fat_hoje);
-    document.getElementById('dash-fat-mes').textContent = fmtMoeda(f.fat_mes);
-    document.getElementById('dash-fat-ano').textContent = fmtMoeda(f.fat_ano);
-    document.getElementById('dash-pedidos-mes').textContent = f.pedidos_mes;
-
-    const porCanal = f.por_canal || {};
-    const tbodyCanal = document.getElementById('tabela-dash-canal');
-    tbodyCanal.innerHTML = '';
-    const canaisOrdenados = Object.keys(porCanal).sort((a,b) => porCanal[b] - porCanal[a]);
-    document.getElementById('dash-canal-vazio').style.display = canaisOrdenados.length ? 'none' : 'block';
-    canaisOrdenados.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${tagCanal(c)}</td><td>${fmtMoeda(porCanal[c])}</td>`;
-      tbodyCanal.appendChild(tr);
-    });
-  } else if (errFat) {
-    console.error('Erro ao carregar faturamento do dashboard:', errFat);
-  }
+function loadDashboard(){
+  clearTimeout(DG.timer);
+  DG.timer = setTimeout(dgCarregar, 120);
 }
+
+function dgIntervalo(hoje){
+  const fim = hoje; let ini, aIni = null, aFim = null;
+  if (DG.periodo === 'mes'){
+    ini = hoje.slice(0, 8) + '01';
+    const dias = (dgT(fim) - dgT(ini)) / DG_DIA + 1;
+    const fimMesAnt = dgMais(ini, -1);
+    aIni = fimMesAnt.slice(0, 8) + '01';
+    aFim = dgMais(aIni, dias - 1); if (aFim > fimMesAnt) aFim = fimMesAnt;
+  } else {
+    const dias = +DG.periodo;
+    ini = dgMais(hoje, -(dias - 1));
+    if (DG.periodo !== '365'){ aFim = dgMais(ini, -1); aIni = dgMais(aFim, -(dias - 1)); }
+  }
+  return { ini, fim, aIni, aFim };
+}
+
+async function dgCarregar(){
+  if (!dgEl('dg-kpis')) return;
+  const seq = ++DG.seq;
+  const iv = dgIntervalo(dgHojeSP());
+  const { data, error } = await supabaseClient.rpc('dashboard_gerencial', { p_inicio: iv.ini, p_fim: iv.fim, p_serie_desde: iv.aIni || iv.ini });
+  if (seq !== DG.seq) return;                       // chegou uma resposta mais nova
+  const erro = dgEl('dg-erro');
+  if (error || !data){
+    console.error('Erro ao carregar o dashboard:', error);
+    if (!DG.dados){ erro.textContent = 'Não foi possível carregar o dashboard agora. Recarregue a página; se continuar, avise o suporte.'; erro.style.display = ''; }
+    return;
+  }
+  erro.style.display = 'none';
+  // se o dia virou entre o pedido e a resposta, vale o "hoje" do banco
+  const iv2 = dgIntervalo(data.hoje);
+  if (data.primeiro_pedido && iv2.ini < data.primeiro_pedido) iv2.ini = data.primeiro_pedido;
+  // índice: A[canal][chave][i], i = dia desde "serie_desde"
+  const desde = data.serie_desde, n = Math.round((dgT(data.hoje) - dgT(desde)) / DG_DIA) + 1;
+  const A = {};
+  (data.serie || []).forEach(r => {
+    const i = Math.round((dgT(r.d) - dgT(desde)) / DG_DIA); if (i < 0 || i >= n) return;
+    const a = A[r.c] || (A[r.c] = Object.fromEntries(DG_CHAVES.map(k => [k, new Float64Array(n)])));
+    DG_CHAVES.forEach(k => { a[k][i] = +r[k] || 0; });
+  });
+  const canais = Object.keys(A).sort((x, y) => (DG_ORDEM_CANAIS.indexOf(x) + 99) % 99 - (DG_ORDEM_CANAIS.indexOf(y) + 99) % 99);
+  DG.dados = { bruto: data, A, n, desde, canais, iv: iv2, periodo: DG.periodo };
+  dgDesenhar();
+}
+
+function dgSoma(ids, a, b, k){
+  const D = DG.dados; if (a === null || b === null) return null;
+  const i0 = Math.max(0, Math.round((dgT(a) - dgT(D.desde)) / DG_DIA)), i1 = Math.min(D.n - 1, Math.round((dgT(b) - dgT(D.desde)) / DG_DIA));
+  let s = 0; ids.forEach(id => { const v = D.A[id] && D.A[id][k]; if (v) for (let i = i0; i <= i1; i++) s += v[i]; });
+  return s;
+}
+function dgDelta(atual, ant){
+  if (ant === null || ant === undefined) return '';
+  if (!ant) return atual ? '<span class="dg-delta flat">novo</span>' : '';
+  const v = (atual - ant) / Math.abs(ant), cls = Math.abs(v) < 0.005 ? 'flat' : v > 0 ? 'up' : 'down';
+  return `<span class="dg-delta ${cls}">${dgPct(Math.abs(v))}</span>`;
+}
+function dgBuckets(){
+  const { ini, fim } = DG.dados.iv, hoje = DG.dados.bruto.hoje, out = [];
+  const dias = (dgT(fim) - dgT(ini)) / DG_DIA + 1;
+  if (dias <= 92){
+    for (let d = ini; d <= fim; d = dgMais(d, 1)) out.push({ a: d, b: d, rot: dgDdMm(d), tit: `${DG_SEM[new Date(dgT(d)).getUTCDay()]}, ${dgDdMm(d)}` + (d === hoje ? ' · hoje (parcial)' : '') });
+  } else {
+    let d = ini;
+    while (d <= fim){
+      const fimMes = dgIso(Date.UTC(+d.slice(0, 4), +d.slice(5, 7), 0)), b = fimMes < fim ? fimMes : fim, m = +d.slice(5, 7) - 1;
+      out.push({ a: d, b, rot: DG_MES[m] + '/' + d.slice(2, 4), tit: DG_MES[m] + ' de ' + d.slice(0, 4) + (b === fim ? ' (até hoje)' : '') });
+      d = dgMais(b, 1);
+    }
+  }
+  return out;
+}
+
+// ---------- gráfico de linhas em SVG próprio ----------
+function dgNice(max){ if (max <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(max))), f = max / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; }
+function dgLinhas(el, cfg){
+  const W = el.clientWidth || 600, H = cfg.h, L = cfg.L || 58, R = 14, T = 8, B = 22, NT = cfg.ticks || 4;
+  const n = cfg.rotulos.length, iw = W - L - R, ih = H - T - B;
+  const max = cfg.max || dgNice(Math.max(1, ...cfg.series.flatMap(s => Array.from(s.v))) * 1.05);
+  const x = i => L + (n <= 1 ? iw / 2 : iw * i / (n - 1)), y = v => T + ih - ih * v / max;
+  let g = '';
+  for (let k = 0; k <= NT; k++){ const v = max * k / NT, yy = y(v);
+    g += `<line class="${k ? 'dg-grid' : 'dg-base'}" x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}"/><text x="${L - 8}" y="${yy + 4}" text-anchor="end">${cfg.eixo(v)}</text>`; }
+  const passo = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(iw / 62))));
+  for (let i = n - 1; i >= 0; i -= passo) g += `<text x="${x(i)}" y="${H - 5}" text-anchor="${n > 1 && i === n - 1 ? 'end' : 'middle'}">${cfg.rotulos[i]}</text>`;
+  cfg.series.forEach(s => {
+    const d = s.v.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join('');
+    if (cfg.series.length === 1 && n > 1) g += `<path d="${d}L${x(n - 1)} ${y(0)}L${x(0)} ${y(0)}Z" fill="${s.cor}" opacity=".08"/>`;
+    if (n > 1) g += `<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    else g += `<circle cx="${x(0)}" cy="${y(s.v[0])}" r="4" fill="${s.cor}"/>`;
+  });
+  g += `<g class="dg-hov" style="display:none"><line class="dg-cursor" y1="${T}" y2="${T + ih}"/>` + cfg.series.map(s => `<circle r="4.5" fill="${s.cor}" stroke="#fff" stroke-width="2"/>`).join('') + `</g>`;
+  g += `<rect x="${L}" y="${T}" width="${Math.max(iw, 1)}" height="${ih}" fill="transparent" style="cursor:crosshair"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(cfg.titulo)}">${g}</svg>`;
+  const svg = el.firstChild, hov = svg.querySelector('.dg-hov'), alvo = svg.querySelector('rect');
+  DG.grupo.push({ marcar(i){ if (i === null){ hov.style.display = 'none'; return; } hov.style.display = '';
+    const ln = hov.querySelector('line'); ln.setAttribute('x1', x(i)); ln.setAttribute('x2', x(i));
+    hov.querySelectorAll('circle').forEach((c, k) => { c.setAttribute('cx', x(i)); c.setAttribute('cy', y(cfg.series[k].v[i])); }); } });
+  const mover = ev => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - L) / (n <= 1 ? 1 : iw / (n - 1)))));
+    DG.grupo.forEach(a => a.marcar(i)); cfg.aoPassar(i, ev); };
+  alvo.addEventListener('pointermove', mover); alvo.addEventListener('pointerdown', mover);
+  alvo.addEventListener('pointerleave', () => { DG.grupo.forEach(a => a.marcar(null)); dgEl('dg-tip').style.display = 'none'; });
+}
+function dgSpark(v, cor){
+  const W = 200, H = 34, max = Math.max(...v, 1), min = Math.min(...v, 0);
+  const y = x => H - 3 - (H - 6) * (x - min) / ((max - min) || 1);
+  const d = v.map((x, i) => (i ? 'L' : 'M') + (W * i / Math.max(1, v.length - 1)).toFixed(1) + ' ' + y(x).toFixed(1)).join('');
+  if (v.length < 2) return '<svg viewBox="0 0 200 34" aria-hidden="true"></svg>';
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}L${W} ${H}L0 ${H}Z" fill="${cor}" opacity=".08"/><path d="${d}" fill="none" stroke="${cor}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function dgTip(html, ev){
+  const t = dgEl('dg-tip'); t.innerHTML = html; t.style.display = 'block';
+  const w = t.offsetWidth, h = t.offsetHeight; let l = ev.clientX + 16;
+  if (l + w > innerWidth - 8) l = ev.clientX - w - 16;
+  t.style.left = Math.max(8, l) + 'px'; t.style.top = Math.max(8, Math.min(innerHeight - h - 8, ev.clientY - h / 2)) + 'px';
+}
+
+// ---------- desenho ----------
+function dgDesenhar(){
+  const D = DG.dados; if (!D) return;
+  const B = D.bruto, iv = D.iv, hoje = B.hoje;
+  const cs = D.canais.filter(c => !DG.off.has(c)), ids = cs;
+  const dias = (dgT(iv.fim) - dgT(iv.ini)) / DG_DIA + 1;
+  const nomesP = { '7': 'últimos 7 dias', '30': 'últimos 30 dias', mes: 'este mês até hoje', '90': 'últimos 90 dias', '365': 'últimos 12 meses' };
+  const comp = D.periodo === 'mes' ? 'os mesmos dias do mês anterior' : D.periodo === '365' ? '' : 'os ' + dias + ' dias anteriores';
+  dgEl('dg-sub-periodo').textContent = `${dgDdMm(iv.ini)} a ${dgDdMm(iv.fim)}/${iv.fim.slice(0, 4)} · ${nomesP[D.periodo]}` + (comp ? ` · comparado com ${comp}` : '');
+  dgEl('dg-seg-periodo').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.dgP === DG.periodo));
+  dgEl('dg-seg-modo').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.dgM === DG.modo));
+
+  dgEl('dg-chips').innerHTML = D.canais.length ? '<span class="dg-rotulo">Canais</span>' + D.canais.map(c => `<button type="button" class="dg-chip ${DG.off.has(c) ? 'off' : ''}" data-dg-c="${esc(c)}" aria-pressed="${!DG.off.has(c)}"><i style="background:${dgCorCanal(c)}"></i>${esc(dgNomeCanal(c))}</button>`).join('')
+    + (cs.length < D.canais.length ? '<button type="button" class="dg-link" data-dg-todos="1">Mostrar todos</button>' : '') : '';
+
+  // ---------- hoje ----------
+  const ontem = dgMais(hoje, -1);
+  const fH = dgSoma(ids, hoje, hoje, 'f'), pH = dgSoma(ids, hoje, hoje, 'p'), fO = dgSoma(ids, ontem, ontem, 'f'), pO = dgSoma(ids, ontem, ontem, 'p');
+  const media7 = dgSoma(ids, dgMais(hoje, -7), ontem, 'f') / 7;
+  const maxH = Math.max(1, ...cs.map(c => dgSoma([c], hoje, hoje, 'f')));
+  dgEl('dg-hoje').innerHTML = `
+    <div class="dg-hoje-num">
+      <div class="dg-rot">Vendido hoje · ${DG_SEM_LONGO[new Date(dgT(hoje)).getUTCDay()]}, ${dgDdMm(hoje)} até ${esc(B.agora || '')}</div>
+      <div class="dg-valor">${fmtMoeda(fH)}</div>
+      <div class="dg-linha"><b>${dgInt(pH)} ${pH === 1 ? 'pedido' : 'pedidos'}</b> · ticket médio ${fmtMoeda(pH ? fH / pH : 0)}</div>
+      <div class="dg-comp">${dgDelta(fH, fO)} <span class="dg-sub2">vs. ontem inteiro (${dgMoeda0(fO)}, ${dgInt(pO)} pedidos)</span></div>
+      <div class="dg-comp">${dgDelta(fH, media7)} <span class="dg-sub2">vs. média dos últimos 7 dias (${dgMoeda0(media7)})</span></div>
+    </div>
+    <div class="dg-hoje-canais">
+      <table class="dg-limpa"><thead><tr><th>Hoje por canal</th><th></th><th>Faturamento</th><th>Pedidos</th><th>Ticket</th></tr></thead><tbody>
+      ${cs.map(c => { const f = dgSoma([c], hoje, hoje, 'f'), p = dgSoma([c], hoje, hoje, 'p'); return `<tr><td>${dgTagCanal(c)}</td><td style="width:38%">${dgBarra(f, maxH, dgCorCanal(c))}</td><td class="dg-num">${fmtMoeda(f)}</td><td class="dg-num">${dgInt(p)}</td><td class="dg-num">${p ? fmtMoeda(f / p) : '–'}</td></tr>`; }).join('') || '<tr><td colspan="5" class="dg-vazio">Nenhum canal selecionado.</td></tr>'}
+      </tbody></table>
+    </div>`;
+
+  // ---------- indicadores do período ----------
+  const S = (k, a = iv.ini, b = iv.fim) => dgSoma(ids, a, b, k);
+  const fat = S('f'), ped = S('p'), fatA = S('f', iv.aIni, iv.aFim), pedA = S('p', iv.aIni, iv.aFim);
+  const liq = S('l'), fl = S('fl'), liqA = S('l', iv.aIni, iv.aFim);
+  const fc = S('fc'), lucro = S('lc') - S('cc'), lucroA = iv.aIni ? S('lc', iv.aIni, iv.aFim) - S('cc', iv.aIni, iv.aFim) : null;
+  const bk = dgBuckets();
+  const serieT = k => bk.map(b => dgSoma(ids, b.a, b.b, k));
+  const sF = serieT('f'), sP = serieT('p'), sL = serieT('l'), sLc = serieT('lc'), sCc = serieT('cc');
+  const kpi = (rot, valor, d, pe, sp) => `<div class="dg-card dg-kpi"><div class="dg-rot">${rot}</div><div class="dg-valor">${valor}</div><div class="dg-pe">${d}<span>${pe}</span></div>${sp}</div>`;
+  dgEl('dg-kpis').innerHTML =
+    kpi('Faturamento', dgMoeda0(fat), dgDelta(fat, fatA), `${dgMoeda0(fat / dias)} por dia`, dgSpark(sF, '#111111')) +
+    kpi('Pedidos', dgInt(ped), dgDelta(ped, pedA), `${(ped / dias).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia`, dgSpark(sP, '#111111')) +
+    kpi('Ticket médio', fmtMoeda(ped ? fat / ped : 0), dgDelta(ped ? fat / ped : 0, pedA ? fatA / pedA : null), 'por pedido', dgSpark(sF.map((f, i) => sP[i] ? f / sP[i] : 0), '#111111')) +
+    kpi('Líquido (entra no caixa)', dgMoeda0(liq), dgDelta(liq, liqA), fl ? `${dgPct(liq / fl)} do faturamento` : 'sem líquido informado', dgSpark(sL, '#111111')) +
+    kpi('Lucro estimado', dgMoeda0(lucro), dgDelta(lucro, lucroA), fc ? `margem ${dgPct(lucro / fc)}` : 'sem base de cálculo', dgSpark(sLc.map((l, i) => l - sCc[i]), '#b9530a'));
+
+  // aviso: o que ficou de fora do líquido / lucro
+  const fora = fat - fc, nsc = S('nsc'), nsl = S('nsl'), fsl = S('fsl'), fsc = S('fsc');
+  const aviso = dgEl('dg-aviso');
+  if (fora > 0.005 && fat > 0){
+    const partes = [];
+    if (nsc) partes.push(`${dgInt(nsc)} ${nsc === 1 ? 'pedido' : 'pedidos'} com produto sem custo cadastrado (${dgMoeda0(fsc)})`);
+    if (nsl) partes.push(`${dgInt(nsl)} ${nsl === 1 ? 'pedido' : 'pedidos'} sem valor líquido (${dgMoeda0(fsl)})` + (cs.includes('shopee') ? ' — a Shopee ainda não informa o líquido ao ERP' : ''));
+    aviso.innerHTML = `<b>Atenção: ${dgPct(fora / fat)} do faturamento do período (${dgMoeda0(fora)}) está fora do lucro estimado.</b> ${partes.join(' · ')}. O lucro e a margem acima consideram só as vendas com líquido e custo conhecidos.`;
+    aviso.style.display = '';
+  } else aviso.style.display = 'none';
+
+  // ---------- vendas por dia ----------
+  const porMes = dias > 92, paineis = DG.modo === 'canal';
+  dgEl('dg-desc-vendas').textContent = (porMes ? 'Um ponto por mês' : 'Um ponto por dia') + (paineis ? ' · todos os canais na mesma escala' : '') + ' · passe o mouse para ver valor e pedidos';
+  DG.grupo.length = 0;
+  const rot = bk.map(b => b.rot);
+  const aoPassar = (i, ev) => { const b = bk[i]; let tf = 0, tp = 0;
+    const linhas = cs.map(c => { const f = dgSoma([c], b.a, b.b, 'f'), p = dgSoma([c], b.a, b.b, 'p'); tf += f; tp += p;
+      return `<tr><td>${dgTagCanal(c)}</td><td>${fmtMoeda(f)}</td><td>${dgInt(p)} ped.</td></tr>`; }).join('');
+    dgTip(`<div class="dg-t">${b.tit}</div><table>${linhas}<tr class="dg-tot"><td>Total</td><td>${fmtMoeda(tf)}</td><td>${dgInt(tp)} ped.</td></tr></table>`, ev); };
+  const series = k => DG.modo === 'total'
+    ? [{ cor: '#111111', v: bk.map(b => dgSoma(ids, b.a, b.b, k)) }]
+    : cs.map(c => ({ cor: dgCorCanal(c), v: bk.map(b => dgSoma([c], b.a, b.b, k)) }));
+  dgEl('dg-bloco-paineis').style.display = (!DG.tabela && paineis) ? '' : 'none';
+  dgEl('dg-bloco-graficos').style.display = (!DG.tabela && !paineis) ? '' : 'none';
+  dgEl('dg-bloco-tabela').style.display = DG.tabela ? '' : 'none';
+  dgEl('dg-btn-tabela').textContent = DG.tabela ? 'Ver como gráfico' : 'Ver como tabela';
+  if (DG.tabela){
+    dgEl('dg-bloco-tabela').innerHTML = `<table class="dg-t"><thead><tr><th>${porMes ? 'Mês' : 'Dia'}</th><th>Faturamento</th><th>Pedidos</th>${cs.map(c => `<th>${esc(dgNomeCanal(c))}</th>`).join('')}</tr></thead><tbody>` +
+      bk.slice().reverse().map(b => `<tr><td>${b.tit}</td><td class="dg-num">${fmtMoeda(dgSoma(ids, b.a, b.b, 'f'))}</td><td class="dg-num">${dgInt(dgSoma(ids, b.a, b.b, 'p'))}</td>${cs.map(c => `<td class="dg-num">${fmtMoeda(dgSoma([c], b.a, b.b, 'f'))} <span class="dg-sub2">· ${dgInt(dgSoma([c], b.a, b.b, 'p'))}</span></td>`).join('')}</tr>`).join('') + '</tbody></table>';
+  } else if (paineis){
+    const mx = dgNice(Math.max(1, ...cs.flatMap(c => bk.map(b => dgSoma([c], b.a, b.b, 'f')))) * 1.05);
+    dgEl('dg-bloco-paineis').innerHTML = cs.map(c => { const f = dgSoma([c], iv.ini, iv.fim, 'f'), p = dgSoma([c], iv.ini, iv.fim, 'p');
+      return `<div class="dg-painel"><div class="dg-n">${dgTagCanal(c)}</div><div class="dg-v">${dgMoeda0(f)}</div><div class="dg-s">${dgInt(p)} pedidos · ticket ${p ? dgMoeda0(f / p) : '–'}</div><div class="dg-graf" data-dg-painel="${esc(c)}"></div></div>`; }).join('') || '<div class="dg-vazio">Nenhum canal selecionado.</div>';
+    dgEl('dg-bloco-paineis').querySelectorAll('[data-dg-painel]').forEach(el => { const c = el.dataset.dgPainel;
+      dgLinhas(el, { h: 120, L: 50, ticks: 2, max: mx, rotulos: rot, series: [{ cor: dgCorCanal(c), v: bk.map(b => dgSoma([c], b.a, b.b, 'f')) }], eixo: dgCurto, titulo: 'Faturamento ' + dgNomeCanal(c), aoPassar }); });
+  } else {
+    dgLinhas(dgEl('dg-graf-fat'), { h: 250, rotulos: rot, series: series('f'), eixo: dgCurto, titulo: 'Faturamento por dia', aoPassar });
+    dgLinhas(dgEl('dg-graf-ped'), { h: 130, rotulos: rot, series: series('p'), eixo: v => Number.isInteger(v) ? dgInt(v) : v.toLocaleString('pt-BR'), titulo: 'Pedidos por dia', aoPassar });
+    dgEl('dg-legenda').innerHTML = DG.modo === 'total' ? '<span><i style="background:#111"></i>Total dos canais selecionados</span>' : cs.map(c => `<span><i style="background:${dgCorCanal(c)}"></i>${esc(dgNomeCanal(c))}</span>`).join('');
+  }
+
+  // ---------- canais ----------
+  const lin = cs.map(c => ({ c, f: dgSoma([c], iv.ini, iv.fim, 'f'), p: dgSoma([c], iv.ini, iv.fim, 'p'), fa: dgSoma([c], iv.aIni, iv.aFim, 'f') })).sort((a, b) => b.f - a.f);
+  dgEl('dg-tab-canais').innerHTML = `<thead><tr><th>Canal</th><th>Faturamento</th><th>Pedidos</th><th>Ticket</th><th>Variação</th></tr></thead><tbody>` +
+    lin.map(l => `<tr><td>${dgTagCanal(l.c)}<div style="margin:5px 0 0 18px">${dgBarra(l.f, lin[0].f, dgCorCanal(l.c))}</div></td><td class="dg-num">${dgMoeda0(l.f)}<div class="dg-sub2">${dgPct(fat ? l.f / fat : 0, 0)} do total</div></td><td class="dg-num">${dgInt(l.p)}</td><td class="dg-num">${l.p ? dgMoeda0(l.f / l.p) : '–'}</td><td>${dgDelta(l.f, l.fa)}</td></tr>`).join('') +
+    `<tr class="dg-total"><td>Total</td><td class="dg-num">${dgMoeda0(fat)}</td><td class="dg-num">${dgInt(ped)}</td><td class="dg-num">${ped ? dgMoeda0(fat / ped) : '–'}</td><td>${dgDelta(fat, fatA)}</td></tr></tbody>`;
+
+  // ---------- do bruto ao lucro (só vendas com líquido e custo) ----------
+  const lc = S('lc'), cc = S('cc'), tc = S('tc'), frc = S('frc'), txc = S('txc'), aj = fc - lc - tc - frc - txc;
+  const partes = [['Lucro estimado', lucro, '#b9530a', 1], ['Custo dos produtos', cc, '#4a4a46'], ['Tarifa dos marketplaces', tc, '#85857f'], ['Frete pago por nós', frc, '#adada7'], ['Taxas de pagamento', txc, '#cfcfc9']];
+  if (Math.abs(aj) >= 0.5) partes.push(['Reembolsos e ajustes', aj, '#e2e2dd']);
+  dgEl('dg-bruto-lucro').innerHTML = fc > 0 ? `<div class="dg-fatias" role="img" aria-label="Divisão do faturamento">${partes.map(p => `<span style="flex:${Math.max(p[1], 0.0001)};background:${p[2]}" title="${p[0]}: ${fmtMoeda(p[1])}"></span>`).join('')}</div>
+    <div class="dg-lista-fat"><div class="dg-forte"><span>${fora > 0.005 ? 'Vendas com líquido e custo' : 'Faturamento bruto'}</span><span class="dg-v">${dgMoeda0(fc)}</span><span class="dg-p">100%</span></div>` +
+    partes.map(p => `<div class="${p[3] ? 'dg-forte' : ''}"><i style="background:${p[2]}"></i><span>${p[0]}</span><span class="dg-v">${p[3] ? '' : '− '}${dgMoeda0(p[1])}</span><span class="dg-p">${dgPct(p[1] / fc)}</span></div>`).join('') +
+    `</div><div class="dg-sub2" style="margin-top:12px">Lucro = líquido recebido − custo (ficha técnica ou custo do cadastro). Ainda sem imposto e despesas fixas.</div>` : '<div class="dg-vazio">Sem vendas com líquido e custo neste período.</div>';
+
+  // ---------- produtos ----------
+  const pm = {};
+  (B.produtos || []).forEach(r => { if (DG.off.has(r.c)) return; const o = pm[r.n] || (pm[r.n] = { n: r.n, q: 0, f: 0, fm: 0, lm: 0, cm: 0 });
+    o.q += +r.q || 0; o.f += +r.f || 0; o.fm += +r.fm || 0; o.lm += +r.lm || 0; o.cm += +r.cm || 0; });
+  const top = Object.values(pm).sort((a, b) => b.f - a.f).slice(0, 8);
+  dgEl('dg-tab-produtos').innerHTML = top.length ? `<thead><tr><th>Produto</th><th>Faturamento</th><th>Qtd.</th><th>Margem</th></tr></thead><tbody>` +
+    top.map(p => `<tr><td><span class="dg-nome" title="${esc(p.n)}">${esc(p.n)}</span><div style="margin-top:5px;max-width:190px">${dgBarra(p.f, top[0].f)}</div></td><td class="dg-num">${dgMoeda0(p.f)}</td><td class="dg-num">${dgInt(p.q)}</td><td class="dg-num">${p.fm > 0 ? dgPct((p.lm - p.cm) / p.fm, 0) : '–'}</td></tr>`).join('') + '</tbody>' : '<tbody><tr><td class="dg-vazio">Nenhuma venda no período.</td></tr></tbody>';
+
+  // ---------- envio ----------
+  const em = {};
+  (B.envio || []).forEach(r => { if (DG.off.has(r.c)) return; em[r.e] = (em[r.e] || 0) + (+r.p || 0); });
+  const envs = Object.entries(em).sort((a, b) => b[1] - a[1]), totE = envs.reduce((s, e) => s + e[1], 0);
+  dgEl('dg-tab-envio').innerHTML = envs.length ? `<thead><tr><th>Modalidade</th><th></th><th>Pedidos</th><th>Part.</th></tr></thead><tbody>` +
+    envs.map(e => `<tr><td title="${esc(ENVIO_DICA[e[0]] || '')}">${esc(ENVIO_LABEL[e[0]] || e[0])}</td><td class="dg-barra" style="width:40%">${dgBarra(e[1], envs[0][1])}</td><td class="dg-num">${dgInt(e[1])}</td><td class="dg-num">${dgPct(e[1] / totE, 0)}</td></tr>`).join('') + '</tbody>' : '<tbody><tr><td class="dg-vazio">Nenhum pedido no período.</td></tr></tbody>';
+
+  // ---------- estoque ----------
+  const E = B.estoque || {}, loc = E.locais || {}, abaixo = E.abaixo || [], cob = E.cobertura || [];
+  const locais = LOCAIS_ESTOQUE.map(l => [l.label, +loc[l.value] || 0, l.value]);
+  const totEst = locais.reduce((s, l) => s + l[1], 0), mxEst = Math.max(1, ...locais.map(l => l[1]));
+  const totFull = locais.filter(l => l[2].startsWith('full_')).reduce((s, l) => s + l[1], 0);
+  dgEl('dg-estoque').innerHTML = `<div class="dg-mini3"><div class="dg-m"><div class="dg-r">Valor total em estoque</div><div class="dg-v">${dgMoeda0(totEst)}</div></div>
+    <div class="dg-m"><div class="dg-r">No Full (3 contas)</div><div class="dg-v">${dgMoeda0(totFull)}</div></div>
+    <div class="dg-m ${abaixo.length ? 'alerta' : ''}"><div class="dg-r">Abaixo do mínimo</div><div class="dg-v">${abaixo.length} ${abaixo.length === 1 ? 'produto' : 'produtos'}</div></div></div>
+    <table class="dg-t" style="margin-bottom:18px"><thead><tr><th>Local</th><th></th><th>Valor</th><th>Part.</th></tr></thead><tbody>` +
+    locais.map(l => `<tr><td>${esc(l[0])}</td><td class="dg-barra" style="width:38%">${dgBarra(l[1], mxEst)}</td><td class="dg-num">${dgMoeda0(l[1])}</td><td class="dg-num">${dgPct(totEst ? l[1] / totEst : 0, 0)}</td></tr>`).join('') + `</tbody></table>` +
+    (cob.length ? `<table class="dg-t"><thead><tr><th>Risco de faltar (Full + físico)</th><th>Saldo</th><th>Venda/dia</th><th>Dura</th><th></th></tr></thead><tbody>` +
+    cob.map(c => { const d = +c.dias; return `<tr><td><span class="dg-nome" title="${esc(c.n)}">${esc(c.n)}</span></td><td class="dg-num">${fmt(+c.saldo)}</td><td class="dg-num">${(+c.vd).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</td><td class="dg-num">${+c.saldo <= 0 ? 'zerado' : Math.round(d) + (Math.round(d) === 1 ? ' dia' : ' dias')}</td><td><span class="dg-selo ${d < 7 ? 'crit' : d < 15 ? 'atn' : 'ok'}">${d < 7 ? 'Crítico' : d < 15 ? 'Atenção' : 'Ok'}</span></td></tr>`; }).join('') +
+    `</tbody></table><div class="dg-sub2" style="margin-top:10px">Os 8 produtos que acabam primeiro no ritmo de venda dos últimos 30 dias.</div>` : '') +
+    (abaixo.length ? `<details class="dg-det"><summary>Ver os ${abaixo.length} abaixo do mínimo</summary><table class="dg-t" style="margin-top:8px"><thead><tr><th>Produto</th><th>Estoque total</th><th>Mínimo</th></tr></thead><tbody>` +
+    abaixo.map(p => `<tr><td>${esc(p.n)} <span class="dg-sub2">(${esc(p.sku)})</span></td><td class="dg-num">${fmt(+p.total)}</td><td class="dg-num">${fmt(+p.minimo)}</td></tr>`).join('') + '</tbody></table></details>' : '');
+
+  // ---------- contas a receber ----------
+  const R = B.receber || {}, sem = R.semanas || [], vSem = k => +((sem.find(s => +s.k === k) || {}).v) || 0;
+  const rotSem = ['Próximos 7 dias', `${dgDdMm(dgMais(hoje, 7))} a ${dgDdMm(dgMais(hoje, 13))}`, `${dgDdMm(dgMais(hoje, 14))} a ${dgDdMm(dgMais(hoje, 20))}`, `${dgDdMm(dgMais(hoje, 21))} a ${dgDdMm(dgMais(hoje, 27))}`, `Depois de ${dgDdMm(dgMais(hoje, 27))}`];
+  const linR = rotSem.map((r, k) => [r, vSem(k)]), mxR = Math.max(1, ...linR.map(l => l[1])), totR = +R.a_receber || 0;
+  dgEl('dg-receber').innerHTML = `<div class="dg-mini3"><div class="dg-m"><div class="dg-r">Total a receber</div><div class="dg-v">${dgMoeda0(totR)}</div></div>
+    <div class="dg-m"><div class="dg-r">Entra nos próximos 7 dias</div><div class="dg-v">${dgMoeda0(+R.prox7)}</div></div>
+    <div class="dg-m ${+R.qtd_vencido ? 'alerta' : ''}"><div class="dg-r">Vencido (loja física)</div><div class="dg-v">${dgMoeda0(+R.valor_vencido)}</div></div></div>
+    <table class="dg-t"><thead><tr><th>Previsão de entrada</th><th></th><th>Valor</th><th>Part.</th></tr></thead><tbody>` +
+    linR.map(l => `<tr><td>${l[0]}</td><td class="dg-barra" style="width:44%">${dgBarra(l[1], mxR)}</td><td class="dg-num">${dgMoeda0(l[1])}</td><td class="dg-num">${dgPct(totR ? l[1] / totR : 0, 0)}</td></tr>`).join('') +
+    `</tbody></table><div class="dg-sub2" style="margin-top:12px">Datas do Mercado Livre são a previsão de liberação do Mercado Pago; costumam adiantar após a entrega. Todos os canais, sem filtro.</div>`;
+
+  // ---------- anúncios ----------
+  const ads = ((B.ads || {}).contas || []).filter(a => !DG.off.has(a.c));
+  const ti = ads.reduce((s, a) => s + (+a.custo || 0), 0), tv = ads.reduce((s, a) => s + (+a.vendas || 0), 0);
+  const roas = (v, c) => c > 0 ? (v / c).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '×' : '–', acos = (v, c) => v > 0 ? dgPct(c / v) : '–';
+  dgEl('dg-desc-ads').textContent = 'Investimento e retorno por conta no período' + ((B.ads || {}).ate ? ` · dados até ${dgDdMm(B.ads.ate)}` : '');
+  dgEl('dg-tab-ads').innerHTML = ads.length ? `<thead><tr><th>Conta</th><th>Investido</th><th>Vendas por anúncio</th><th>Retorno (ROAS)</th><th>ACOS</th></tr></thead><tbody>` +
+    ads.map(a => `<tr><td>${dgTagCanal(a.c)}</td><td class="dg-num">${dgMoeda0(+a.custo)}</td><td class="dg-num">${dgMoeda0(+a.vendas)}</td><td class="dg-num">${roas(+a.vendas, +a.custo)}</td><td class="dg-num">${acos(+a.vendas, +a.custo)}</td></tr>`).join('') +
+    `<tr class="dg-total"><td>Total</td><td class="dg-num">${dgMoeda0(ti)}</td><td class="dg-num">${dgMoeda0(tv)}</td><td class="dg-num">${roas(tv, ti)}</td><td class="dg-num">${acos(tv, ti)}</td></tr></tbody>` : '<tbody><tr><td class="dg-vazio">Sem dados de anúncios para os canais e o período escolhidos.</td></tr></tbody>';
+
+  // ---------- pendências ----------
+  const P = B.pend || {}, pend = [];
+  if (+P.perguntas){ const h = P.pergunta_mais_antiga ? Math.floor((Date.now() - new Date(P.pergunta_mais_antiga).getTime()) / 3600000) : null;
+    pend.push(['crit', P.perguntas, +P.perguntas === 1 ? 'Pergunta sem resposta no Mercado Livre' : 'Perguntas sem resposta no Mercado Livre', h === null ? '' : 'a mais antiga há ' + (h >= 48 ? Math.floor(h / 24) + ' dias' : h + ' h'), 'gestao-contas']); }
+  if (+R.qtd_vencido) pend.push(['crit', R.qtd_vencido, +R.qtd_vencido === 1 ? 'Parcela vencida da loja física' : 'Parcelas vencidas da loja física', fmtMoeda(+R.valor_vencido) + ' em aberto', 'contas-receber']);
+  if (abaixo.length) pend.push(['atn', abaixo.length, abaixo.length === 1 ? 'Produto abaixo do estoque mínimo' : 'Produtos abaixo do estoque mínimo', '', 'estoque']);
+  if (+P.promo_vencendo) pend.push(['atn', P.promo_vencendo, 'Promoções terminando em até 3 dias', '', 'gestao-contas']);
+  if (+P.shopee_nf) pend.push(['atn', P.shopee_nf, 'Pedido Shopee com nota fiscal pendente', '', 'vendas']);
+  if (+P.sem_custo) pend.push(['atn', P.sem_custo, +P.sem_custo === 1 ? 'Produto ativo sem custo' : 'Produtos ativos sem custo', 'as vendas dele ficam fora do lucro', 'produtos']);
+  if (+P.itens_sem_produto) pend.push(['atn', P.itens_sem_produto, 'Itens de pedido sem produto vinculado', '', 'vendas']);
+  if (+P.ml_sem_liquido) pend.push(['', P.ml_sem_liquido, 'Vendas do Mercado Livre ainda sem valor líquido', '', 'vendas']);
+  if (+P.ops) pend.push(['', P.ops, +P.ops === 1 ? 'Ordem de produção em andamento' : 'Ordens de produção em andamento', '', 'producao']);
+  dgEl('dg-pend').innerHTML = pend.length ? pend.map(p => `<button type="button" data-dg-ir="${p[4]}"><span class="dg-qtd ${p[0]}">${dgInt(+p[1])}</span><span>${p[2]}${p[3] ? ` <span class="dg-det2">· ${p[3]}</span>` : ''}</span><span class="dg-ir">${esc(MENU_LABELS[p[4]] || 'Abrir')} →</span></button>`).join('') : '<div class="dg-vazio">Nada pendente agora.</div>';
+}
+
+// ---------- cliques do dashboard ----------
+document.getElementById('view-dashboard').addEventListener('click', ev => {
+  const t = ev.target.closest('button'); if (!t) return;
+  const d = t.dataset;
+  if (d.dgP){ DG.periodo = d.dgP; dgEl('dg-seg-periodo').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === t)); dgCarregar(); }
+  else if (d.dgM){ DG.modo = d.dgM; DG.tabela = false; dgDesenhar(); }
+  else if (d.dgC){ const visiveis = DG.dados ? DG.dados.canais.filter(c => !DG.off.has(c)) : [];
+    if (DG.off.has(d.dgC)) DG.off.delete(d.dgC); else if (visiveis.length > 1) DG.off.add(d.dgC);
+    dgDesenhar(); }
+  else if (d.dgTodos){ DG.off.clear(); dgDesenhar(); }
+  else if (t.id === 'dg-btn-tabela'){ DG.tabela = !DG.tabela; dgDesenhar(); }
+  else if (d.dgIr){ const nav = document.querySelector(`.nav-item[data-view="${d.dgIr}"]`); if (nav) nav.click(); }
+});
+let dgResize; window.addEventListener('resize', () => { clearTimeout(dgResize); dgResize = setTimeout(() => { if (document.getElementById('view-dashboard').classList.contains('active')) dgDesenhar(); }, 150); });
 
 // ============================================================
 // PRODUTOS
