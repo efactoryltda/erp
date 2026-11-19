@@ -466,7 +466,7 @@ async function svConferirEmpresa(nota: Nota) {
   const serie = Number(emp.serie_nfe ?? emp?.empresa?.serie_nfe);
   if (Number.isFinite(serie) && serie > 0 && serie !== Number(nota.serie)) {
     throw new ErroSysVelox(409, 'SERIE_DIFERENTE',
-      `Na SysVelox a série da NF-e desta empresa está ${serie}, mas no ERP é ${nota.serie}. Ajuste a série no portal da SysVelox (Minha conta → Empresas) para ${nota.serie}.`);
+      `Na SysVelox a série da NF-e desta empresa está ${serie}, mas no ERP é ${nota.serie}. Em Notas fiscais → Configuração, use o botão "Usar a série ${nota.serie} na SysVelox".`);
   }
 }
 
