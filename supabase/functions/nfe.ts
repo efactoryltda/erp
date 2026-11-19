@@ -9,6 +9,8 @@
 //   { acao: 'email',            nota_id, email? }
 //   { acao: 'limpar_simulacao' }                         (só notas de simulação)
 //   { acao: 'teste_sysvelox' }                           (emite 1 nota de TESTE no sandbox)
+//   { acao: 'sysvelox_status' }                          (série e numeração da NF-e na SysVelox)
+//   { acao: 'sysvelox_serie' }                           (grava na SysVelox a série configurada no ERP)
 //
 // Segurança: "Verify JWT" fica DESLIGADO no painel (padrão do projeto),
 // mas esta função confere o login de verdade (auth.getUser) e recusa
@@ -324,7 +326,94 @@ function corpoNfeSysVelox(d: any): Record<string, unknown> {
   const frete = centavos(d.totais?.frete), desconto = centavos(d.totais?.desconto);
   if (frete > 0) corpo.freight_cents = frete;          // a API rateia nos itens
   if (desconto > 0) corpo.discount_cents = desconto;   // a API rateia nos itens
+  const info = textoComplementar(d.informacoes_complementares);
+  if (info) corpo.informacoes_complementares = info;   // infCpl (ex.: texto do Simples Nacional)
   return corpo;
+}
+
+// Texto livre das "informações complementares" (infCpl): sem espaços sobrando, até 5000 caracteres (limite da API)
+function textoComplementar(v: unknown): string {
+  return String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 5000);
+}
+
+// ------------------------------------------------------------
+// Série da NF-e na SysVelox
+// A série usada na emissão é a "serie_nfe" do CADASTRO da empresa na SysVelox
+// (o POST /v1/nfe não tem campo de série). O portal não mostra esse campo, e o
+// PUT /v1/empresas/{cnpj} exige o cadastro COMPLETO — montado aqui a partir da
+// configuração fiscal do ERP. A numeração de cada série fica em "numeracao".
+// ------------------------------------------------------------
+async function svStatusEmpresa() {
+  const { data: c, error } = await supabase.from('fiscal_config').select('*').eq('id', 1).single();
+  if (error || !c) throw new Error('Configuração fiscal não encontrada.');
+  const r = await svJson(`/v1/empresas/${c.cnpj}`);
+  const emp = r?.empresa ?? r;                                 // aceita a resposta com ou sem o envelope "empresa"
+  const numeracao = (Array.isArray(emp.numeracao) ? emp.numeracao : [])
+    .filter((n: any) => Number(n.modelo) === 55)
+    .map((n: any) => ({ serie: Number(n.serie), ambiente: n.ambiente ?? null, ultimo_numero: Number(n.ultimo_numero ?? 0) }));
+  return {
+    c, emp,
+    status: {
+      ok: true, razao_social: emp.razao_social ?? null, cnpj: emp.cnpj ?? c.cnpj,
+      serie_sysvelox: emp.serie_nfe ?? null, serie_erp: Number(c.serie),
+      bate: Number(emp.serie_nfe) === Number(c.serie), numeracao,
+    },
+  };
+}
+
+function corpoEmpresaSysVelox(c: any, serieNfe: number, emp: any): Record<string, unknown> {
+  const t = (v: unknown) => { const s = String(v ?? '').trim(); return s === '' ? null : s; };
+  const faltando: string[] = [];
+  const obrig: Record<string, unknown> = {
+    'razão social': t(c.razao_social), 'UF': t(c.uf), 'código IBGE do município': t(c.codigo_municipio),
+    'rua': t(c.logradouro), 'número': t(c.numero), 'bairro': t(c.bairro), 'município': t(c.municipio), 'CEP': t(c.cep),
+  };
+  for (const [k, v] of Object.entries(obrig)) if (!v) faltando.push(k);
+  if (faltando.length) throw new Error('Configuração fiscal incompleta para enviar à SysVelox: falta ' + faltando.join(', ') + '.');
+  if (!/^\d{7}$/.test(String(c.codigo_municipio)) || !/^\d{8}$/.test(String(c.cep))) throw new Error('Código IBGE (7 dígitos) ou CEP (8 dígitos) inválido na configuração.');
+  if (!Number.isInteger(serieNfe) || serieNfe < 1 || serieNfe > 999) throw new Error('A SysVelox aceita série de 1 a 999.');
+  const corpo: Record<string, unknown> = {
+    razao_social: t(c.razao_social), nome_fantasia: t(c.nome_fantasia),
+    inscricao_estadual: t(c.ie), inscricao_municipal: t(c.im),
+    crt: Number(c.crt), uf: t(c.uf), ibge_codigo_municipio: t(c.codigo_municipio),
+    logradouro: t(c.logradouro), numero: t(c.numero), complemento: t(c.complemento), bairro: t(c.bairro),
+    municipio_nome: t(c.municipio), cep: t(c.cep),
+    serie_nfe: serieNfe,
+  };
+  // mantém as séries de NFC-e e NFS-e que já estão lá (o PUT substitui o cadastro inteiro)
+  if (emp?.serie_nfce != null) corpo.serie_nfce = Number(emp.serie_nfce);
+  if (emp?.serie_nfse != null) corpo.serie_nfse = Number(emp.serie_nfse);
+  return corpo;
+}
+
+async function svConsultarEmpresa() {
+  try {
+    return (await svStatusEmpresa()).status;
+  } catch (e) {
+    const msg = e instanceof ErroSysVelox ? `${e.codigo}: ${e.message}` : (e as Error).message;
+    return { ok: false, erro: msg };
+  }
+}
+
+async function svDefinirSerie(usuario: string) {
+  try {
+    const { c, emp, status } = await svStatusEmpresa();
+    if (status.bate) return { ...status, mensagem: `A SysVelox já está na série ${c.serie}. Nada foi alterado.` };
+    const corpo = corpoEmpresaSysVelox(c, Number(c.serie), emp);
+    await svJson(`/v1/empresas/${c.cnpj}`, { method: 'PUT', body: JSON.stringify(corpo) });
+    const depois = (await svStatusEmpresa()).status;          // confere o que ficou gravado lá
+    if (!depois.bate) {
+      await evento(null, 'sysvelox_serie', false, `A SysVelox respondeu, mas a série continua ${depois.serie_sysvelox}.`, usuario);
+      return { ...depois, ok: false, erro: `A SysVelox não confirmou a troca: a série lá continua ${depois.serie_sysvelox}.` };
+    }
+    await evento(null, 'sysvelox_serie', true, `Série da NF-e na SysVelox: ${status.serie_sysvelox ?? '?'} → ${depois.serie_sysvelox}.`, usuario,
+      { antes: status.serie_sysvelox, depois: depois.serie_sysvelox });
+    return { ...depois, mensagem: `Série da NF-e na SysVelox trocada de ${status.serie_sysvelox ?? '?'} para ${depois.serie_sysvelox}.` };
+  } catch (e) {
+    const msg = e instanceof ErroSysVelox ? `${e.codigo}: ${e.message}${e.campo ? ` (campo: ${e.campo})` : ''}` : (e as Error).message;
+    await evento(null, 'sysvelox_serie', false, msg, usuario);
+    return { ok: false, erro: msg };
+  }
 }
 
 // Lê o documento na SysVelox e traduz o status para o do ERP
@@ -435,7 +524,11 @@ async function testeSysVelox(usuario: string) {
     svChave(); svEmpresa();
     passos.push('Chave de TESTE e id da empresa encontrados nos segredos.');
     const emp = await svJson(`/v1/empresas/${c.cnpj}`);
-    passos.push(`Empresa encontrada na SysVelox: ${emp.razao_social || emp?.empresa?.razao_social || c.cnpj} · série NF-e ${emp.serie_nfe ?? emp?.empresa?.serie_nfe ?? '?'}.`);
+    const serieSv = emp.serie_nfe ?? emp?.empresa?.serie_nfe;
+    passos.push(`Empresa encontrada na SysVelox: ${emp.razao_social || emp?.empresa?.razao_social || c.cnpj} · série NF-e ${serieSv ?? '?'}.`);
+    if (serieSv != null && Number(serieSv) !== Number(c.serie)) {
+      passos.push(`⚠️ Série diferente: na SysVelox é ${serieSv}, no ERP é ${c.serie}. As vendas não saem enquanto não bater — use "Usar a série ${c.serie} na SysVelox".`);
+    }
     const corpo = {
       company_id: svEmpresa(), nat_op: c.natureza_operacao, finalidade: 1, ind_final: 1, ind_pres: c.indicador_presenca_fisica,
       modalidade_frete: 9, payment_method: 'sem_pagamento',
@@ -445,6 +538,8 @@ async function testeSysVelox(usuario: string) {
       items: [{ description: 'TESTE DE INTEGRACAO DO ERP', ncm: '48191000', cfop: c.cfop_padrao_dentro_uf, unit: 'UN', quantity: 1,
                 unit_price_cents: 100, csosn: c.csosn_padrao, cst_pis: c.cst_pis_padrao, cst_cofins: c.cst_cofins_padrao, origem_mercadoria: 0 }],
     };
+    const info = textoComplementar(c.info_complementar);
+    if (info) (corpo as Record<string, unknown>).informacoes_complementares = info;
     const r = await svJson('/v1/nfe', { method: 'POST', body: JSON.stringify(corpo), idempotencia: `erp-teste-${Date.now()}` });
     passos.push(`Enviada (id ${r.id}) — status "${r.status}". Acompanhando a cada 2 s…`);
     const fim = Date.now() + 60_000;
@@ -633,6 +728,8 @@ Deno.serve(async (req) => {
       case 'email':            return resposta(await enviarEmail(String(corpo.nota_id || ''), corpo.email, usuario));
       case 'limpar_simulacao': return resposta(await limparSimulacao(usuario));
       case 'teste_sysvelox':   return resposta(await testeSysVelox(usuario));
+      case 'sysvelox_status':  return resposta(await svConsultarEmpresa());
+      case 'sysvelox_serie':   return resposta(await svDefinirSerie(usuario));
       default:                 return resposta({ ok: false, erro: 'Ação desconhecida.' }, 400);
     }
   } catch (e) {

@@ -398,6 +398,8 @@
   .nfe-banner.erro{ background:#fde8e8; border-color:#f3b0b0; color:var(--danger); }
   .nfe-amb-aviso{ padding:8px 12px; border-radius:6px; border:1px solid var(--border); font-size:13px; font-weight:600; margin-bottom:12px; }
   .nfe-msg{ font-size:13px; margin-top:10px; min-height:16px; line-height:1.5; }
+  .nfe-sv-box{ margin-top:12px; padding:12px 14px; border:1px solid var(--border); border-radius:10px; }
+  .nfe-sv-box table{ margin-top:8px; }
   .nfe-msg.ok{ color:var(--ok); } .nfe-msg.erro{ color:var(--danger); } .nfe-msg.aviso{ color:#b5610a; }
   .nfe-pendencias{ background:#fde8e8; color:#8a1c1c; border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:13px; }
   .nfe-avisos{ background:#fff7e0; color:#7a5200; border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:13px; }
@@ -1083,7 +1085,7 @@
           <div class="field"><label for="nfe-c-copia">Cópia das notas para (e-mail)</label><input type="email" id="nfe-c-copia"></div>
           <div class="field" style="flex-basis:100%;"><label for="nfe-c-info">Informações complementares (saem em toda nota)</label><textarea id="nfe-c-info" rows="2" maxlength="2000"></textarea></div>
         </form>
-        <p class="muted" style="font-size:12px;">O CFOP/CSOSN de cada produto (aba Produtos) tem prioridade sobre o padrão. Vazio no produto = usa o padrão daqui. As "informações complementares" só entram na nota de simulação: a SysVelox monta esse texto sozinha (o teste mostra o que ela coloca).</p>
+        <p class="muted" style="font-size:12px;">O CFOP/CSOSN de cada produto (aba Produtos) tem prioridade sobre o padrão. Vazio no produto = usa o padrão daqui. As "informações complementares" saem em toda nota (simulação e SysVelox) — é aqui que fica o texto do Simples Nacional.</p>
         <h4 style="margin:18px 0 8px;">Ambiente e numeração</h4>
         <form class="inline" onsubmit="return false;">
           <div class="field"><label for="nfe-c-modo">Onde as notas são emitidas</label>
@@ -1097,6 +1099,14 @@
         <div class="tabela-rolavel" style="margin-top:10px;"><table><thead><tr><th>Ambiente</th><th>Série</th><th class="num">Último nº usado</th><th class="num">Próxima nota</th><th></th></tr></thead>
           <tbody id="nfe-num-tbody"></tbody></table></div>
         <p class="muted" style="font-size:12px;" id="nfe-num-ajuda"></p>
+        <div class="nfe-sv-box" id="nfe-sv-box">
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <strong style="font-size:14px;">Na SysVelox (chave de teste)</strong>
+            <button type="button" class="secondary" id="nfe-sv-consultar">Consultar série e numeração na SysVelox</button>
+            <button type="button" id="nfe-sv-usar-serie" hidden>Usar a série do ERP na SysVelox</button>
+          </div>
+          <div id="nfe-sv-res" class="nfe-msg"></div>
+        </div>
         <div class="nfe-msg" id="nfe-c-msg"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
           <button type="button" id="nfe-c-salvar">Salvar configuração</button>
@@ -6102,7 +6112,7 @@ function preencherNfeConfigForm(){
   set('nfe-c-cstpis', c.cst_pis_padrao); set('nfe-c-cstcofins', c.cst_cofins_padrao);
   set('nfe-c-info', c.info_complementar); set('nfe-c-modo', c.ambiente + '|' + c.provedor); set('nfe-c-serie', c.serie);
   document.getElementById('nfe-num-ajuda').textContent = c.provedor === 'sysvelox'
-    ? `Na SysVelox o número da nota é dado pela própria SysVelox (série ${c.serie} configurada no portal dela). A tabela acima vale só para a simulação.`
+    ? `Na SysVelox quem numera é a própria SysVelox, na série gravada no cadastro dela (o portal não mostra esse campo). A tabela acima vale só para a simulação — a série e a numeração reais estão no quadro abaixo.`
     : 'Na simulação o ERP numera sozinho (último + 1).';
   const tb = document.getElementById('nfe-num-tbody');
   tb.innerHTML = nfeNumeracao.map(n => `<tr>
@@ -6170,6 +6180,52 @@ async function ajustarNumeracaoNfe(ambiente, serie, atual){
   const { error } = await supabaseClient.rpc('nfe_ajustar_numeracao', { p_ambiente: ambiente, p_serie: serie, p_ultimo: n });
   if (error) { alert('Não ajustou: ' + error.message); return; }
   await loadNfeConfig();
+}
+
+// Série e numeração da NF-e NA SYSVELOX (a série usada na emissão é a do cadastro de lá)
+function renderStatusSysVelox(r){
+  const btn = document.getElementById('nfe-sv-usar-serie');
+  if (!r || !r.ok) { btn.hidden = true; msgNfe('nfe-sv-res', '❌ ' + esc((r && r.erro) || 'Sem resposta da SysVelox.'), 'erro'); return; }
+  const emUso = Number(r.serie_sysvelox);
+  const num = (r.numeracao || []).slice();
+  if (Number.isInteger(emUso) && !num.some(n => Number(n.serie) === emUso)) num.push({ serie: emUso, ambiente: null, ultimo_numero: 0 });
+  num.sort((a, b) => (Number(b.serie) === emUso) - (Number(a.serie) === emUso) || Number(a.serie) - Number(b.serie));
+  const linhas = num.map(n => `<tr><td>${esc(n.serie)}${Number(n.serie) === emUso ? ' <span class="badge concluida">em uso</span>' : ' <span class="muted">(não usada)</span>'}</td><td>${esc(n.ambiente === 'test' ? 'Teste' : n.ambiente === 'live' ? 'Produção' : (n.ambiente || '—'))}</td>
+      <td class="num">${Number(n.ultimo_numero).toLocaleString('pt-BR')}</td><td class="num"><strong>${(Number(n.ultimo_numero) + 1).toLocaleString('pt-BR')}</strong></td></tr>`).join('');
+  const tabela = linhas
+    ? `<div class="tabela-rolavel"><table><thead><tr><th>Série</th><th>Ambiente</th><th class="num">Último nº usado</th><th class="num">Próxima nota</th></tr></thead><tbody>${linhas}</tbody></table></div>`
+    : '<div class="muted">Nenhuma NF-e emitida ainda — a primeira sai com o nº 1.</div>';
+  const cab = r.bate
+    ? `✅ Série da NF-e na SysVelox: <strong>${esc(r.serie_sysvelox)}</strong> — igual à do ERP.`
+    : `⚠️ Série da NF-e na SysVelox: <strong>${esc(r.serie_sysvelox ?? '?')}</strong> · no ERP: <strong>${esc(r.serie_erp)}</strong>. As vendas não são emitidas enquanto não bater.`;
+  msgNfe('nfe-sv-res', (r.mensagem ? '✅ ' + esc(r.mensagem) + '<br>' : '') + cab + tabela, r.bate ? 'ok' : 'aviso');
+  btn.textContent = `Usar a série ${r.serie_erp} na SysVelox`;
+  btn.hidden = !!r.bate;
+}
+
+async function consultarSysVelox(){
+  const btn = document.getElementById('nfe-sv-consultar');
+  btn.disabled = true;
+  msgNfe('nfe-sv-res', 'Consultando a SysVelox…');
+  try { renderStatusSysVelox(await chamarNfe({ acao: 'sysvelox_status' })); }
+  catch (e) { msgNfe('nfe-sv-res', '❌ ' + esc(e.message), 'erro'); }
+  btn.disabled = false;
+}
+
+async function usarSerieSysVelox(){
+  const c = nfeConfig;
+  const serie = Number(c && c.serie);
+  if (!c || !Number.isInteger(serie) || serie < 1) { msgNfe('nfe-sv-res', '❌ Configuração fiscal não carregada (ou série inválida). Recarregue a página.', 'erro'); return; }
+  if (!confirm(`Gravar a série ${serie} da NF-e no cadastro da E-Factory na SysVelox?\n\n`
+    + `A SysVelox só troca a série reenviando o cadastro inteiro, então vão junto os dados desta configuração:\n`
+    + `${c.razao_social || ''} · IE ${c.ie || '—'} · IM ${c.im || '—'}\n${c.logradouro || ''}, ${c.numero || ''} — ${c.bairro || ''} · ${c.municipio || ''}/${c.uf || ''} · CEP ${c.cep || ''}\n\n`
+    + `Confira se estão iguais aos do portal. As próximas notas da SysVelox saem na série ${serie}.`)) return;
+  const btn = document.getElementById('nfe-sv-usar-serie');
+  btn.disabled = true;
+  msgNfe('nfe-sv-res', 'Gravando na SysVelox…');
+  try { renderStatusSysVelox(await chamarNfe({ acao: 'sysvelox_serie' })); }
+  catch (e) { msgNfe('nfe-sv-res', '❌ ' + esc(e.message), 'erro'); }
+  btn.disabled = false;
 }
 
 async function testarSysVelox(){
@@ -6764,6 +6820,8 @@ async function abrirNotasFiscais(){
   on('nfe-c-salvar', 'click', salvarNfeConfig);
   on('nfe-c-buscacep', 'click', () => buscarCepNfe('nfe-c-'));
   on('nfe-c-limpar-sim', 'click', limparSimulacaoNfe);
+  on('nfe-sv-consultar', 'click', consultarSysVelox);
+  on('nfe-sv-usar-serie', 'click', usarSerieSysVelox);
   on('nfe-c-testar-sv', 'click', testarSysVelox);
   // modal emitir
   on('nfe-e-fechar', 'click', () => { document.getElementById('nfe-modal-emitir').style.display = 'none'; });
