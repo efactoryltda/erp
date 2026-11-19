@@ -5145,17 +5145,19 @@ function estadoIndicadoresPedidos(texto){
 // Célula "Líquido" de um pedido. Só informativo: o faturamento (Total) não muda.
 function celulaLiquido(p){
   if (p.valor_liquido !== null && p.valor_liquido !== undefined) {
+    const shp = !!p.shopee_order_sn;
     const partes = [
       `Total: ${fmtMoeda(p.valor_total)}`,
-      `− Tarifa ML: ${fmtMoeda(p.liquido_tarifa_ml || 0)}`,
+      `− ${shp ? 'Comissão + taxa de serviço Shopee' : 'Tarifa ML'}: ${fmtMoeda(p.liquido_tarifa_ml || 0)}`,
       `− Frete pago pelo vendedor: ${fmtMoeda(p.liquido_frete_vendedor || 0)}`,
-      `− Taxas Mercado Pago (e reembolsos): ${fmtMoeda(p.liquido_taxas_mp || 0)}`,
+      `− ${shp ? 'Taxas Shopee (e reembolsos)' : 'Taxas Mercado Pago (e reembolsos)'}: ${fmtMoeda(p.liquido_taxas_mp || 0)}`,
       `= Líquido: ${fmtMoeda(p.valor_liquido)}`,
     ].join('\n');
     const aviso = p.liquido_status === 'estornado' ? ' <span class="muted">(estornado)</span>'
       : p.liquido_status === 'reembolso_parcial' ? ' <span class="muted">(reembolso parcial)</span>' : '';
     return `<span title="${esc(partes)}">${fmtMoeda(p.valor_liquido)}</span>${aviso}`;
   }
+  if (p.shopee_order_sn) return '<span class="muted" title="Repasse da Shopee ainda não consultado (o ERP busca de hora em hora)">—</span>';
   if (!p.ml_order_id) return '<span class="muted">-</span>';
   const motivo = p.liquido_status === 'pendente' ? 'pagamento ainda pendente no Mercado Pago'
     : p.liquido_status === 'erro' ? 'não foi possível consultar no Mercado Pago (tenta de novo depois)'
@@ -5182,7 +5184,7 @@ async function carregarLiquidoFiltro(f, seq){
   const pct = Number(r.bruto_dos_com_liquido) > 0 ? (Number(r.liquido) / Number(r.bruto_dos_com_liquido) * 100) : null;
   det.textContent = `(${com.toLocaleString('pt-BR')} venda${com !== 1 ? 's' : ''} com líquido` +
     (pct !== null ? ` · ${pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do bruto delas` : '') + ')' +
-    (sem ? ` · ${sem.toLocaleString('pt-BR')} venda${sem !== 1 ? 's' : ''} do ML ainda sem líquido` : '');
+    (sem ? ` · ${sem.toLocaleString('pt-BR')} venda${sem !== 1 ? 's' : ''} de marketplace ainda sem líquido` : '');
 }
 
 function atualizarControlesPaginacao(qtdNaPagina){
@@ -5418,7 +5420,7 @@ async function excluirPedido(id){
 // depois como outra série, sem mudar a estrutura.
 // ============================================================
 const URL_SYNC_RECEBER = 'https://jrkuzyhobgzhjjyblmed.supabase.co/functions/v1/ml-sync-receber';
-const CR_CANAIS = ['loja_fisica', 'ml_conta1', 'ml_conta2', 'ml_conta3', 'loja_online', 'outros'];   // ordem fixa (cor segue o canal)
+const CR_CANAIS = ['loja_fisica', 'ml_conta1', 'ml_conta2', 'ml_conta3', 'shopee', 'loja_online', 'outros'];   // ordem fixa (cor segue o canal)
 const CR_STATUS = [
   { value: 'a_receber',  label: 'A receber' },
   { value: 'recebido',   label: 'Recebido' },
@@ -5715,9 +5717,10 @@ function crLinhaHtml(l){
   const n = (v) => Number(v || 0);
   const det = [`Bruto: ${fmtMoeda(l.valor_bruto)}`];
   if (n(l.valor_reembolsado)) det.push(`− Devolvido ao comprador: ${fmtMoeda(l.valor_reembolsado)}`);
-  if (n(l.tarifa)) det.push(`− Tarifa ML: ${fmtMoeda(l.tarifa)}`);
+  const shp = l.origem === 'shopee';
+  if (n(l.tarifa)) det.push(`− ${shp ? 'Comissão + taxa de serviço Shopee' : 'Tarifa ML'}: ${fmtMoeda(l.tarifa)}`);
   if (n(l.frete)) det.push(`− Frete pago pelo vendedor: ${fmtMoeda(l.frete)}`);
-  if (n(l.taxas)) det.push(`− Taxas: ${fmtMoeda(l.taxas)}`);
+  if (n(l.taxas)) det.push(`− ${shp ? 'Taxas Shopee (proteção de frete, afiliados)' : 'Taxas'}: ${fmtMoeda(l.taxas)}`);
   if (n(l.outros_ajustes)) det.push(`− Outros ajustes: ${fmtMoeda(l.outros_ajustes)}`);
   det.push(`= Líquido: ${fmtMoeda(l.valor_liquido)}`);
   if (l.parcelas > 1) det.push(`(comprador parcelou em ${l.parcelas}x — o ML libera de uma vez)`);
@@ -5731,6 +5734,7 @@ function crLinhaHtml(l){
 
   const sub = [];
   if (l.ml_order_id) sub.push('Pedido ML ' + esc(l.ml_order_id));
+  if (l.origem === 'shopee' && l.observacao) sub.push('Pedido ' + esc(l.observacao));
   if (l.cliente) sub.push(esc(l.cliente));
   if (l.origem === 'manual') sub.push(l.categoria === 'aporte' ? 'Aporte (manual)' : l.categoria === 'outros' ? 'Outros (manual)' : 'Venda (manual)');
   if (l.origem === 'pedido') {
@@ -5742,6 +5746,8 @@ function crLinhaHtml(l){
 
   const prev = l.status === 'a_receber' && l.origem === 'ml'
     ? '<span class="cr-prev" title="Data que o Mercado Livre informa hoje. Costuma adiantar depois da entrega — o ERP atualiza sozinho.">previsão ML</span>'
+    : l.status === 'aguardando' && l.origem === 'shopee'
+      ? '<span class="cr-prev" title="A Shopee libera o repasse alguns dias depois que o comprador confirma o recebimento. O ERP atualiza sozinho (de hora em hora).">após entrega</span>'
     : (l.liberacao_editada ? '<span class="cr-prev">data ajustada</span>' : '');
 
   let acoes = '';

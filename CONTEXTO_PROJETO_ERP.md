@@ -1084,6 +1084,34 @@ caso das 227 caixas 30x12,3x8 em 08/10).
 
 ## Integração Shopee — plano combinado (2026-10-22 a 2026-10-30)
 
+**Fase 2 no ar (Lote 16 — 2026-11-19): taxas, líquido e Contas a receber.**
+- Fórmula conferida em pedidos reais (`/api/v2/payment/get_escrow_detail`,
+  campo `order_income`): **repasse = preço de venda − commission_fee − service_fee
+  − shipping_seller_protection_fee_amount (R$ 0,49) − order_ams_commission_fee
+  (afiliados, quando houver)**. Usar as taxas CHEIAS (não as `net_*`).
+- Armadilhas vistas: `credit_card_transaction_fee` é paga pelo COMPRADOR (igual a
+  `buyer_transaction_fee`) — não é custo do vendedor; `final_shipping_fee` vem
+  negativo mesmo quando comprador/Shopee pagaram o frete — por isso o frete do
+  vendedor só conta a parte que de fato saiu do repasse (resíduo limitado ao frete).
+- SQL `sql/2026-11-19_lote16_shopee_liquido.sql`: índice único
+  `uq_lanc_shopee_pedido (pedido_id) where origem='shopee'`; RPC
+  `registrar_liquido_shopee(p_pedido_id, p_dados)` (service_role; grava colunas de
+  líquido do pedido + 1 lançamento `origem/canal 'shopee'`, mesma convenção do ML:
+  líquido = bruto − tarifa − frete − taxas − outros − reembolsado; respeita data
+  editada à mão); RPC `fila_liquido_shopee(limite)` (sem lançamento, aguardando, ou
+  cancelado ainda não estornado); `resumo_liquido_filtro_v3/v4` passam a contar
+  Shopee em "ainda sem líquido".
+- Edge Function `shopee-sync-liquido` (`?ver=<sn>`, `?simular=1`, `?limite=N`):
+  data de liberação vem de `get_escrow_list` (últimos 60 dias). Liberado →
+  `recebido` na data da Shopee; não liberado → `aguardando` (sem data); cancelado →
+  `estornado` (reembolsado = bruto, líquido 0). pg_cron **`sync-liquido-shopee`
+  no minuto 41 de cada hora** (limite 60).
+- Backfill 19/11: 81 pedidos, bruto R$ 5.037,80 − tarifas R$ 1.378,09 − taxas
+  R$ 48,12 = **líquido R$ 3.611,59** (51 recebidos R$ 2.263,86; 29 aguardando
+  R$ 1.347,73; 1 estornado). Fechou centavo a centavo com o repasse da Shopee.
+- Tela: Shopee entrou no filtro/gráfico de Contas a receber (`CR_CANAIS`);
+  tooltips de líquido com rótulos da Shopee; tag "após entrega" nos aguardando.
+
 **Status (2026-11-09): LOJA REAL NO AR.** Go Live aprovado (Live Partner_id
 2051877; **Live Key vence em 03/05/2027** — gerar outra no Console antes disso e
 atualizar `SHOPEE_PARTNER_KEY`). Loja "E-Factory Group" (shop_id 1677860524)
